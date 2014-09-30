@@ -191,6 +191,9 @@ void TestPhotosTreeWidget::TestDeleteGroupsByIds()
   photos_widget.AddGroup(1, groups[1]);
   photos_widget.AddGroup(2, groups[2]);
 
+  photos_widget.show();
+  qApp->exec();
+
   std::vector<uint> group_ids;
   group_ids.push_back(1);
   group_ids.push_back(2);

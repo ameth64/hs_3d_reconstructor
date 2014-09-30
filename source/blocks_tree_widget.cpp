@@ -14,145 +14,296 @@ namespace recon
 
 BlocksTreeWidget::BlocksTreeWidget(QWidget* parent)
   : QTreeWidget(parent),
-    activated_block_id_(std::numeric_limits<uint>::max()),
-    photo_icon_(new QIcon(":/images/icon_photo.png")),
-    valid_icon_(new QIcon(":/images/icon_valid.png")),
-    invalid_icon_(new QIcon(":/images/icon_invalid.png"))
+    block_icon_(QIcon(":/images/icon_block.png")),
+    photo_icon_(QIcon(":/images/icon_photo.png")),
+    feature_match_icon_(QIcon(":/images/icon_feature_match.png")),
+    photo_orientation_icon_(QIcon(":/images/icon_photo_orientation.png")),
+    point_cloud_icon_(QIcon(":/images/icon_point_cloud.png")),
+    surface_model_icon_(QIcon(":/images/icon_surface_model.png")),
+    dem_icon_(QIcon(":/images/icon_dem.png")),
+    texture_icon_(QIcon(":/images/icon_texture.png")),
+    dom_icon_(QIcon(":/images/icon_dom.png"))
 {
-  setSelectionMode(QAbstractItemView::ExtendedSelection);
+  setSelectionMode(QAbstractItemView::SingleSelection);
   setExpandsOnDoubleClick(false);
-
-  setColumnCount(4);
-  QTreeWidgetItem* header_item =
-    new QTreeWidgetItem(QStringList()
-                          <<tr("")
-                          <<tr("Position")
-                          <<tr("Rotation")
-                          <<tr("Oriented"));
-  setHeaderItem(header_item);
-  workspace_item_ =
-    new QTreeWidgetItem(this, QStringList()<<tr("Workspace"));
-  workspace_item_->setExpanded(true);
-  addTopLevelItem(workspace_item_);
-
-  QObject::connect(this, &QTreeWidget::itemDoubleClicked,
-                   this, &BlocksTreeWidget::OnItemDoubleClicked);
+  header()->close();
 }
 
-int BlocksTreeWidget::ClearBlocks()
+int BlocksTreeWidget::AddBlock(uint block_id, const QString& block_name)
 {
+  if (block_item_map_.find(block_id) != block_item_map_.end()) return -1;
+  QTreeWidgetItem* block_item =
+    new QTreeWidgetItem(this, QStringList()<<block_name, BLOCK);
+  block_item->setData(0, Qt::UserRole, QVariant(block_id));
+  block_item->setIcon(0, block_icon_);
+  addTopLevelItem(block_item);
+  QTreeWidgetItem* photo_item =
+    new QTreeWidgetItem(block_item, QStringList()<<tr("Photos"), PHOTOS);
+  photo_item->setData(0, Qt::UserRole, QVariant(block_id));
+  photo_item->setIcon(0, photo_icon_);
+  block_item->addChild(photo_item);
+  block_item->setExpanded(true);
+
+  block_item_map_[block_id] = block_item;
+
   return 0;
 }
-
-int BlocksTreeWidget::AddBlock(uint block_id, const BlockEntry& block)
+int BlocksTreeWidget::AddFeatureMatch(uint block_id, uint feature_match_id,
+                                      const QString& feature_match_name)
 {
-  if (block_item_map_.find(block_id) != block_item_map_.end())
+  if (block_item_map_.find(block_id) == block_item_map_.end() ||
+      feature_match_item_map_.find(feature_match_id) !=
+      feature_match_item_map_.end()) return -1;
+
+  QTreeWidgetItem* block_item = block_item_map_[block_id];
+
+  QTreeWidgetItem* feature_match_item =
+    new QTreeWidgetItem(block_item, QStringList()<<feature_match_name,
+                        FEATURE_MATCH);
+  feature_match_item->setData(0, Qt::UserRole, QVariant(feature_match_id));
+  feature_match_item->setIcon(0, feature_match_icon_);
+  feature_match_item->setExpanded(true);
+  block_item->addChild(feature_match_item);
+
+  feature_match_item_map_[feature_match_id] = feature_match_item;
+
+  return 0;
+}
+int BlocksTreeWidget::AddPhotoOrientation(
+  uint feature_match_id, uint photo_orientation_id,
+  const QString& photo_orientation_name)
+{
+  if (feature_match_item_map_.find(feature_match_id) ==
+      feature_match_item_map_.end() ||
+      photo_orientation_item_map_.find(photo_orientation_id) !=
+      photo_orientation_item_map_.end()) return -1;
+
+  QTreeWidgetItem* feature_match_item =
+    feature_match_item_map_[feature_match_id];
+
+  QTreeWidgetItem* photo_orientation_item =
+    new QTreeWidgetItem(feature_match_item,
+                        QStringList()<<photo_orientation_name,
+                        PHOTO_ORIENTATION);
+  photo_orientation_item->setData(0, Qt::UserRole,
+                                  QVariant(photo_orientation_id));
+  photo_orientation_item->setIcon(0, photo_orientation_icon_);
+  photo_orientation_item->setExpanded(true);
+  feature_match_item->addChild(photo_orientation_item);
+
+  photo_orientation_item_map_[photo_orientation_id] = photo_orientation_item;
+
+  return 0;
+}
+int BlocksTreeWidget::AddPointCloud(uint photo_orientation_id,
+                                    uint point_cloud_id,
+                                    const QString& point_cloud_name)
+{
+  if (photo_orientation_item_map_.find(photo_orientation_id) ==
+      photo_orientation_item_map_.end() ||
+      point_cloud_item_map_.find(point_cloud_id) != point_cloud_item_map_.end())
   {
     return -1;
   }
-  QTreeWidgetItem* block_item =
-    new QTreeWidgetItem(workspace_item_, QStringList()<<block.name);
-  block_item->setData(0, Qt::UserRole, QVariant(block_id));
-  workspace_item_->addChild(block_item);
-  block_item_map_[block_id] = block_item;
-  auto itr_photo = block.photos.begin();
-  auto itr_photo_end = block.photos.end();
-  for (; itr_photo != itr_photo_end; ++itr_photo)
+
+  QTreeWidgetItem* photo_orientation_item =
+    photo_orientation_item_map_[photo_orientation_id];
+
+  QTreeWidgetItem* point_cloud_item =
+    new QTreeWidgetItem(photo_orientation_item,
+                        QStringList()<<point_cloud_name, POINT_CLOUD);
+  point_cloud_item->setData(0, Qt::UserRole, QVariant(point_cloud_id));
+  point_cloud_item->setIcon(0, point_cloud_icon_);
+  point_cloud_item->setExpanded(true);
+  photo_orientation_item->addChild(point_cloud_item);
+
+  point_cloud_item_map_[point_cloud_id] = point_cloud_item;
+  return 0;
+}
+int BlocksTreeWidget::AddSurfaceModel(uint point_cloud_id,
+                                      uint surface_model_id,
+                                      const QString& surface_model_name)
+{
+  if (point_cloud_item_map_.find(point_cloud_id) ==
+      point_cloud_item_map_.end() ||
+      surface_model_item_map_.find(surface_model_id) !=
+      surface_model_item_map_.end())
   {
-    if (photo_item_map_.find(itr_photo->second.id) == photo_item_map_.end())
-    {
-      QString photo_item_text = itr_photo->second.file_name;
-      QTreeWidgetItem* photo_item =
-        new QTreeWidgetItem(block_item, QStringList()<<photo_item_text
-                                                     <<""<<""<<"");
-      photo_item->setData(0, Qt::UserRole, QVariant(itr_photo->second.id));
-      photo_item->setIcon(0, *photo_icon_);
-      if (itr_photo->second.mask[PhotoEntry::POSITION])
-      {
-        photo_item->setIcon(1, *valid_icon_);
-      }
-      else
-      {
-        photo_item->setIcon(1, *invalid_icon_);
-      }
-      if (itr_photo->second.mask[PhotoEntry::ROTATION])
-      {
-        photo_item->setIcon(2, *valid_icon_);
-      }
-      else
-      {
-        photo_item->setIcon(2, *invalid_icon_);
-      }
-      if (itr_photo->second.mask[PhotoEntry::ORIENTED])
-      {
-        photo_item->setIcon(3, *valid_icon_);
-      }
-      else
-      {
-        photo_item->setIcon(3, *invalid_icon_);
-      }
-      block_item->addChild(photo_item);
-      photo_item_map_[itr_photo->second.id] = photo_item;
-    }
+    return -1;
   }
 
-  block_item->setExpanded(true);
+  QTreeWidgetItem* point_cloud_item =
+    point_cloud_item_map_[point_cloud_id];
+
+  QTreeWidgetItem* surface_model_item =
+    new QTreeWidgetItem(point_cloud_item,
+                        QStringList()<<surface_model_name, SURFACE_MODEL);
+  surface_model_item->setData(0, Qt::UserRole, QVariant(surface_model_id));
+  surface_model_item->setIcon(0, surface_model_icon_);
+  surface_model_item->setExpanded(true);
+  point_cloud_item->addChild(surface_model_item);
+
+  surface_model_item_map_[surface_model_id] = surface_model_item;
+  return 0;
+}
+int BlocksTreeWidget::AddDEM(uint surface_model_id, uint dem_id,
+                             const QString& dem_name)
+{
+  if (surface_model_item_map_.find(surface_model_id) ==
+      surface_model_item_map_.end() ||
+      dem_item_map_.find(dem_id) !=
+      dem_item_map_.end())
+  {
+    return -1;
+  }
+
+  QTreeWidgetItem* surface_model_item =
+    surface_model_item_map_[surface_model_id];
+
+  QTreeWidgetItem* dem_item = new QTreeWidgetItem(DEM);
+  dem_item->setText(0, dem_name);
+  dem_item->setData(0, Qt::UserRole, QVariant(dem_id));
+  dem_item->setIcon(0, dem_icon_);
+  dem_item->setExpanded(true);
+  int child_count = surface_model_item->childCount();
+  int i = 0;
+  for (; i < child_count; i++)
+  {
+    QTreeWidgetItem* child = surface_model_item->child(i);
+    if (child->type() == TEXTURE)
+    {
+      break;
+    }
+  }
+  if (i >= child_count)
+  {
+    surface_model_item->addChild(dem_item);
+  }
+  else
+  {
+    surface_model_item->insertChild(i, dem_item);
+  }
+
+  dem_item_map_[dem_id] = dem_item;
+  return 0;
+}
+int BlocksTreeWidget::AddTexture(uint surface_model_id, uint texture_id,
+                                 const QString& texture_name)
+{
+  if (surface_model_item_map_.find(surface_model_id) ==
+      surface_model_item_map_.end() ||
+      texture_item_map_.find(texture_id) !=
+      texture_item_map_.end())
+  {
+    return -1;
+  }
+
+  QTreeWidgetItem* surface_model_item =
+    surface_model_item_map_[surface_model_id];
+
+  QTreeWidgetItem* texture_item =
+    new QTreeWidgetItem(surface_model_item,
+                        QStringList()<<texture_name, TEXTURE);
+  texture_item->setData(0, Qt::UserRole, QVariant(texture_id));
+  texture_item->setIcon(0, texture_icon_);
+  texture_item->setExpanded(true);
+  surface_model_item->addChild(texture_item);
+
+  texture_item_map_[texture_id] = texture_item;
+  return 0;
+}
+int BlocksTreeWidget::AddDOM(uint texture_id, uint dom_id,
+                             const QString& dom_name)
+{
+  if (texture_item_map_.find(texture_id) ==
+      texture_item_map_.end() ||
+      dom_item_map_.find(dom_id) !=
+      dom_item_map_.end())
+  {
+    return -1;
+  }
+
+  QTreeWidgetItem* texture_item =
+    texture_item_map_[texture_id];
+
+  QTreeWidgetItem* dom_item =
+    new QTreeWidgetItem(texture_item,
+                        QStringList()<<dom_name, DOM);
+  dom_item->setData(0, Qt::UserRole, QVariant(dom_id));
+  dom_item->setIcon(0, dom_icon_);
+  dom_item->setExpanded(true);
+  texture_item->addChild(dom_item);
+
+  dom_item_map_[dom_id] = dom_item;
   return 0;
 }
 
-int BlocksTreeWidget::AddPhotos(uint block_id, const PhotoContainer& photos)
+int BlocksTreeWidget::DeleteBlock(uint block_id)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeleteFeatureMatch(uint feature_match)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeletePhotoOrientation(uint photo_orientation_id)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeletePointCloud(uint point_cloud_id)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeleteSurfaceModel(uint surface_model_id)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeleteDEM(uint dem_id)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeleteTexture(uint texture_id)
+{
+  return 0;
+}
+int BlocksTreeWidget::DeleteDOM(uint dom_id)
 {
   return 0;
 }
 
-uint BlocksTreeWidget::activated_block_id() const
-{
-  return activated_block_id_;
-}
-
-int BlocksTreeWidget::DeleteBlocksByIds(const std::vector<uint>& block_ids)
+int BlocksTreeWidget::ChangeBlockName(uint block_id, const QString& block_name)
 {
   return 0;
 }
-
-int BlocksTreeWidget::DeleteBlocksBySelectedItems()
+int BlocksTreeWidget::ChangeFeatureMatchName(uint feature_match_id,
+                                             const QString& feature_match_name)
 {
   return 0;
 }
-
-int BlocksTreeWidget::ActivateBlockById(uint block_id)
+int BlocksTreeWidget::ChangePhotoOrientationName(
+  uint photo_orientation_id, const QString& photo_orientation_name)
 {
   return 0;
 }
-
-int BlocksTreeWidget::RemovePhotosByIds(const std::vector<uint> photo_ids)
+int BlocksTreeWidget::ChangePointCloudName(
+  uint point_cloud_id, const QString& point_cloud_name)
 {
   return 0;
 }
-
-int BlocksTreeWidget::RemovePhotosBySelectedItems()
+int BlocksTreeWidget::ChangeSurfaceModelName(
+  uint surface_model_id, const QString& surface_model_name)
 {
   return 0;
 }
-
-void BlocksTreeWidget::OnItemSelectionChanged()
-{
-
-}
-
-void BlocksTreeWidget::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
-{
-  QMessageBox msg_box;
-  msg_box.setText(tr("Double Clicked!"));
-  msg_box.exec();
-}
-
-int BlocksTreeWidget::DeleteBlocksInternal(const ItemVector& block_items)
+int BlocksTreeWidget::ChangeDEMName(uint dem_id, QString& dem_name)
 {
   return 0;
 }
-
-int BlocksTreeWidget::RemovePhotosInternal(const ItemVector& photo_items)
+int BlocksTreeWidget::ChangeTextureName(uint texture_id, QString& texture_name)
+{
+  return 0;
+}
+int BlocksTreeWidget::ChangeDOMName(uint dom_id, QString& dom_name)
 {
   return 0;
 }
