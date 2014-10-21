@@ -1,0 +1,14 @@
+﻿#ifndef _HS_3D_RECONSTRUCTOR_PHOTO_ORIENTATION_INFO_WIDGET_HPP_
+#define _HS_3D_RECONSTRUCTOR_PHOTO_ORIENTATION_INFO_WIDGET_HPP_
+
+namespace hs
+{
+namespace recon
+{
+
+
+
+}
+}
+
+#endif

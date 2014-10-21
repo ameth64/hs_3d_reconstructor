@@ -15,10 +15,10 @@ include_directories("source")
 
 set(RECONSTRUCTOR_NAME "hs_3d_reconstructor")
 set(RECONSTRUCTOR_SOURCES
-  "source/main.cpp"
-  "source/main_window.cpp"
-  "source/manager_pane.cpp"
-  "source/blocks_tree_widget.cpp"
+  "source/gui/main.cpp"
+  "source/gui/main_window.cpp"
+  "source/gui/manager_pane.cpp"
+  "source/gui/blocks_tree_widget.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES
@@ -34,53 +34,112 @@ set(RECONSTRUCTOR_RESOURCES
   "resource/3d_reconstructor.qrc"
   )
 
-hs_add_qt_executable(${RECONSTRUCTOR_NAME}
-  SOURCES ${RECONSTRUCTOR_SOURCES}
-  QT_MODULES ${RECONSTRUCTOR_QT_MODULES}
-  UI_FILES ${RECONSTRUCTOR_UI_FILES}
-  RESOURCES ${RECONSTRUCTOR_RESOURCES}
-  )
+#hs_add_qt_executable(${RECONSTRUCTOR_NAME}
+#  SOURCES ${RECONSTRUCTOR_SOURCES}
+#  QT_MODULES ${RECONSTRUCTOR_QT_MODULES}
+#  UI_FILES ${RECONSTRUCTOR_UI_FILES}
+#  RESOURCES ${RECONSTRUCTOR_RESOURCES}
+#  )
+#
+#hslib_add_dep(${RECONSTRUCTOR_NAME}
+#  3RDPARTY_DEPS boost HEADONLY
+#  3RDPARTY_DEPS eigen HEADONLY
+#  HS_DEPS hs_math HEADONLY
+#  HS_DEPS hs_sfm HEADONLY
+#  )
+#
+#hslib_post_build(${RECONSTRUCTOR_NAME})
 
-hslib_add_dep(${RECONSTRUCTOR_NAME}
+set(DATABASE_NAME "database")
+set(DATABASE_SOURCES
+  "source/database/database.cpp"
+  "source/database/field.cpp"
+  "source/database/condition.cpp"
+  "source/database/demo_resource.cpp"
+  "source/database/block_resource.cpp"
+  "source/database/photogroup_resource.cpp"
+  "source/database/photo_resource.cpp"
+  "source/database/ground_control_point_resource.cpp"
+  "source/database/photo_measure_resource.cpp"
+  "source/database/feature_match_resource.cpp"
+  "source/database/photo_orientation_resource.cpp"
+  "source/database/point_cloud_resource.cpp"
+  "source/database/surface_model_resource.cpp"
+  "source/database/texture_resource.cpp"
+  "source/database/photo_block_relation_resource.cpp"
+  "source/database/gcp_photo_measure_relation_resource.cpp"
+  )
+hslib_add_library(${DATABASE_NAME} ${HSPRJ_NAME} ${DATABASE_SOURCES})
+hslib_add_dep(${DATABASE_NAME}
   3RDPARTY_DEPS boost HEADONLY
-  3RDPARTY_DEPS eigen HEADONLY
-  HS_DEPS hs_math HEADONLY
-  HS_DEPS hs_sfm HEADONLY
+  3RDPARTY_DEPS sqlite
   )
 
-hslib_post_build(${RECONSTRUCTOR_NAME})
-
-
-hs_add_qt_executable(test_manager_pane SOURCES
-  "unit_test/test_manager_pane.cpp"
-  "unit_test/action_tester.cpp"
-  "source/manager_pane.cpp"
-  QT_MODULES "Test" "Widgets" "Core"
-  RESOURCES "resource/3d_reconstructor.qrc")
-
-hs_add_qt_executable(test_blocks_tree_widget SOURCES
-  "unit_test/test_utility.cpp"
-  "unit_test/test_blocks_tree_widget.cpp"
-  "source/blocks_tree_widget.cpp"
-  QT_MODULES "Test" "Widgets" "Core"
-  RESOURCES "resource/3d_reconstructor.qrc")
-
-hs_add_qt_executable(test_photos_tree_widget SOURCES
-  "unit_test/test_utility.cpp"
-  "unit_test/test_photos_tree_widget.cpp"
-  "source/photos_tree_widget.cpp"
-  QT_MODULES "Test" "Widgets" "Core"
-  RESOURCES "resource/3d_reconstructor.qrc")
-hslib_add_dep(test_photos_tree_widget
-  3RDPARTY_DEPS boost HEADONLY
-  3RDPARTY_DEPS eigen HEADONLY
-  HS_DEPS hs_math HEADONLY
-  HS_DEPS hs_sfm HEADONLY
+set(DATABASE_UTEST_SOURCES
+  "unit_test/database/main.cpp"
+  "unit_test/database/test_condition.cpp"
+  "unit_test/database/test_demo_resource.cpp"
+  "unit_test/database/test_block_resource.cpp"
+  "unit_test/database/test_photogroup_resource.cpp"
+  "unit_test/database/test_photo_resource.cpp"
+  "unit_test/database/test_ground_control_point_resource.cpp"
+  "unit_test/database/test_photo_measure_resource.cpp"
+  "unit_test/database/test_feature_match_resource.cpp"
+  "unit_test/database/test_photo_orientation_resource.cpp"
+  "unit_test/database/test_point_cloud_resource.cpp"
+  "unit_test/database/test_surface_model_resource.cpp"
+  "unit_test/database/test_texture_resource.cpp"
+  "unit_test/database/test_photo_block_relation_resource.cpp"
+  "unit_test/database/test_gcp_photo_measure_relation_resource.cpp"
   )
-hslib_post_build(test_photos_tree_widget)
+hslib_add_utest(${DATABASE_NAME} SOURCES ${DATABASE_UTEST_SOURCES})
+hslib_add_dep(${DATABASE_NAME}_utest
+  3RDPARTY_DEPS sqlite
+  )
+hslib_post_build(${DATABASE_NAME}_utest)
 
-hs_add_qt_executable(test_opengl_window SOURCES
-  "unit_test/test_opengl_window.cpp"
-  "source/opengl_window.cpp"
-  QT_MODULES "Test" "Widgets" "Core"
-  RESOURCES "resource/3d_reconstructor.qrc")
+#hs_add_qt_executable(test_manager_pane SOURCES
+#  "unit_test/gui/test_manager_pane.cpp"
+#  "unit_test/gui/action_tester.cpp"
+#  "source/gui/manager_pane.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
+#
+#hs_add_qt_executable(test_blocks_tree_widget SOURCES
+#  "unit_test/gui/test_utility.cpp"
+#  "unit_test/gui/test_blocks_tree_widget.cpp"
+#  "source/gui/blocks_tree_widget.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
+#
+#hs_add_qt_executable(test_photos_tree_widget SOURCES
+#  "unit_test/gui/test_utility.cpp"
+#  "unit_test/gui/test_photos_tree_widget.cpp"
+#  "source/gui/photos_tree_widget.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
+#hslib_add_dep(test_photos_tree_widget
+#  3RDPARTY_DEPS boost HEADONLY
+#  3RDPARTY_DEPS eigen HEADONLY
+#  HS_DEPS hs_math HEADONLY
+#  HS_DEPS hs_sfm HEADONLY
+#  )
+#hslib_post_build(test_photos_tree_widget)
+#
+#hs_add_qt_executable(test_opengl_window SOURCES
+#  "unit_test/gui/test_opengl_window.cpp"
+#  "source/gui/opengl_window.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
+#
+#hs_add_qt_executable(test_block_info_widget SOURCES
+#  "unit_test/gui/test_block_info_widget.cpp"
+#  "source/gui/block_info_widget.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
+#
+#hs_add_qt_executable(test_feature_match_info_widget SOURCES
+#  "unit_test/gui/test_feature_match_info_widget.cpp"
+#  "source/gui/feature_match_info_widget.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
