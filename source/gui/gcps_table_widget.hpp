@@ -16,6 +16,7 @@ public:
   enum DisplayMode
   {
     SHOW_MEASUREMENT,
+    SHOW_ESTIMATE,
     SHOW_ERROR
   };
   enum ValueUnit

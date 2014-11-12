@@ -12,9 +12,10 @@ namespace recon
 
 /**
  *  该Widget显示与像控点相关联的照片。
- *  有两种显示方式，
- *  一种是缩略图列表显示，此时只显示照片的缩略图，不可对照片作放大缩小等操作；
- *  另一种是快速标记模式，此时显示照片一定范围内的准确像素，可放大缩小平移。
+ *  有三种显示方式：
+ *  1.缩略图列表模式，此时只显示照片的缩略图，不可对照片作放大缩小平移等操作；
+ *  2.快速标记模式，此时显示照片一定范围内的准确像素，可放大缩小至一定程度；
+ *  3.误差列表模式，此时显示各张照片测量的重投影误差。
  */
 class GCPMarkWidget : public QWidget
 {
@@ -24,18 +25,22 @@ public:
   typedef hs::imgio::whole::ImageData ImageData;
   enum DisplayMode
   {
-    THUMBNAIL_LIST,
-    RAPID_MARK
+    THUMBNAIL_TABLE,
+    RAPID_MARK,
+    ERROR_TABLE
   };
 
   struct ImagePos
   {
     enum State
     {
-      PREDICATED,
-      MEASURED
+      PREDICATED = 0,
+      MEASURED,
+      NUMBER_OF_STATE
     };
-    Float center[2];
+    typedef std::bitset<NUMBER_OF_STATE> mask;
+    Float predicated_pos_[2];
+    Float measured_pos_[2];
   };
   typedef std::vector<ImagePos> ImagePosContainer;
 

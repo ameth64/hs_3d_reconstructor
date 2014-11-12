@@ -4,7 +4,7 @@
 #include <QtTest/QtTest>
 #include <QApplication>
 
-#include "blocks_tree_widget.hpp"
+#include "gui/blocks_tree_widget.hpp"
 
 #include "test_utility.hpp"
 

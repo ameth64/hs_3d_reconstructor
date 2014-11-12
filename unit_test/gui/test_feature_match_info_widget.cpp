@@ -1,10 +1,9 @@
 ﻿#include <QtTest/QtTest>
 #include <QApplication>
 
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+#include <random>
 
-#include "feature_match_info_widget.hpp"
+#include "gui/feature_match_info_widget.hpp"
 
 #include "test_utility.hpp"
 
@@ -20,23 +19,23 @@ public:
   typedef FeatureMatchInfoWidget::PhotoFeatureEntryContainer
           PhotoFeatureEntryContainer;
 
-  static void GeneratePhotoFeatureEntrys(uint number_of_photos,
-                                         uint min_number_of_keypoints,
-                                         uint max_number_of_keypoints,
-                                         uint min_number_of_matches,
-                                         uint max_number_of_matches,
-                                         uint photo_id_offset,
-                                         PhotoFeatureEntryContainer& entries);
+  static void GeneratePhotoFeatureEntries(uint number_of_photos,
+                                          uint min_number_of_keypoints,
+                                          uint max_number_of_keypoints,
+                                          uint min_number_of_matches,
+                                          uint max_number_of_matches,
+                                          uint photo_id_offset,
+                                          PhotoFeatureEntryContainer& entries);
 
   static bool ValidateFeatureMatchInfoWidget(
     const PhotoFeatureEntryContainer& entries,
     FeatureMatchInfoWidget* feature_widget);
 
 private slots:
-  void TestConstructor();
+  void TestSet();
 };
 
-void TestFeatureMatchInfoWidget::GeneratePhotoFeatureEntrys(
+void TestFeatureMatchInfoWidget::GeneratePhotoFeatureEntries(
   uint number_of_photos,
   uint min_number_of_keypoints,
   uint max_number_of_keypoints,
@@ -45,10 +44,10 @@ void TestFeatureMatchInfoWidget::GeneratePhotoFeatureEntrys(
   uint photo_id_offset,
   PhotoFeatureEntryContainer& entries)
 {
-  boost::random::mt19937 random_generator;
-  boost::random::uniform_int_distribution<uint> keypoints_distribution(
+  std::mt19937 random_generator;
+  std::uniform_int_distribution<uint> keypoints_distribution(
     min_number_of_keypoints, max_number_of_keypoints);
-  boost::random::uniform_int_distribution<uint> matches_distribution(
+  std::uniform_int_distribution<uint> matches_distribution(
     min_number_of_matches, max_number_of_matches);
   entries.clear();
   for (uint photo_id = photo_id_offset;
@@ -68,10 +67,36 @@ bool TestFeatureMatchInfoWidget::ValidateFeatureMatchInfoWidget(
   const PhotoFeatureEntryContainer& entries,
   FeatureMatchInfoWidget* feature_widget)
 {
+  QIcon photo_icon(QIcon(":/images/icon_photo.png"));
+
+  size_t number_of_entries = entries.size();
+  if (number_of_entries != size_t(feature_widget->rowCount()))
+    return false;
+  auto itr_entry = entries.begin();
+  auto itr_entry_end = entries.end();
+  for (int entry_item_id = 0; itr_entry != itr_entry_end;
+       ++itr_entry, ++entry_item_id)
+  {
+    QTableWidgetItem* photo_item = feature_widget->item(entry_item_id, 0);
+    QTableWidgetItem* keypoints_item = feature_widget->item(entry_item_id, 1);
+    QTableWidgetItem* matches_item = feature_widget->item(entry_item_id, 2);
+    if (itr_entry->first != photo_item->data(Qt::UserRole).toUInt())
+      return false;
+    if (!IconCompare(photo_item->icon(), photo_icon))
+      return false;
+    if (itr_entry->second.photo_name != photo_item->text())
+      return false;
+    if (itr_entry->second.number_of_keypoints  !=
+        keypoints_item->text().toUInt())
+      return false;
+    if (itr_entry->second.number_of_matches != matches_item->text().toUInt())
+      return false;
+  }
+
   return true;
 }
 
-void TestFeatureMatchInfoWidget::TestConstructor()
+void TestFeatureMatchInfoWidget::TestSet()
 {
   uint number_of_photos = 2000;
   uint min_number_of_keypoints = 38000;
@@ -80,7 +105,7 @@ void TestFeatureMatchInfoWidget::TestConstructor()
   uint max_number_of_matches = 10000;
   uint photo_id_offset = 0;
   PhotoFeatureEntryContainer entries;
-  GeneratePhotoFeatureEntrys(number_of_photos,
+  GeneratePhotoFeatureEntries(number_of_photos,
                              min_number_of_keypoints,
                              max_number_of_keypoints,
                              min_number_of_matches,
@@ -88,7 +113,13 @@ void TestFeatureMatchInfoWidget::TestConstructor()
                              photo_id_offset,
                              entries);
 
-  FeatureMatchInfoWidget feature_widget(entries);
+  FeatureMatchInfoWidget feature_widget;
+  feature_widget.Set(entries);
+  QCOMPARE(true, ValidateFeatureMatchInfoWidget(entries, &feature_widget));
+  feature_widget.Clear();
+  entries.clear();
+  ValidateFeatureMatchInfoWidget(entries, &feature_widget);
+
   feature_widget.show();
 
   qApp->exec();

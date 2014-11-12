@@ -6,7 +6,7 @@
 #include <QAction>
 #include <QMouseEvent>
 
-#include "manager_pane.hpp"
+#include "gui/manager_pane.hpp"
 #include "action_tester.hpp"
 
 namespace test

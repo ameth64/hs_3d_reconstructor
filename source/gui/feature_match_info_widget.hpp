@@ -23,15 +23,13 @@ public:
     uint number_of_matches;
   };
   typedef std::map<uint, PhotoFeatureEntry> PhotoFeatureEntryContainer;
-  typedef std::map<uint, int> RowMap;
-  FeatureMatchInfoWidget(
-    const PhotoFeatureEntryContainer& photo_feature_entries =
-      PhotoFeatureEntryContainer(),
-    QWidget* parent = 0);
+  FeatureMatchInfoWidget(QWidget* parent = 0);
+
+  void Set(const PhotoFeatureEntryContainer& photo_feature_entries);
+  void Clear();
 
 private:
   QIcon photo_icon_;
-  RowMap row_map_;
 };
 
 }

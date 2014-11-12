@@ -3,7 +3,7 @@
 #include "hs_math/random/uniform_random_var.hpp"
 
 #include "test_utility.hpp"
-#include "photos_tree_widget.hpp"
+#include "gui/photos_tree_widget.hpp"
 
 namespace test
 {

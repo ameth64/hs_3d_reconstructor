@@ -1,7 +1,7 @@
 ﻿#include <QtTest/QtTest>
 #include <QApplication>
 
-#include "block_info_widget.hpp"
+#include "gui/block_info_widget.hpp"
 
 namespace test
 {
@@ -74,6 +74,7 @@ void TestBlockInfoWidget::TestContent()
   {
     QFAIL("Can't find button!");
   }
+  qApp->exec();
 }
 
 }
