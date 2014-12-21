@@ -32,7 +32,7 @@ protected:
   void RenderNow();
   void RenderLater();
   virtual void Render() = 0;
-  virtual void Initialize();
+  virtual void Initialize() = 0;
 
 protected:
   bool event(QEvent* event);

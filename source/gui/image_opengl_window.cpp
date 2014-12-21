@@ -17,11 +17,16 @@ namespace recon
 ImageOpenGLWindow::ImageOpenGLWindow(QWindow* parent)
   : OpenGLWindow(parent)
   , image_renderer_(nullptr)
+  , icon_renderer_(nullptr)
+  , image_width_(0)
+  , image_height_(0)
+  , icon_offset_x_(0)
+  , icon_offset_y_(0)
   , need_reload_image_(false)
   , need_clear_image_(false)
   , need_set_origin_image_(false)
-  , image_width_(0)
-  , image_height_(0)
+  , need_set_icon_(false)
+  , need_set_positions_(false)
 {
   //SetAnimating(true);
   QObject::connect(this, &OpenGLWindow::MouseDragging,
@@ -34,6 +39,12 @@ ImageOpenGLWindow::~ImageOpenGLWindow()
   {
     delete image_renderer_;
     image_renderer_ = nullptr;
+  }
+
+  if (icon_renderer_ != nullptr)
+  {
+    delete icon_renderer_;
+    icon_renderer_ = nullptr;
   }
 }
 
@@ -60,6 +71,23 @@ void ImageOpenGLWindow::ClearImage()
   thumbnail_image_data_.Reset();
   origin_image_data_.Reset();
   need_clear_image_ = true;
+  RenderNow();
+}
+
+void ImageOpenGLWindow::SetIcon(const ImageData& icon_image_data,
+                                int icon_offset_x, int icon_offset_y)
+{
+  icon_image_data_ = icon_image_data;
+  icon_offset_x_ = icon_offset_x;
+  icon_offset_y_ = icon_offset_y;
+  need_set_icon_ = true;
+  RenderNow();
+}
+
+void ImageOpenGLWindow::SetPositions(const PositionContainer& positions)
+{
+  positions_ = positions;
+  need_set_positions_ = true;
   RenderNow();
 }
 
@@ -98,9 +126,38 @@ void ImageOpenGLWindow::Render()
     need_set_origin_image_ = false;
   }
 
+  if (need_set_icon_)
+  {
+    if (icon_renderer_ == nullptr)
+    {
+      icon_renderer_ = new IconRenderer(icon_image_data_,
+                                        icon_offset_x_, icon_offset_y_);
+    }
+    else
+    {
+      icon_renderer_->ResetIcon(icon_image_data_,
+                                icon_offset_x_, icon_offset_y_);
+    }
+    need_set_icon_ = false;
+  }
+
+  if (need_set_positions_)
+  {
+    if (icon_renderer_ != nullptr)
+    {
+      icon_renderer_->ResetPositions(positions_);
+    }
+    need_set_positions_ = false;
+  }
+
   if (image_renderer_)
   {
     image_renderer_->Render(viewing_transformer_);
+  }
+
+  if (icon_renderer_)
+  {
+    icon_renderer_->Render(viewing_transformer_);
   }
   glFlush();
 }

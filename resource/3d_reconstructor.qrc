@@ -1,8 +1,14 @@
 <RCC>
 <qresource>
     <file>images/icon_photo.png</file>
+    <file>images/icon_photo_add.png</file>
+    <file>images/icon_photo_remove.png</file>
     <file>images/icon_valid.png</file>
     <file>images/icon_invalid.png</file>
     <file>images/icon_group.png</file>
+    <file>images/icon_group_add.png</file>
+    <file>images/icon_group_remove.png</file>
+    <file>images/icon_gcp.png</file>
+    <file>images/icon_tiepoint.png</file>
 </qresource>
 </RCC>

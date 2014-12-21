@@ -38,8 +38,6 @@ public:
 
   typedef std::vector<QTreeWidgetItem> ItemVector;
   typedef std::map<uint, QTreeWidgetItem*> ItemMap;
-  typedef std::pair<uint, std::vector<uint> > GroupPhotosPair;
-  typedef std::vector<GroupPhotosPair> GroupPhotosPairContainer;
 
 public:
   PhotosTreeWidget(QWidget* parent = 0);
@@ -55,8 +53,7 @@ public slots:
 
 signals:
   void SelectedGroupsDeleted(const std::vector<uint>& group_ids);
-  void SelectedPhotosRemoved(
-    const GroupPhotosPairContainer& group_photos_pairs);
+  void SelectedPhotosRemoved(const std::vector<uint>& photo_ids);
   void PhotoSelected(uint photo_id);
   void GroupsOnlySelected(const std::vector<uint>& block_ids);
   void SingleGroupSelected(uint group_id);

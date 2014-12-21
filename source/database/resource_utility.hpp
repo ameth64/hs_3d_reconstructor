@@ -47,7 +47,8 @@ public:
   {
     if (Resource::IsResourceExist(database))
     {
-      return nullptr;
+      Resource* resource = new Resource(database);
+      return resource;
     }
     else
     {

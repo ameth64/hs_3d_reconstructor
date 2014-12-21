@@ -4,6 +4,7 @@
 #include <bitset>
 
 #include <sqlite3.h>
+#include <boost/filesystem.hpp>
 
 namespace hs
 {
@@ -20,33 +21,35 @@ public:
   typedef unsigned int Identifier;
   typedef double Float;
 
-  //enum ResourceType
-  //{
-  //  UNKNOWN_RESOURCE = 0,
-  //  BLOCK_RESOURCE,
-  //  FEATURE_MATCH_RESOURCE,
-  //  PHOTO_ORIENTATION_RESOURCE,
-  //  POINT_CLOUD_RESOURCE,
-  //  SURFACE_MODEL_RESOURCE,
-  //  TEXTURE_RESOURCE,
-  //  PHOTO_RESOURCE,
-  //  PHOTOGROUP_RESOURCE,
-  //  GROUND_CONTROL_POINT_RESOURCE,
-  //  PHOTO_MEASURE_RESOURCE,
-  //  NUMBER_OF_RESOURCE_TYPES
-  //};
-
 public:
   Database();
+  ~Database();
 
-  int Open(const std::string& db_path);
+  enum ErrorCode
+  {
+    NO_ERROR = 0,
+    ERROR_FAIL_TO_OPEN_SQLITE_DATABASE,
+    ERROR_DATABASE_FILE_NOT_EXIST,
+    ERROR_DATABASE_DIRECTORY_EXIST,
+    ERROR_CANT_CREATE_DATABASE_DIRECTORY,
+    ERROR_FAIL_TO_CLOSE_SQLITE_DATABASE,
+    NUMBER_OF_ERROR_CODE
+  };
 
-  int Create(const std::string& db_path);
+  int Open(const std::string& database_file);
+
+  int Create(const std::string& database_directory);
+
+  int Close();
 
   sqlite3* sqlite_db();
 
+  std::string Name() const;
+  std::string DatabaseFilePath() const;
+
 private:
   sqlite3* sqlite_db_;
+  boost::filesystem::path database_file_path_;
 };
 
 }

@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <random>
 
+#include <boost/filesystem.hpp>
+
 #include "database/database.hpp"
 #include "database/field.hpp"
 #include "database/condition.hpp"
@@ -44,16 +46,21 @@ public:
     DELETE_FAILED
   };
 
-  static int Test(const std::string& test_db_path,
+  static int Test(const std::string& test_db_directory,
                   const AddRequestContainer& add_requests,
                   const RecordContainer& true_added_records)
   {
+    boost::filesystem::path test_db_path(test_db_directory);
+    if (boost::filesystem::exists(test_db_path))
+    {
+      boost::filesystem::remove_all(test_db_path);
+    }
     Database database;
-    database.Create(test_db_path);
+    database.Create(test_db_directory);
     Resource* resource = Resource::RegisterToDatabase(database);
-    Resource* resource_fail = Resource::RegisterToDatabase(database);
+    Resource* resource_again = Resource::RegisterToDatabase(database);
     if (resource == nullptr) return REGISTER_FAILED;
-    if (resource_fail != nullptr) return REGISTER_FAILED;
+    if (resource_again == nullptr) return REGISTER_FAILED;
 
     int result = TEST_SUCCESS;
     while (1)

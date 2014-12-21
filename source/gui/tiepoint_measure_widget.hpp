@@ -24,60 +24,6 @@ namespace recon
  *  2.快速标记模式，此时显示照片一定范围内的准确像素，可放大缩小至一定程度；
  *  3.误差列表模式，此时显示各张照片测量的重投影误差。
  */
-//class TiepointMeasureWidget : public QAbstractScrollArea
-//{
-//  Q_OBJECT
-//public:
-//  typedef float Float;
-//  struct TiepointPhoto
-//  {
-//    TiepointPhoto()
-//      : photo_id(std::numeric_limits<uint>::max())
-//      , photo_path()
-//    {
-//      predicated_pos[0] = std::numeric_limits<Float>::quiet_NaN();
-//      predicated_pos[1] = std::numeric_limits<Float>::quiet_NaN();
-//      measured_pos[0] = std::numeric_limits<Float>::quiet_NaN();
-//      measured_pos[1] = std::numeric_limits<Float>::quiet_NaN();
-//    }
-//    uint photo_id;
-//    QString photo_path;
-//    Float predicated_pos[2];
-//    Float measured_pos[2];
-//  };
-//  typedef std::map<uint, TiepointPhoto> TiepointPhotoContainer;
-//  typedef std::pair<int, int> LayoutKey;
-//  typedef std::map<LayoutKey, uint> TiepointPhotoLayout;
-//  typedef std::map<LayoutKey, ImageWindow> LayoutedImageWindowContainer;
-//  typedef std::pair<QWidget*, ImageWindow*> ImageDisplayer;
-//  typedef std::map<uint, ImageDisplayer> IdentifiedImageDisplayerContainer;
-//  typedef std::vector<ImageDisplayer> ImageDisplayerPool;
-//
-//public:
-//  TiepointMeasureWidget(QWidget* parent = 0);
-//  int SetTiepointPhotos(const TiepointPhotoContainer& tiepoint_photos);
-//private:
-//  int UpdateTiepointPhotoLayout();
-//  QPoint LayoutKeyToCanvasPos(const LayoutKey& layout_key) const;
-//  LayoutKey CanvasPosToLayoutKey(const QPoint& canvas_pos) const;
-//private slots:
-//  int UpdateImageWindow();
-//
-//private:
-//  int vertical_gap_;
-//  int horizontal_gap_;
-//  int image_window_width_;
-//  int image_window_height_;
-//  int cached_count_;
-//
-//  QWidget* canvas_;
-//
-//  TiepointPhotoContainer tiepoint_photos_;
-//  TiepointPhotoLayout tiepoint_photo_layout_;
-//  IdentifiedImageDisplayerContainer identified_image_displayers_;
-//  ImageDisplayerPool image_displayer_pool_;
-//};
-
 struct TiepointPhoto
 {
   typedef float Float;
@@ -85,9 +31,11 @@ struct TiepointPhoto
 
   uint photo_id;
   QString photo_path;
+  QString thumbnail_path;
+  int width;
+  int height;
   Float predicated_pos[2];
   Float measured_pos[2];
-  //hs::imgio::whole::ImageData image_data;
 };
 
 struct TiepointPhotoAlignment
@@ -106,14 +54,18 @@ class TiepointMeasureWidget : public QWidget
   Q_OBJECT
 public:
   typedef TiepointPhoto::Float Float;
+  typedef hs::imgio::whole::ImageData ImageData;
   typedef std::map<uint, TiepointPhoto> TiepointPhotoContainer;
 
   typedef ImageContainerWidget Displayer;
   typedef std::map<uint, Displayer*> DisplayerContainer;
   typedef std::vector<Displayer*> DisplayerPool;
+  typedef std::map<uint, QString> LoadingTask;
+  typedef std::map<uint, ImageData> LoadingResult;
 
 public:
   TiepointMeasureWidget(QWidget* parent = 0);
+  virtual ~TiepointMeasureWidget();
   int SetTiepointPhotos(const TiepointPhotoContainer& tiepoint_photos);
 
 protected:
@@ -121,8 +73,14 @@ protected:
 
 private:
   int UpdateAlignment();
+  int StartLoadingThread();
+  int StopLoadingThread();
+  void LoadingThreadWork();
+  void Lock();
+  void Unlock();
 private slots:
   int UpdateImageWindows();
+  void OnTimeout();
 
 private:
   TiepointPhotoContainer tiepoint_photos_;
@@ -138,6 +96,15 @@ private:
 
   DisplayerContainer used_displayers_;
   DisplayerPool displayer_pool_;
+
+  std::thread working_thread_;
+  std::mutex mutex_;
+  int keep_working_;
+  int keep_loading_;
+  LoadingTask loading_task_;
+  LoadingResult loading_result_;
+
+  QTimer* update_origin_timer_;
 };
 
 }

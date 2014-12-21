@@ -1,6 +1,10 @@
-﻿#include "blocks_pane.hpp"
+﻿#include "gui/blocks_pane.hpp"
 
 namespace hs
+{
+namespace recon
+{
+namespace gui
 {
 
 BlocksPane::BlocksPane(QWidget* parent)
@@ -14,4 +18,6 @@ void BlocksPane::CreateToolBar()
 
 }
 
+}
+}
 }

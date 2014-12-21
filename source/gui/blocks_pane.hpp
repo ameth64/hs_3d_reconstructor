@@ -1,11 +1,13 @@
 ﻿#ifndef _HS_3D_RECONSTRUCTOR_BLOCKS_PANE_HPP_
 #define _HS_3D_RECONSTRUCTOR_BLOCKS_PANE_HPP_
 
-#include "manager_pane.hpp"
+#include "gui/manager_pane.hpp"
 
 namespace hs
 {
 namespace recon
+{
+namespace gui
 {
 
 class BlocksPane : public ManagerPane
@@ -18,6 +20,7 @@ private:
   void CreateToolBar();
 };
 
+}
 }
 }
 

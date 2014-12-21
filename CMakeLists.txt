@@ -21,6 +21,17 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/main_window.cpp"
   "source/gui/manager_pane.cpp"
   "source/gui/blocks_tree_widget.cpp"
+  "source/gui/new_project_config_dialog.cpp"
+  "source/gui/photos_pane.cpp"
+  "source/gui/blocks_pane.cpp"
+  "source/gui/photos_tree_widget.cpp"
+  "source/gui/property_field_asignment_widget.cpp"
+  "source/gui/property_field_asignment_dialog.cpp"
+  "source/gui/photogroup_pos_configure_widget.cpp"
+  "source/gui/photogroup_info_widget.cpp"
+  "source/gui/photogroup_info_pos_wrap_widget.cpp"
+  "source/gui/photo_files_select_widget.cpp"
+  "source/gui/photos_import_configure_dialog.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES
@@ -44,10 +55,13 @@ hs_add_qt_executable(${RECONSTRUCTOR_NAME}
   )
 
 hslib_add_dep(${RECONSTRUCTOR_NAME}
-  3RDPARTY_DEPS boost HEADONLY
+  3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
   3RDPARTY_DEPS eigen HEADONLY
+  3RDPARTY_DEPS exiv2
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
+  HS_DEPS hs_image_io DEP_LIBS whole_io
+  LOCAL_DEPS database
   )
 
 hslib_post_build(${RECONSTRUCTOR_NAME})
@@ -55,6 +69,7 @@ hslib_post_build(${RECONSTRUCTOR_NAME})
 set(DATABASE_NAME "database")
 set(DATABASE_SOURCES
   "source/database/database.cpp"
+  "source/database/database_mediator.cpp"
   "source/database/field.cpp"
   "source/database/condition.cpp"
   "source/database/demo_resource.cpp"
@@ -73,7 +88,7 @@ set(DATABASE_SOURCES
   )
 hslib_add_library(${DATABASE_NAME} ${HSPRJ_NAME} ${DATABASE_SOURCES})
 hslib_add_dep(${DATABASE_NAME}
-  3RDPARTY_DEPS boost HEADONLY
+  3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
   3RDPARTY_DEPS sqlite
   )
 
@@ -96,6 +111,7 @@ set(DATABASE_UTEST_SOURCES
   )
 hslib_add_utest(${DATABASE_NAME} SOURCES ${DATABASE_UTEST_SOURCES})
 hslib_add_dep(${DATABASE_NAME}_utest
+  3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
   3RDPARTY_DEPS sqlite
   )
 hslib_post_build(${DATABASE_NAME}_utest)
@@ -163,7 +179,8 @@ hs_add_qt_executable(test_image_opengl_window SOURCES
   "unit_test/gui/test_image_opengl_window.cpp"
   "source/gui/opengl_window.cpp"
   "source/gui/image_opengl_window.cpp"
-  QT_MODULES "Test" "Widgets" "Core")
+  QT_MODULES "Test" "Widgets" "Core"
+  RESOURCES "resource/3d_reconstructor.qrc")
 hslib_add_dep(test_image_opengl_window
   3RDPARTY_DEPS boost HEADONLY
   3RDPARTY_DEPS eigen HEADONLY
@@ -241,6 +258,55 @@ hslib_add_dep(test_image_container_widget
   )
 target_link_libraries(test_image_container_widget ${OPENGL_LIBRARIES})
 hslib_post_build(test_image_container_widget)
+
+hs_add_qt_executable(test_photo_files_select_widget SOURCES
+  "unit_test/gui/test_photo_files_select_widget.cpp"
+  "source/gui/photo_files_select_widget.cpp"
+  QT_MODULES "Test" "Widgets" "Core"
+  RESOURCES "resource/3d_reconstructor.qrc")
+hslib_add_dep(test_photo_files_select_widget
+  3RDPARTY_DEPS exiv2
+  HS_DEPS hs_image_io DEP_LIBS whole_io)
+hslib_post_build(test_photo_files_select_widget)
+
+#hs_add_qt_executable(test_photogroup_info_widget SOURCES
+#  "unit_test/gui/test_photogroup_info_widget.cpp"
+#  "source/gui/photogroup_info_widget.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
+
+hs_add_qt_executable(test_photogroup_info_pos_wrap_widget SOURCES
+  "unit_test/gui/test_photogroup_info_pos_wrap_widget.cpp"
+  "source/gui/property_field_asignment_widget.cpp"
+  "source/gui/property_field_asignment_dialog.cpp"
+  "source/gui/photogroup_pos_configure_widget.cpp"
+  "source/gui/photogroup_info_widget.cpp"
+  "source/gui/photogroup_info_pos_wrap_widget.cpp"
+  QT_MODULES "Test" "Widgets" "Core"
+  RESOURCES "resource/3d_reconstructor.qrc")
+
+hs_add_qt_executable(test_photos_import_configure_dialog SOURCES
+  "unit_test/gui/test_photos_import_configure_dialog.cpp"
+  "source/gui/property_field_asignment_widget.cpp"
+  "source/gui/property_field_asignment_dialog.cpp"
+  "source/gui/photogroup_pos_configure_widget.cpp"
+  "source/gui/photogroup_info_widget.cpp"
+  "source/gui/photogroup_info_pos_wrap_widget.cpp"
+  "source/gui/photo_files_select_widget.cpp"
+  "source/gui/photos_import_configure_dialog.cpp"
+  QT_MODULES "Test" "Widgets" "Core"
+  RESOURCES "resource/3d_reconstructor.qrc")
+hslib_add_dep(test_photos_import_configure_dialog
+  3RDPARTY_DEPS exiv2
+  HS_DEPS hs_image_io DEP_LIBS whole_io)
+hslib_post_build(test_photos_import_configure_dialog)
+
+#hs_add_qt_executable(test_property_field_asignment_dialog SOURCES
+#  "unit_test/gui/test_property_field_asignment_dialog.cpp"
+#  "source/gui/property_field_asignment_widget.cpp"
+#  "source/gui/property_field_asignment_dialog.cpp"
+#  QT_MODULES "Test" "Widgets" "Core"
+#  RESOURCES "resource/3d_reconstructor.qrc")
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data
   DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)

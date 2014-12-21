@@ -67,7 +67,7 @@ TEST(TestPhotoOrientationResource, SimpleTest)
   true_added_records[4] = add_request4;
 
   ASSERT_EQ(Tester::TEST_SUCCESS, Tester::Test(
-      "test_photo_orientation_resource.db",
+      "test_photo_orientation_resource",
       add_requests,
       true_added_records));
 }

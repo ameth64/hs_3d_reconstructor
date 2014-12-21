@@ -72,7 +72,7 @@ int PhotosTreeWidget::AddGroup(uint group_id, const GroupEntry& group)
       photo_item->setData(0, Qt::UserRole, QVariant(itr_photo->second.id));
       photo_item->setIcon(0, *photo_icon_);
       group_item->addChild(photo_item);
-      photo_item_map_[itr_photo->second.id] = photo_item;
+      photo_item_map_[itr_photo->first] = photo_item;
     }
   }
 
@@ -82,26 +82,180 @@ int PhotosTreeWidget::AddGroup(uint group_id, const GroupEntry& group)
 
 int PhotosTreeWidget::AddPhotos(uint group_id, const PhotoContainer& photos)
 {
+  auto itr_group = group_item_map_.find(group_id);
+  if (itr_group == group_item_map_.end()) return -1;
+  auto itr_photo = photos.begin();
+  auto itr_photo_end = photos.end();
+  for (; itr_photo != itr_photo_end; ++itr_photo)
+  {
+    if (photo_item_map_.find(itr_photo->first) != photo_item_map_.end())
+    {
+      continue;
+    }
+    QString photo_item_text = itr_photo->second.file_name;
+    QString x_text = QString::number(double(itr_photo->second.x));
+    QString y_text = QString::number(double(itr_photo->second.y));
+    QString z_text = QString::number(double(itr_photo->second.z));
+    QString pitch_text = QString::number(double(itr_photo->second.pitch));
+    QString roll_text = QString::number(double(itr_photo->second.roll));
+    QString heading_text =
+      QString::number(double(itr_photo->second.heading));
+    QString projection_text = itr_photo->second.projection;
+    QTreeWidgetItem* photo_item =
+      new QTreeWidgetItem(
+        itr_group->second, QStringList()<<photo_item_text
+                                        <<x_text
+                                        <<y_text
+                                        <<z_text
+                                        <<pitch_text
+                                        <<roll_text
+                                        <<heading_text
+                                        <<projection_text);
+    photo_item->setData(0, Qt::UserRole, QVariant(itr_photo->second.id));
+    photo_item->setIcon(0, *photo_icon_);
+    itr_group->second->addChild(photo_item);
+    photo_item_map_[itr_photo->first] = photo_item;
+  }
   return 0;
 }
 
 int PhotosTreeWidget::DeleteGroupsByIds(const std::vector<uint>& group_ids)
 {
+  auto itr_group_id = group_ids.begin();
+  auto itr_group_id_end = group_ids.end();
+  for (; itr_group_id != itr_group_id_end; ++itr_group_id)
+  {
+    auto itr_group = group_item_map_.find(*itr_group_id);
+    if (itr_group == group_item_map_.end())
+    {
+      continue;
+    }
+    //删除照片组包含的所有图片
+    int child_count = itr_group->second->childCount();
+    for (int i = 0; i < child_count; i++)
+    {
+      QTreeWidgetItem* photo_item = itr_group->second->child(i);
+      uint photo_id = photo_item->data(0, Qt::UserRole).toUInt();
+      auto itr_photo_item = photo_item_map_.find(photo_id);
+      if (itr_photo_item == photo_item_map_.end() ||
+          itr_photo_item->second != photo_item) return -1;
+      photo_item_map_.erase(itr_photo_item);
+    }
+    delete itr_group->second;
+    group_item_map_.erase(itr_group);
+  }
   return 0;
 }
 
 int PhotosTreeWidget::DeleteGroupsBySelectedItems()
 {
-  return 0;
+  QList<QTreeWidgetItem*> selected_items = selectedItems();
+  QList<QTreeWidgetItem*> remove_items;
+  auto itr_selected_item = selected_items.begin();
+  auto itr_selected_item_end = selected_items.end();
+  for (; itr_selected_item != itr_selected_item_end; ++itr_selected_item)
+  {
+    uint group_id = (*itr_selected_item)->data(0, Qt::UserRole).toUInt();
+    auto itr_group_item = group_item_map_.find(group_id);
+    if (itr_group_item != group_item_map_.end() &&
+        itr_group_item->second == *itr_selected_item)
+    {
+      remove_items.push_back(*itr_selected_item);
+    }
+  }
+  if (remove_items == selected_items)
+  {
+    itr_selected_item = selected_items.begin();
+    itr_selected_item_end = selected_items.end();
+    std::vector<uint> group_ids;
+    for (; itr_selected_item != itr_selected_item_end; ++itr_selected_item)
+    {
+      uint group_id = (*itr_selected_item)->data(0, Qt::UserRole).toUInt();
+      auto itr_group_item = group_item_map_.find(group_id);
+      group_item_map_.erase(itr_group_item);
+      delete *itr_selected_item;
+      group_ids.push_back(group_id);
+    }
+    emit SelectedGroupsDeleted(group_ids);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
 }
 
 int PhotosTreeWidget::RemovePhotosByIds(const std::vector<uint>& photo_ids)
 {
-  return 0;
+  //给定的照片全部存在才会删除
+  std::vector<QTreeWidgetItem*> remove_items;
+  auto itr_photo_id = photo_ids.begin();
+  auto itr_photo_id_end = photo_ids.end();
+  for (; itr_photo_id != itr_photo_id_end; ++itr_photo_id)
+  {
+    auto itr_photo_item = photo_item_map_.find(*itr_photo_id);
+    if (itr_photo_item != photo_item_map_.end())
+    {
+      remove_items.push_back(itr_photo_item->second);
+    }
+  }
+  if (remove_items.size() == photo_ids.size())
+  {
+    itr_photo_id = photo_ids.begin();
+    itr_photo_id_end = photo_ids.end();
+    for (; itr_photo_id != itr_photo_id_end; ++itr_photo_id)
+    {
+      auto itr_photo_item = photo_item_map_.find(*itr_photo_id);
+      if (itr_photo_item != photo_item_map_.end())
+      {
+        photo_item_map_.erase(itr_photo_item);
+        delete itr_photo_item->second;
+      }
+    }
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
 }
 
 int PhotosTreeWidget::RemovePhotosBySelectedItems()
 {
+  QList<QTreeWidgetItem*> selected_items = selectedItems();
+  QList<QTreeWidgetItem*> remove_items;
+  auto itr_selected_item = selected_items.begin();
+  auto itr_selected_item_end = selected_items.end();
+  for (; itr_selected_item != itr_selected_item_end; ++itr_selected_item)
+  {
+    uint photo_id = (*itr_selected_item)->data(0, Qt::UserRole).toUInt();
+    auto itr_photo_item = photo_item_map_.find(photo_id);
+    if (itr_photo_item != photo_item_map_.end() &&
+        itr_photo_item->second == *itr_selected_item)
+    {
+      remove_items.push_back(*itr_selected_item);
+    }
+  }
+  if (remove_items == selected_items)
+  {
+    itr_selected_item = selected_items.begin();
+    itr_selected_item_end = selected_items.end();
+    std::vector<uint> photo_ids;
+    for (; itr_selected_item != itr_selected_item_end; ++itr_selected_item)
+    {
+      uint photo_id = (*itr_selected_item)->data(0, Qt::UserRole).toUInt();
+      auto itr_photo_item = photo_item_map_.find(photo_id);
+      photo_item_map_.erase(itr_photo_item);
+      delete *itr_selected_item;
+      photo_ids.push_back(photo_id);
+    }
+    emit SelectedPhotosRemoved(photo_ids);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
   return 0;
 }
 

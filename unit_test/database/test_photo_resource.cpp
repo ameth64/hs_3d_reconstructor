@@ -87,7 +87,7 @@ TEST(TestPhotoResource, SimpleTest)
   true_added_records[3] = add_request3;
   true_added_records[4] = add_request4;
 
-  ASSERT_EQ(Tester::TEST_SUCCESS, Tester::Test("test_photo_resource.db",
+  ASSERT_EQ(Tester::TEST_SUCCESS, Tester::Test("test_photo_resource",
                                                add_requests,
                                                true_added_records));
 }

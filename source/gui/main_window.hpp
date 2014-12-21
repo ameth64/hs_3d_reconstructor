@@ -6,10 +6,18 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QStatusBar>
+#include <QSettings>
+
+#include "database/database_mediator.hpp"
+
+#include "gui/photos_pane.hpp"
+#include "gui/blocks_pane.hpp"
 
 namespace hs
 {
 namespace recon
+{
+namespace gui
 {
 
 class MainWindow : public QMainWindow
@@ -20,6 +28,11 @@ public:
   explicit MainWindow();
   ~MainWindow();
 
+private slots:
+  void OnActionNewProjectTriggered();
+  void OnActionOpenProjectTriggered();
+  void OnActionCloseProjectTriggered();
+
 private:
   QMenuBar* menu_bar_;
   QMenu* menu_file_;
@@ -29,9 +42,15 @@ private:
   QAction* action_open_project_;
   QAction* action_close_project_;
 
-  QWidget* widget_;
+  hs::recon::db::DatabaseMediator database_mediator_;
+
+  QSettings settings_;
+
+  PhotosPane* photos_pane_;
+  BlocksPane* blocks_pane_;
 };
 
+}
 }
 }
 

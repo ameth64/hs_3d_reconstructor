@@ -94,10 +94,6 @@ void OpenGLWindow::RenderLater()
   }
 }
 
-void OpenGLWindow::Initialize()
-{
-}
-
 bool OpenGLWindow::event(QEvent* event)
 {
   switch (event->type())

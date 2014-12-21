@@ -45,6 +45,7 @@ public slots:
 
 protected:
   virtual void Render();
+  virtual void Initialize();
 
 private:
   uint rendered_count_;
@@ -200,6 +201,10 @@ void OpenGLWindowTester::OnMouseDoubleClicked(Qt::KeyboardModifiers state_key,
 void OpenGLWindowTester::Render()
 {
   rendered_count_++;
+}
+
+void OpenGLWindowTester::Initialize()
+{
 }
 
 class TestOpenGLWindow : public QObject
