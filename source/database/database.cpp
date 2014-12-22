@@ -21,10 +21,11 @@ Database::~Database()
 
 int Database::Open(const std::string& database_file)
 {
-  database_file_path_ = database_file;
-  if (boost::filesystem::exists(database_file_path_))
+  boost::filesystem::path database_file_path = database_file;
+  if (boost::filesystem::exists(database_file_path))
   {
     Close();
+    database_file_path_ = database_file;
     int result = sqlite3_open(database_file_path_.c_str(), &sqlite_db_);
     if (result == SQLITE_OK)
     {

@@ -12,8 +12,8 @@ class TestTiepointMeasureWidget : public QObject
 {
   Q_OBJECT
 private:
-  typedef hs::recon::TiepointMeasureWidget TiepointMeasureWidget;
-  typedef hs::recon::TiepointPhoto TiepointPhoto;
+  typedef hs::recon::gui::TiepointMeasureWidget TiepointMeasureWidget;
+  typedef hs::recon::gui::TiepointPhoto TiepointPhoto;
   typedef TiepointPhoto::Float Float;
   typedef TiepointMeasureWidget::TiepointPhotoContainer TiepointPhotoContainer;
 

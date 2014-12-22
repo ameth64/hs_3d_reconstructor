@@ -25,8 +25,13 @@ public:
     STATE_SELECT_PHOTO_FILES = 1,
     STATE_CONFIG_INFO_POS
   };
+  typedef PhotogroupPOSConfigureWidget::POSEntry POSEntry;
+  typedef PhotogroupPOSConfigureWidget::POSEntryContainer POSEntryContainer;
 public:
   PhotosImportConfigureDialog(QWidget* parent = 0, Qt::WindowFlags f = 0);
+
+  PhotogroupInfo GetPhotogroupInfo();
+  POSEntryContainer GetPOSEntries();
 
 private slots:
   void OnPushButtonPreviousClicked();

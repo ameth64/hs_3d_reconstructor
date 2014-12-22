@@ -28,6 +28,20 @@ DatabaseMediator::~DatabaseMediator()
   Close();
 }
 
+int DatabaseMediator::RegisterObserver(DatabaseObserver* observer)
+{
+  auto itr_observer = observers_.find(observer);
+  if (itr_observer == observers_.end())
+  {
+    observers_.insert(observer);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
 int DatabaseMediator::Open(const std::string& database_file)
 {
   int result = Close();

@@ -56,11 +56,19 @@ MainWindow::MainWindow()
   addDockWidget(Qt::LeftDockWidgetArea, photos_pane_);
   //addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
 
+
+  database_mediator_.RegisterObserver(photos_pane_);
+
   showMaximized();
 }
 
 MainWindow::~MainWindow()
 {
+}
+
+hs::recon::db::DatabaseMediator& MainWindow::database_mediator()
+{
+  return database_mediator_;
 }
 
 void MainWindow::OnActionNewProjectTriggered()

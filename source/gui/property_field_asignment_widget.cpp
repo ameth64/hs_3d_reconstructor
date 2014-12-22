@@ -343,7 +343,7 @@ void PropertyFieldAsignmentWidget::OnRecordsSectionClicked(int column)
   QHeaderView* header =
     table_widget_property_assignment_->horizontalHeader();
   int section_width = header->sectionSize(column);
-  int section_pos = header->sectionPosition(column);
+  int section_pos = header->sectionPosition(column) - header->offset();
   int section_height = header->rect().height();
   combo_box_assign_->set_column(column);
   combo_box_assign_->show();

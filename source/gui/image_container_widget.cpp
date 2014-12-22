@@ -4,6 +4,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 ImageContainerWidget::ImageContainerWidget(ImageOpenGLWindow* image_window,
                                            const QString& comment,
@@ -40,5 +42,6 @@ void ImageContainerWidget::SetComment(const QString& comment)
   comment_label_->setText(comment);
 }
 
+}
 }
 }

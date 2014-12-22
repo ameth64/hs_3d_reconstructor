@@ -13,6 +13,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 TiepointPhoto::TiepointPhoto()
   : photo_id(std::numeric_limits<uint>::max())
@@ -295,7 +297,7 @@ int TiepointMeasureWidget::UpdateImageWindows()
                     (row - slider_value * alignment_.rows_in_page) *
                     (displayer_height_ + vertical_gap_));
     ImageOpenGLWindow* image_opengl_window = displayer->image_window();
-    image_opengl_window->DisplayThumbnailImage(
+    image_opengl_window->SetThumbnailImage(
       itr_tiepoint_photo->second.width, itr_tiepoint_photo->second.height,
       image_data);
     displayer_pool_.pop_back();
@@ -347,6 +349,7 @@ void TiepointMeasureWidget::OnTimeout()
 }
 
 
+}
 }
 }
 

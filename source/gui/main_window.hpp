@@ -28,6 +28,9 @@ public:
   explicit MainWindow();
   ~MainWindow();
 
+public:
+  hs::recon::db::DatabaseMediator& database_mediator();
+
 private slots:
   void OnActionNewProjectTriggered();
   void OnActionOpenProjectTriggered();

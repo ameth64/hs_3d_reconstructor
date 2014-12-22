@@ -24,6 +24,9 @@ PhotosTreeWidget::PhotosTreeWidget(QWidget* parent)
                         <<tr("Heading")
                         <<tr("Projection"));
   setHeaderItem(header_item);
+
+  QObject::connect(this, &QTreeWidget::itemSelectionChanged,
+                   this, &PhotosTreeWidget::OnItemSelectionChanged);
 }
 
 int PhotosTreeWidget::ClearGroups()
@@ -51,13 +54,15 @@ int PhotosTreeWidget::AddGroup(uint group_id, const GroupEntry& group)
     if (photo_item_map_.find(itr_photo->second.id) == photo_item_map_.end())
     {
       QString photo_item_text = itr_photo->second.file_name;
-      QString x_text = QString::number(double(itr_photo->second.x));
-      QString y_text = QString::number(double(itr_photo->second.y));
-      QString z_text = QString::number(double(itr_photo->second.z));
-      QString pitch_text = QString::number(double(itr_photo->second.pitch));
-      QString roll_text = QString::number(double(itr_photo->second.roll));
+      QString x_text = QString::number(double(itr_photo->second.x), 'f', 4);
+      QString y_text = QString::number(double(itr_photo->second.y), 'f', 4);
+      QString z_text = QString::number(double(itr_photo->second.z), 'f', 4);
+      QString pitch_text =
+        QString::number(double(itr_photo->second.pitch), 'f', 4);
+      QString roll_text =
+        QString::number(double(itr_photo->second.roll), 'f', 4);
       QString heading_text =
-        QString::number(double(itr_photo->second.heading));
+        QString::number(double(itr_photo->second.heading), 'f', 4);
       QString projection_text = itr_photo->second.projection;
       QTreeWidgetItem* photo_item =
         new QTreeWidgetItem(
@@ -257,6 +262,68 @@ int PhotosTreeWidget::RemovePhotosBySelectedItems()
     return -1;
   }
   return 0;
+}
+
+void PhotosTreeWidget::OnItemSelectionChanged()
+{
+  auto selected_items = selectedItems();
+  if (selected_items.empty())
+  {
+    emit NothingSelected();
+    return;
+  }
+  QList<QTreeWidgetItem*> selected_group_items;
+  QList<QTreeWidgetItem*> selected_photo_items;
+  auto itr_selected_item = selected_items.begin();
+  auto itr_selected_item_end = selected_items.end();
+  for (; itr_selected_item != itr_selected_item_end; ++itr_selected_item)
+  {
+    //有父亲项的为照片项，否则为照片组项
+    if ((*itr_selected_item)->parent() != nullptr)
+    {
+      selected_photo_items.push_back(*itr_selected_item);
+    }
+    else
+    {
+      selected_group_items.push_back(*itr_selected_item);
+    }
+  }
+  if (selected_group_items.empty() && selected_photo_items.size() == 1)
+  {
+    QTreeWidgetItem* item = *(selected_photo_items.begin());
+    emit PhotoSelected(item->data(0, Qt::UserRole).toUInt());
+  }
+  else if (selected_group_items.size() > 1 && selected_photo_items.empty())
+  {
+    auto itr_group_item = selected_group_items.begin();
+    auto itr_group_item_end = selected_group_items.end();
+    std::vector<uint> group_ids;
+    for (; itr_group_item != itr_group_item_end; ++itr_group_item)
+    {
+      group_ids.push_back((*itr_group_item)->data(0, Qt::UserRole).toUInt());
+    }
+    emit GroupsOnlySelected(group_ids);
+  }
+  else if (selected_group_items.size() == 1 && selected_photo_items.empty())
+  {
+    QTreeWidgetItem* item = *(selected_group_items.begin());
+    emit SingleGroupSelected(item->data(0, Qt::UserRole).toUInt());
+  }
+  else if (selected_group_items.empty() && selected_photo_items.size() > 1)
+  {
+    auto itr_photo_item = selected_photo_items.begin();
+    auto itr_photo_item_end = selected_photo_items.end();
+    std::vector<uint> photo_ids;
+    for (; itr_photo_item != itr_photo_item_end; ++itr_photo_item)
+    {
+      photo_ids.push_back((*itr_photo_item)->data(0, Qt::UserRole).toUInt());
+    }
+    emit PhotosOnlySelected(photo_ids);
+  }
+  else
+  {
+    emit PhotosAndGroupsSelected();
+  }
 }
 
 }

@@ -94,17 +94,17 @@ PhotogroupPOSConfigureWidget::GetPOSEntries()
     if (!ok) pos_entry.z = std::numeric_limits<double>::quiet_NaN();
     else pos_entry.z = z;
 
-    QTableWidgetItem* item_pitch = table_pos_->item(row, 1);
+    QTableWidgetItem* item_pitch = table_pos_->item(row, 4);
     double pitch = item_pitch->text().toDouble(&ok);
     if (!ok) pos_entry.pitch = std::numeric_limits<double>::quiet_NaN();
     else pos_entry.pitch = pitch;
 
-    QTableWidgetItem* item_roll = table_pos_->item(row, 1);
+    QTableWidgetItem* item_roll = table_pos_->item(row, 5);
     double roll = item_roll->text().toDouble(&ok);
     if (!ok) pos_entry.roll = std::numeric_limits<double>::quiet_NaN();
     else pos_entry.roll = roll;
 
-    QTableWidgetItem* item_heading = table_pos_->item(row, 1);
+    QTableWidgetItem* item_heading = table_pos_->item(row, 6);
     double heading = item_heading->text().toDouble(&ok);
     if (!ok) pos_entry.heading = std::numeric_limits<double>::quiet_NaN();
     else pos_entry.heading = heading;

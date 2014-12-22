@@ -51,13 +51,18 @@ public slots:
   int RemovePhotosByIds(const std::vector<uint>& photo_ids);
   int RemovePhotosBySelectedItems();
 
+private slots:
+  void OnItemSelectionChanged();
+
 signals:
   void SelectedGroupsDeleted(const std::vector<uint>& group_ids);
   void SelectedPhotosRemoved(const std::vector<uint>& photo_ids);
   void PhotoSelected(uint photo_id);
-  void GroupsOnlySelected(const std::vector<uint>& block_ids);
+  void GroupsOnlySelected(const std::vector<uint>& group_ids);
   void SingleGroupSelected(uint group_id);
   void PhotosOnlySelected(const std::vector<uint>& photo_ids);
+  void NothingSelected();
+  void PhotosAndGroupsSelected();
 
 private:
   ItemMap group_item_map_;

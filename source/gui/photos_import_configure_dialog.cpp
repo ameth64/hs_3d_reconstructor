@@ -46,6 +46,17 @@ PhotosImportConfigureDialog::PhotosImportConfigureDialog(QWidget* parent,
     this, &PhotosImportConfigureDialog::OnPhotoFileEntriesChanged);
 }
 
+PhotogroupInfo PhotosImportConfigureDialog::GetPhotogroupInfo()
+{
+  return photogroup_widget_->GetPhotogroupInfo();
+}
+
+PhotosImportConfigureDialog::POSEntryContainer
+PhotosImportConfigureDialog::GetPOSEntries()
+{
+  return photogroup_widget_->GetPOSEntries();
+}
+
 void PhotosImportConfigureDialog::OnPushButtonPreviousClicked()
 {
   switch (configure_state_)

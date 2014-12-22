@@ -32,6 +32,10 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/photogroup_info_pos_wrap_widget.cpp"
   "source/gui/photo_files_select_widget.cpp"
   "source/gui/photos_import_configure_dialog.cpp"
+  "source/gui/photogroup_info_setting_widget.cpp"
+  "source/gui/photo_display_widget.cpp"
+  "source/gui/image_container_widget.cpp"
+  "source/gui/image_opengl_window.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES
@@ -61,8 +65,10 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
+  HS_DEPS hs_graphics DEP_LIBS graphics_qt
   LOCAL_DEPS database
   )
+target_link_libraries(${RECONSTRUCTOR_NAME} ${OPENGL_LIBRARIES})
 
 hslib_post_build(${RECONSTRUCTOR_NAME})
 
@@ -198,7 +204,6 @@ hslib_post_build(test_image_opengl_window)
 
 hs_add_qt_executable(test_tiepoint_measure_widget SOURCES
   "unit_test/gui/test_tiepoint_measure_widget.cpp"
-  "source/gui/opengl_window.cpp"
   "source/gui/image_opengl_window.cpp"
   "source/gui/image_container_widget.cpp"
   "source/gui/tiepoint_measure_widget.cpp"
@@ -213,7 +218,7 @@ hslib_add_dep(test_tiepoint_measure_widget
   3RDPARTY_DEPS z
   HS_DEPS hs_math_HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
-  HS_DEPS hs_graphics HEADONLY
+  HS_DEPS hs_graphics DEP_LIBS graphics_qt
   )
 target_link_libraries(test_tiepoint_measure_widget ${OPENGL_LIBRARIES})
 hslib_post_build(test_tiepoint_measure_widget)

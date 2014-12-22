@@ -16,6 +16,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 /**
  *  该Widget显示与像控点相关联的照片。
@@ -107,6 +109,7 @@ private:
   QTimer* update_origin_timer_;
 };
 
+}
 }
 }
 

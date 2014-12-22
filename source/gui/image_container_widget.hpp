@@ -11,6 +11,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 class ImageContainerWidget : public QWidget
 {
@@ -31,6 +33,7 @@ private:
   QVBoxLayout* layout_;
 };
 
+}
 }
 }
 

@@ -7,6 +7,8 @@
 #include "database/database_mediator.hpp"
 #include "gui/manager_pane.hpp"
 #include "gui/photos_tree_widget.hpp"
+#include "gui/photogroup_info_setting_widget.hpp"
+#include "gui/photo_display_widget.hpp"
 
 namespace hs
 {
@@ -23,19 +25,36 @@ public:
 
   virtual void Response(int request_flag, void* response);
 
-private:
+private slots:
   void OnActionAddPhotogroupTriggered();
+  void OnActionAddPhotosTriggered();
+  void OnActionRemovePhotogroupTriggered();
+  void OnActionRemovePhotosTriggered();
+
+  void OnPhotoSelected(uint photo_id);
+  void OnGroupsOnlySelected(const std::vector<uint>& group_ids);
+  void OnSingleGroupSelected(uint group_id);
+  void OnPhotosOnlySelected(const std::vector<uint>& photo_ids);
+  void OnNothingSelected();
+  void OnPhotosAndGroupsSelected();
+
+  void OnSelectedGroupsDeleted(const std::vector<uint>& group_ids);
+  void OnSelectedPhotosRemoved(const std::vector<uint>& photo_ids);
+
+  void OnPhotogroupInfoUpdated(uint id, const PhotogroupInfo& photogroup_info);
 
 public:
   PhotosTreeWidget* photos_tree_widget_;
+  PhotogroupInfoSettingWidget* photogroup_info_widget_;
+  PhotoDisplayWidget* photo_display_widget_;
 
   QIcon icon_add_photogroup_;
-  QIcon icon_add_photos_;
+  //QIcon icon_add_photos_;
   QIcon icon_remove_photogroup_;
   QIcon icon_remove_photos_;
 
   QAction* action_add_photogroup_;
-  QAction* action_add_photos_;
+  //QAction* action_add_photos_;
   QAction* action_remove_photogroup_;
   QAction* action_remove_photos_;
 };
