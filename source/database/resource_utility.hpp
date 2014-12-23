@@ -344,22 +344,22 @@ public:\
   typedef ResourceUtility<ResourceName> Utility;\
   friend Utility;\
 \
-  typedef typename Utility::Record Record;\
-  typedef typename Utility::RecordContainer RecordContainer;\
+  typedef Utility::Record Record;\
+  typedef Utility::RecordContainer RecordContainer;\
 \
-  typedef typename Utility::AddRequest AddRequest;\
-  typedef typename Utility::AddRequestContainer AddRequestContainer;\
-  typedef typename Utility::AddedRecord AddedRecord;\
-  typedef typename Utility::AddedRecordContainer AddedRecordContainer;\
+  typedef Utility::AddRequest AddRequest;\
+  typedef Utility::AddRequestContainer AddRequestContainer;\
+  typedef Utility::AddedRecord AddedRecord;\
+  typedef Utility::AddedRecordContainer AddedRecordContainer;\
 \
-  typedef typename Utility::SelectMask SelectMask;\
-  typedef typename Utility::SelectedRecord SelectedRecord;\
-  typedef typename Utility::SelectedRecordContainer SelectedRecordContainer;\
+  typedef Utility::SelectMask SelectMask;\
+  typedef Utility::SelectedRecord SelectedRecord;\
+  typedef Utility::SelectedRecordContainer SelectedRecordContainer;\
 \
-  typedef typename Utility::UpdateRequest UpdateRequest;\
-  typedef typename Utility::UpdateRequestContainer UpdateRequestContainer;\
-  typedef typename Utility::UpdatedRecord UpdatedRecord;\
-  typedef typename Utility::UpdatedRecordContainer UpdatedRecordContainer;\
+  typedef Utility::UpdateRequest UpdateRequest;\
+  typedef Utility::UpdateRequestContainer UpdateRequestContainer;\
+  typedef Utility::UpdatedRecord UpdatedRecord;\
+  typedef Utility::UpdatedRecordContainer UpdatedRecordContainer;\
 \
 private:\
   ResourceName(Database& database);\

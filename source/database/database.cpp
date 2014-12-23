@@ -26,7 +26,7 @@ int Database::Open(const std::string& database_file)
   {
     Close();
     database_file_path_ = database_file;
-    int result = sqlite3_open(database_file_path_.c_str(), &sqlite_db_);
+    int result = sqlite3_open(database_file_path_.string().c_str(), &sqlite_db_);
     if (result == SQLITE_OK)
     {
       return NO_ERROR;
@@ -59,7 +59,7 @@ int Database::Create(const std::string& database_directory)
   database_file_path_ = database_directory_path;
   database_file_path_ /= database_directory_path.stem();
   database_file_path_ += ".3db";
-  int result = sqlite3_open(database_file_path_.c_str(), &sqlite_db_);
+  int result = sqlite3_open(database_file_path_.string().c_str(), &sqlite_db_);
   if (result == SQLITE_OK)
   {
     return NO_ERROR;

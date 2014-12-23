@@ -15,14 +15,16 @@ namespace recon
 namespace gui
 {
 
-QStringList PhotogroupPOSConfigureWidget::header_labels_ =
-  QStringList() << tr("Photo Name")
-                << tr("Coordinate X")
-                << tr("Coordinate Y")
-                << tr("Coordinate Z")
-                << tr("Pitch")
-                << tr("Roll")
-                << tr("Heading");
+QStringList PhotogroupPOSConfigureWidget::HeaderLabels()
+{
+  return QStringList() << tr("Photo Name")
+                       << tr("Coordinate X")
+                       << tr("Coordinate Y")
+                       << tr("Coordinate Z")
+                       << tr("Pitch")
+                       << tr("Roll")
+                       << tr("Heading");
+}
 
 PhotogroupPOSConfigureWidget::PhotogroupPOSConfigureWidget(
   QWidget* parent, Qt::WindowFlags f)
@@ -137,8 +139,8 @@ void PhotogroupPOSConfigureWidget::Initialize()
   layout_header_->addWidget(push_button_clear_);
   layout_header_->addWidget(push_button_import_);
 
-  table_pos_->setColumnCount(int(header_labels_.size()));
-  table_pos_->setHorizontalHeaderLabels(header_labels_);
+  table_pos_->setColumnCount(int(HeaderLabels().size()));
+  table_pos_->setHorizontalHeaderLabels(HeaderLabels());
   table_pos_->resizeColumnsToContents();
 
   QObject::connect(
@@ -165,20 +167,20 @@ void PhotogroupPOSConfigureWidget::OnPushButtonImportClicked()
         std::string(std::istreambuf_iterator<char>(file),
                     std::istreambuf_iterator<char>());
       PropertyFieldAsignmentDialog assignment_dialog(
-        file_content, header_labels_, this);
+        file_content, HeaderLabels(), this);
       if (assignment_dialog.exec())
       {
         PropertyFieldAsignmentDialog::AssignedFieldValues assigned_field_values;
         assignment_dialog.GetAssignedFieldValues(assigned_field_values);
         auto itr_first_values =
-          assigned_field_values.find(header_labels_[0]);
+          assigned_field_values.find(HeaderLabels()[0]);
         if (itr_first_values == assigned_field_values.end())
         {
           //Not aligned
-          for (int column = 1; column < int(header_labels_.size()); column++)
+          for (int column = 1; column < int(HeaderLabels().size()); column++)
           {
             auto itr_values =
-              assigned_field_values.find(header_labels_[column]);
+              assigned_field_values.find(HeaderLabels()[column]);
             if (itr_values != assigned_field_values.end())
             {
               auto itr_value = itr_values->second.begin();
@@ -196,10 +198,10 @@ void PhotogroupPOSConfigureWidget::OnPushButtonImportClicked()
         else
         {
           //Aligned
-          for (int column = 1; column < int(header_labels_.size()); column++)
+          for (int column = 1; column < int(HeaderLabels().size()); column++)
           {
             auto itr_values =
-              assigned_field_values.find(header_labels_[column]);
+              assigned_field_values.find(HeaderLabels()[column]);
             if (itr_values != assigned_field_values.end())
             {
               auto itr_value = itr_values->second.begin();

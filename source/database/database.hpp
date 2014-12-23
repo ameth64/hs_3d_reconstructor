@@ -6,6 +6,8 @@
 #include <sqlite3.h>
 #include <boost/filesystem.hpp>
 
+#include "hs_3d_reconstructor/config/hs_config.hpp"
+
 namespace hs
 {
 namespace recon
@@ -13,9 +15,7 @@ namespace recon
 namespace db
 {
 
-class ResourceBase;
-
-class Database
+class HS_EXPORT Database
 {
 public:
   typedef unsigned int Identifier;

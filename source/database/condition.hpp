@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "hs_3d_reconstructor/config/hs_config.hpp"
 #include "database/field.hpp"
 
 namespace hs
@@ -12,13 +13,13 @@ namespace recon
 namespace db
 {
 
-class Condition
+class HS_EXPORT Condition
 {
 public:
   virtual std::string sql_text() const;
 };
 
-class EqualTo : public Condition
+class HS_EXPORT EqualTo : public Condition
 {
 public:
   EqualTo(const Field& field, const Value& value);
@@ -30,7 +31,7 @@ private:
   Value value_;
 };
 
-class GreaterThan : public Condition
+class HS_EXPORT GreaterThan : public Condition
 {
 public:
   GreaterThan(const Field& field, const Value& value);
@@ -42,7 +43,7 @@ private:
   Value value_;
 };
 
-class LessThan : public Condition
+class HS_EXPORT LessThan : public Condition
 {
 public:
   LessThan(const Field& field, const Value& value);
@@ -54,7 +55,7 @@ private:
   Value value_;
 };
 
-class Or : public Condition
+class HS_EXPORT Or : public Condition
 {
 public:
   Or(const Condition& condition_1, const Condition& condition_2);
@@ -65,7 +66,7 @@ private:
   const Condition& condition_2_;
 };
 
-class And : public Condition
+class HS_EXPORT And : public Condition
 {
 public:
   And(const Condition& condition_1, const Condition& condition_2);

@@ -1,6 +1,7 @@
 ﻿#ifndef _HS_3D_RECONSTRUCTOR_DATABASE_GCP_PHOTO_MEASURE_RELATION_RESOURCE_HPP_
 #define _HS_3D_RECONSTRUCTOR_DATABASE_GCP_PHOTO_MEASURE_RELATION_RESOURCE_HPP_
 
+#include "hs_3d_reconstructor/config/hs_config.hpp"
 #include "database/resource_utility.hpp"
 
 namespace hs
@@ -10,7 +11,7 @@ namespace recon
 namespace db
 {
 
-class GCPPhotoMeasureRelationResource
+class HS_EXPORT GCPPhotoMeasureRelationResource
 {
 public:
   enum FieldIdentifier

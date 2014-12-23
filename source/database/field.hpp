@@ -6,6 +6,7 @@
 
 #include <boost/any.hpp>
 
+#include "hs_3d_reconstructor/config/hs_config.hpp"
 #include "database/database.hpp"
 
 namespace hs
@@ -33,7 +34,7 @@ enum FieldConstraintType
   FIELD_CONSTRAINT_NONE
 };
 
-struct Field
+struct HS_EXPORT Field
 {
   const char* name;
   FieldValueType value_type;
@@ -41,7 +42,7 @@ struct Field
 };
 
 
-class Value
+class HS_EXPORT Value
 {
 public:
   Value();

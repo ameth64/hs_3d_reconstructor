@@ -63,7 +63,7 @@ private:
   LabelRowMap label_row_map_;
 
 private:
-  static QStringList header_labels_;
+  static QStringList HeaderLabels();
 };
 
 }

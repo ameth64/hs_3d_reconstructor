@@ -62,6 +62,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS exiv2
+  3RDPARTY_DEPS glew
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
@@ -92,11 +93,13 @@ set(DATABASE_SOURCES
   "source/database/photo_block_relation_resource.cpp"
   "source/database/gcp_photo_measure_relation_resource.cpp"
   )
+add_definitions(-DBOOST_ALL_NO_LIB)
 hslib_add_library(${DATABASE_NAME} ${HSPRJ_NAME} ${DATABASE_SOURCES})
 hslib_add_dep(${DATABASE_NAME}
   3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
   3RDPARTY_DEPS sqlite
   )
+hslib_post_build(${DATABASE_NAME})
 
 set(DATABASE_UTEST_SOURCES
   "unit_test/database/main.cpp"
@@ -150,12 +153,6 @@ hslib_add_dep(test_photos_tree_widget
   )
 hslib_post_build(test_photos_tree_widget)
 
-hs_add_qt_executable(test_opengl_window SOURCES
-  "unit_test/gui/test_opengl_window.cpp"
-  "source/gui/opengl_window.cpp"
-  QT_MODULES "Test" "Widgets" "Core"
-  RESOURCES "resource/3d_reconstructor.qrc")
-
 hs_add_qt_executable(test_opengl_widget SOURCES
   "unit_test/gui/test_opengl_widget.cpp"
   "source/gui/opengl_widget.cpp"
@@ -183,7 +180,6 @@ hs_add_qt_executable(test_photo_orientation_info_widget SOURCES
   RESOURCES "resource/3d_reconstructor.qrc")
 hs_add_qt_executable(test_image_opengl_window SOURCES
   "unit_test/gui/test_image_opengl_window.cpp"
-  "source/gui/opengl_window.cpp"
   "source/gui/image_opengl_window.cpp"
   QT_MODULES "Test" "Widgets" "Core"
   RESOURCES "resource/3d_reconstructor.qrc")
@@ -246,7 +242,6 @@ hslib_post_build(test_image_widget)
 hs_add_qt_executable(test_image_container_widget SOURCES
   "unit_test/gui/test_image_container_widget.cpp"
   "source/gui/image_container_widget.cpp"
-  "source/gui/opengl_window.cpp"
   "source/gui/image_opengl_window.cpp"
   QT_MODULES "Test" "Widgets" "Core" "OpenGL")
 hslib_add_dep(test_image_container_widget

@@ -3,6 +3,7 @@
 
 #include <set>
 
+#include "hs_3d_reconstructor/config/hs_config.hpp"
 #include "database/database.hpp"
 #include "database/block_resource.hpp"
 #include "database/photogroup_resource.hpp"
@@ -30,14 +31,14 @@ class DatabaseRequestHandler;
 /**
  *  观察者模式中的观察者类。
  */
-class DatabaseObserver
+class HS_EXPORT DatabaseObserver
 {
 public:
   virtual void Response(int request_flag, void* response) = 0;
 };
 
 
-class DatabaseMediator
+class HS_EXPORT DatabaseMediator
 {
 public:
   enum ErrorCode

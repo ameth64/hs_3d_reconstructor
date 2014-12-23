@@ -1,6 +1,8 @@
 ﻿#ifndef _HS_3D_RECONSTRUCTOR_DATABASE_FEATURE_MATCH_HPP_
 #define _HS_3D_RECONSTRUCTOR_DATABASE_FEATURE_MATCH_HPP_
 
+#include "hs_3d_reconstructor/config/hs_config.hpp"
+
 #include "database/resource_utility.hpp"
 
 namespace hs
@@ -10,7 +12,7 @@ namespace recon
 namespace db
 {
 
-class FeatureMatchResource
+class HS_EXPORT FeatureMatchResource
 {
 public:
   enum FieldIdentifier
