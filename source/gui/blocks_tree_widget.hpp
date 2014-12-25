@@ -2,6 +2,7 @@
 #define _HS_3D_RECONSTRUCTOR_BLOCKS_TREE_WIDGET_HPP_
 
 #include <map>
+#include <vector>
 
 #include <QTreeWidget>
 #include <QIcon>
@@ -16,10 +17,12 @@ class BlocksTreeWidget : public QTreeWidget
   Q_OBJECT
 public:
   typedef std::map<uint, QTreeWidgetItem*> ItemMap;
+  typedef std::map<uint, QString> StringMap;
   enum ItemType
   {
     BLOCK = QTreeWidgetItem::UserType,
     PHOTOS,
+    PHOTO,
     FEATURE_MATCH,
     PHOTO_ORIENTATION,
     POINT_CLOUD,
@@ -32,6 +35,7 @@ public:
 
 public:
   int AddBlock(uint block_id, const QString& block_name);
+  int AddPhotosToBlock(uint block_id, const StringMap& photo_names);
   int AddFeatureMatch(uint block_id, uint feature_match_id,
                       const QString& feature_match_name);
   int AddPhotoOrientation(uint feature_match_id, uint photo_orientation_id,
@@ -46,6 +50,7 @@ public:
   int AddDOM(uint texture_model_id, uint dom_id, const QString& dom_name);
 
   int DeleteBlock(uint block_id);
+  int DeletePhotosFromBlock(uint block_id, const std::vector<uint>& photo_ids);
   int DeleteFeatureMatch(uint feature_match_id);
   int DeletePhotoOrientation(uint photo_orientation_id);
   int DeletePointCloud(uint point_cloud_id);
@@ -54,32 +59,49 @@ public:
   int DeleteTexture(uint texture_id);
   int DeleteDOM(uint dom_id);
 
-  int ChangeBlockName(uint block_id, const QString& block_name);
-  int ChangeFeatureMatchName(uint feature_match_id,
-                             const QString& feature_match_name);
-  int ChangePhotoOrientationName(uint photo_orientation_id,
-                                 const QString& photo_orientation_name);
-  int ChangePointCloudName(uint point_cloud_id,
-                           const QString& point_cloud_name);
-  int ChangeSurfaceModelName(uint surface_model_id,
-                             const QString& surface_model_name);
-  int ChangeDEMName(uint dem_id, QString& dem_name);
-  int ChangeTextureName(uint texture_id, QString& texture_name);
-  int ChangeDOMName(uint dom_id, QString& dom_name);
+  QTreeWidgetItem* BlockItem(uint block_id);
+  QTreeWidgetItem* PhotosItem(uint block_id);
+  QTreeWidgetItem* PhotoItem(uint photo_id);
+  QTreeWidgetItem* FeatureMatchItem(uint feature_match_id);
+  QTreeWidgetItem* PhotoOrientationItem(uint photo_orientation_id);
+  QTreeWidgetItem* PointCloudItem(uint point_cloud_id);
+  QTreeWidgetItem* SurfaceModelItem(uint surface_model_id);
+  QTreeWidgetItem* DEMItem(uint dem_id);
+  QTreeWidgetItem* TextureItem(uint texture_id);
+  QTreeWidgetItem* DOMItem(uint dom_id);
+
+  //int ChangeBlockName(uint block_id, const QString& block_name);
+  //int ChangeFeatureMatchName(uint feature_match_id,
+  //                           const QString& feature_match_name);
+  //int ChangePhotoOrientationName(uint photo_orientation_id,
+  //                               const QString& photo_orientation_name);
+  //int ChangePointCloudName(uint point_cloud_id,
+  //                         const QString& point_cloud_name);
+  //int ChangeSurfaceModelName(uint surface_model_id,
+  //                           const QString& surface_model_name);
+  //int ChangeDEMName(uint dem_id, QString& dem_name);
+  //int ChangeTextureName(uint texture_id, QString& texture_name);
+  //int ChangeDOMName(uint dom_id, QString& dom_name);
 
 signals:
-  void BlockSelected(uint block_id);
-  void PhotosSelected(uint block_id);
-  void FeatureMatchSelected(uint feature_match_id);
-  void PhotoOrientationSelected(uint photo_orientation_id);
-  void PointCloudSelected(uint point_cloud_id);
-  void SurfaceModelSelected(uint surface_model_id);
-  void DEMSelected(uint dem_id);
-  void TextureSelected(uint texture_id);
-  void DOMSelected(uint dom_id);
+  void BlockItemSelected(uint block_id);
+  void PhotosInOneBlockSelected(uint block_id,
+                                const std::vector<uint>& photo_ids);
+  void PhotosItemSelected(uint block_id);
+  void FeatureMatchItemSelected(uint feature_match_id);
+  void PhotoOrientationItemSelected(uint photo_orientation_id);
+  void PointCloudItemSelected(uint point_cloud_id);
+  void SurfaceItemModelSelected(uint surface_model_id);
+  void DEMItemSelected(uint dem_id);
+  void TextureItemSelected(uint texture_id);
+  void DOMItemSelected(uint dom_id);
+
+private slots:
+  void OnItemSelectionChanged();
 
 private:
   QIcon block_icon_;
+  QIcon photos_icon_;
   QIcon photo_icon_;
   QIcon feature_match_icon_;
   QIcon photo_orientation_icon_;
@@ -90,6 +112,8 @@ private:
   QIcon dom_icon_;
 
   ItemMap block_item_map_;
+  ItemMap photos_item_map_;
+  ItemMap photo_item_map_;
   ItemMap feature_match_item_map_;
   ItemMap photo_orientation_item_map_;
   ItemMap point_cloud_item_map_;
