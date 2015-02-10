@@ -393,26 +393,26 @@ void PhotosTreeWidget::OnItemSelectionChanged()
   {
     group_ids.push_back((*itr_selected_group_items)->data(0, Qt::UserRole).toUInt());
   }
-  if (group_ids.empty() && photo_ids.size() == 1)
+  if (/*group_ids.empty() && */photo_ids.size() == 1)
   {
     emit PhotoSelected(photo_ids[0]);
   }
-  else if (group_ids.empty() && photo_ids.size() > 1)
+  if (/*group_ids.empty() &&*/ photo_ids.size() > 1)
   {
     emit PhotosOnlySelected(photo_ids);
   }
-  else if (group_ids.size() == 1 && photo_ids.empty())
-  {
-    emit SingleGroupSelected(group_ids[0]);
-  }
-  else if (group_ids.size() > 1 && photo_ids.empty())
-  {
-    emit GroupsOnlySelected(group_ids);
-  }
-  else
-  {
-    emit PhotosAndGroupsSelected(group_ids, photo_ids);
-  }
+  //else if (group_ids.size() == 1 && photo_ids.empty())
+  //{
+  //  emit SingleGroupSelected(group_ids[0]);
+  //}
+  //else if (group_ids.size() > 1 && photo_ids.empty())
+  //{
+  //  emit GroupsOnlySelected(group_ids);
+  //}
+  //else
+  //{
+  //  emit PhotosAndGroupsSelected(group_ids, photo_ids);
+  //}
 }
 
 int PhotosTreeWidget::GetPhotoEntry(uint photo_id, PhotoEntry& photo_entry)
