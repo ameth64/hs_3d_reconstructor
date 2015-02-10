@@ -36,6 +36,9 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/photo_display_widget.cpp"
   "source/gui/image_container_widget.cpp"
   "source/gui/image_opengl_window.cpp"
+  "source/gui/block_photos_select_widget.cpp"
+  "source/gui/block_photos_select_dialog.cpp"
+  "source/gui/block_info_widget.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES

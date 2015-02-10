@@ -47,6 +47,7 @@ int BlocksTreeWidget::AddBlock(uint block_id, const QString& block_name)
   photos_item->setIcon(0, photos_icon_);
   block_item->addChild(photos_item);
   block_item->setExpanded(true);
+  block_item->setIcon(0, block_icon_);
 
   block_item_map_[block_id] = block_item;
   photos_item_map_[block_id] = photos_item;
@@ -631,7 +632,11 @@ QTreeWidgetItem* BlocksTreeWidget::DOMItem(uint dom_id)
 void BlocksTreeWidget::OnItemSelectionChanged()
 {
   QList<QTreeWidgetItem*> selected_items = selectedItems();
-  if (selected_items.size() == 1)
+  if (selected_items.size() == 0)
+  {
+    return;
+  }
+  else if (selected_items.size() == 1)
   {
     QTreeWidgetItem* selected_item = selected_items[0];
     switch (selected_item->type())
@@ -644,10 +649,62 @@ void BlocksTreeWidget::OnItemSelectionChanged()
       }
     case PHOTOS:
       {
-
+        uint block_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit PhotosItemSelected(block_id);
+        break;
+      }
+    case FEATURE_MATCH:
+      {
+        uint feature_match_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit FeatureMatchItemSelected(feature_match_id);
+        break;
+      }
+    case PHOTO_ORIENTATION:
+      {
+        uint photo_orientation_id =
+          selected_item->data(0, Qt::UserRole).toUInt();
+        emit PhotoOrientationItemSelected(photo_orientation_id);
+        break;
+      }
+    case POINT_CLOUD:
+      {
+        uint point_cloud_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit PointCloudItemSelected(point_cloud_id);
+        break;
+      }
+    case SURFACE_MODEL:
+      {
+        uint surface_model_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit SurfaceModelItemSelected(surface_model_id);
+        break;
+      }
+    case DEM:
+      {
+        uint dem_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit DEMItemSelected(dem_id);
+        break;
+      }
+    case TEXTURE:
+      {
+        uint texture_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit TextureItemSelected(texture_id);
+        break;
+      }
+    case DOM:
+      {
+        uint dom_id = selected_item->data(0, Qt::UserRole).toUInt();
+        emit DOMItemSelected(dom_id);
+        break;
+      }
+    default:
+      {
         break;
       }
     }
+  }
+  else
+  {
+
   }
 }
 

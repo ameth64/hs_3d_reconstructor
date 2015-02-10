@@ -7,6 +7,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 ManagerPane::ManagerPane(const QString& title, QWidget* parent)
   : QDockWidget(title, parent),
@@ -105,5 +107,6 @@ void ManagerPane::OnDockLocationChanged(Qt::DockWidgetArea area)
   }
 }
 
+}
 }
 }

@@ -4,6 +4,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 PhotosTreeWidget::PhotosTreeWidget(QWidget* parent)
   : QTreeWidget(parent),
@@ -326,5 +328,6 @@ void PhotosTreeWidget::OnItemSelectionChanged()
   }
 }
 
+}
 }
 }

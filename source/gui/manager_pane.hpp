@@ -10,6 +10,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 class ManagerPane : public QDockWidget
 {
@@ -36,6 +38,7 @@ protected:
   QToolBar* tool_bar_;
 };
 
+}
 }
 }
 

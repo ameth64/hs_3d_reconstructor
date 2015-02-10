@@ -10,6 +10,8 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 class PhotosTreeWidget : public QTreeWidget
 {
@@ -72,6 +74,7 @@ private:
   QIcon* photo_icon_;
 };
 
+}
 }
 }
 

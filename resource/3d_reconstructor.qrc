@@ -11,5 +11,16 @@
     <file>images/icon_group_remove.png</file>
     <file>images/icon_gcp.png</file>
     <file>images/icon_tiepoint.png</file>
+    <file>images/icon_feature_match.png</file>
+    <file>images/icon_photo_orientation.png</file>
+    <file>images/icon_point_cloud.png</file>
+    <file>images/icon_surface_model.png</file>
+    <file>images/icon_texture.png</file>
+    <file>images/icon_dom.png</file>
+    <file>images/icon_dem.png</file>
+    <file>images/icon_block.png</file>
+    <file>images/icon_block_add.png</file>
+    <file>images/icon_block_remove.png</file>
+    <file>images/icon_workflow_add.png</file>
 </qresource>
 </RCC>

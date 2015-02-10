@@ -560,7 +560,7 @@ struct DatabaseRequestHandler<RequestUpdatePhotogroups,
   }
 };
 
-//Request Get Photogroup
+//Request Get Photo
 struct RequestGetPhoto
 {
   REQUEST_HEADER

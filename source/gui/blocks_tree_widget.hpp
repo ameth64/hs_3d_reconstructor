@@ -91,7 +91,7 @@ signals:
   void FeatureMatchItemSelected(uint feature_match_id);
   void PhotoOrientationItemSelected(uint photo_orientation_id);
   void PointCloudItemSelected(uint point_cloud_id);
-  void SurfaceItemModelSelected(uint surface_model_id);
+  void SurfaceModelItemSelected(uint surface_model_id);
   void DEMItemSelected(uint dem_id);
   void TextureItemSelected(uint texture_id);
   void DOMItemSelected(uint dom_id);

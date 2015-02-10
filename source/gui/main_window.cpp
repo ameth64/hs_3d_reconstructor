@@ -51,11 +51,10 @@ MainWindow::MainWindow()
   setCentralWidget(tmp_central_widget);
 
   photos_pane_ = new PhotosPane(this);
-  //blocks_pane_ = new BlocksPane(this);
+  blocks_pane_ = new BlocksPane(this);
 
-  addDockWidget(Qt::LeftDockWidgetArea, photos_pane_);
-  //addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
-
+  addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
+  tabifyDockWidget(blocks_pane_, photos_pane_);
 
   database_mediator_.RegisterObserver(photos_pane_);
 

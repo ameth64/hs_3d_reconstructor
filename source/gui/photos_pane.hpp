@@ -43,7 +43,7 @@ private slots:
 
   void OnPhotogroupInfoUpdated(uint id, const PhotogroupInfo& photogroup_info);
 
-public:
+private:
   PhotosTreeWidget* photos_tree_widget_;
   PhotogroupInfoSettingWidget* photogroup_info_widget_;
   PhotoDisplayWidget* photo_display_widget_;
