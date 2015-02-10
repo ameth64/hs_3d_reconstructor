@@ -25,7 +25,7 @@ BlockPhotosSelectWidget::BlockPhotosSelectWidget(
   photos_tree_widget_ = new PhotosTreeWidget(splitter_);
   auto itr_group = groups.begin();
   auto itr_group_end = groups.end();
-  for (size_t i = 0; i < groups.size(); i++)
+  for (; itr_group != itr_group_end;++itr_group)
   {
     photos_tree_widget_->AddGroup(itr_group->first, itr_group->second);
   }
