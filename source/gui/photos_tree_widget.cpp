@@ -339,42 +339,99 @@ void PhotosTreeWidget::OnItemSelectionChanged()
       selected_group_items.push_back(*itr_selected_item);
     }
   }
-  if (selected_group_items.empty() && selected_photo_items.size() == 1)
+  //if (selected_group_items.empty() && selected_photo_items.size() == 1)
+  //{
+  //  QTreeWidgetItem* item = *(selected_photo_items.begin());
+  //  emit PhotoSelected(item->data(0, Qt::UserRole).toUInt());
+  //}
+  //else if (selected_group_items.size() > 1 && selected_photo_items.empty())
+  //{
+  //  auto itr_group_item = selected_group_items.begin();
+  //  auto itr_group_item_end = selected_group_items.end();
+  //  std::vector<uint> group_ids;
+  //  for (; itr_group_item != itr_group_item_end; ++itr_group_item)
+  //  {
+  //    group_ids.push_back((*itr_group_item)->data(0, Qt::UserRole).toUInt());
+  //  }
+  //  emit GroupsOnlySelected(group_ids);
+  //}
+  //else if (selected_group_items.size() == 1 && selected_photo_items.empty())
+  //{
+  //  QTreeWidgetItem* item = *(selected_group_items.begin());
+  //  emit SingleGroupSelected(item->data(0, Qt::UserRole).toUInt());
+  //}
+  //else if (selected_group_items.empty() && selected_photo_items.size() > 1)
+  //{
+  //  auto itr_photo_item = selected_photo_items.begin();
+  //  auto itr_photo_item_end = selected_photo_items.end();
+  //  std::vector<uint> photo_ids;
+  //  for (; itr_photo_item != itr_photo_item_end; ++itr_photo_item)
+  //  {
+  //    photo_ids.push_back((*itr_photo_item)->data(0, Qt::UserRole).toUInt());
+  //  }
+  //  emit PhotosOnlySelected(photo_ids);
+  //}
+  //else
+  //{
+  //  emit PhotosAndGroupsSelected();
+  //}
+
+  auto itr_selected_photo_items = selected_photo_items.begin();
+  auto itr_selected_photo_items_end = selected_photo_items.end();
+  std::vector<uint> photo_ids;
+  for (; itr_selected_photo_items != itr_selected_photo_items_end
+    ; ++itr_selected_photo_items)
   {
-    QTreeWidgetItem* item = *(selected_photo_items.begin());
-    emit PhotoSelected(item->data(0, Qt::UserRole).toUInt());
+    photo_ids.push_back((*itr_selected_photo_items)->data(0, Qt::UserRole).toUInt());
   }
-  else if (selected_group_items.size() > 1 && selected_photo_items.empty())
+
+  auto itr_selected_group_items = selected_group_items.begin();
+  auto itr_selected_group_items_end = selected_group_items.end();
+  std::vector<uint> group_ids;
+  for (; itr_selected_group_items != itr_selected_group_items_end
+    ; ++itr_selected_group_items)
   {
-    auto itr_group_item = selected_group_items.begin();
-    auto itr_group_item_end = selected_group_items.end();
-    std::vector<uint> group_ids;
-    for (; itr_group_item != itr_group_item_end; ++itr_group_item)
-    {
-      group_ids.push_back((*itr_group_item)->data(0, Qt::UserRole).toUInt());
-    }
-    emit GroupsOnlySelected(group_ids);
+    group_ids.push_back((*itr_selected_group_items)->data(0, Qt::UserRole).toUInt());
   }
-  else if (selected_group_items.size() == 1 && selected_photo_items.empty())
+  if (group_ids.empty() && photo_ids.size() == 1)
   {
-    QTreeWidgetItem* item = *(selected_group_items.begin());
-    emit SingleGroupSelected(item->data(0, Qt::UserRole).toUInt());
+    emit PhotoSelected(photo_ids[0]);
   }
-  else if (selected_group_items.empty() && selected_photo_items.size() > 1)
+  else if (group_ids.empty() && photo_ids.size() > 1)
   {
-    auto itr_photo_item = selected_photo_items.begin();
-    auto itr_photo_item_end = selected_photo_items.end();
-    std::vector<uint> photo_ids;
-    for (; itr_photo_item != itr_photo_item_end; ++itr_photo_item)
-    {
-      photo_ids.push_back((*itr_photo_item)->data(0, Qt::UserRole).toUInt());
-    }
     emit PhotosOnlySelected(photo_ids);
+  }
+  else if (group_ids.size() == 1 && photo_ids.empty())
+  {
+    emit SingleGroupSelected(group_ids[0]);
+  }
+  else if (group_ids.size() > 1 && photo_ids.empty())
+  {
+    emit GroupsOnlySelected(group_ids);
   }
   else
   {
-    emit PhotosAndGroupsSelected();
+    emit PhotosAndGroupsSelected(group_ids, photo_ids);
   }
+}
+
+int PhotosTreeWidget::GetPhotoEntry(uint photo_id, PhotoEntry& photo_entry)
+{
+  auto itr_photo_item = photo_item_map_.find(photo_id);
+  if (itr_photo_item == photo_item_map_.end())
+  {
+    return -1;
+  }
+  photo_entry.id = photo_id;
+  photo_entry.file_name = itr_photo_item->second->text(0);
+  photo_entry.x = itr_photo_item->second->text(1).toFloat();
+  photo_entry.y = itr_photo_item->second->text(2).toFloat();
+  photo_entry.z = itr_photo_item->second->text(3).toFloat();
+  photo_entry.pitch = itr_photo_item->second->text(4).toFloat();
+  photo_entry.roll = itr_photo_item->second->text(5).toFloat();
+  photo_entry.heading = itr_photo_item->second->text(6).toFloat();
+  photo_entry.projection = itr_photo_item->second->text(7);
+  return 0;
 }
 
 }

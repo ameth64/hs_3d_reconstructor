@@ -30,7 +30,35 @@ BlockPhotosSelectWidget::BlockPhotosSelectWidget(
     photos_tree_widget_->AddGroup(itr_group->first, itr_group->second);
   }
   splitter_->addWidget(photos_tree_widget_);
+  QObject::connect(
+    photos_tree_widget_, &PhotosTreeWidget::PhotoSelected
+    , this, &BlockPhotosSelectWidget::SinglePhotoSelected);
+  QObject::connect(photos_tree_widget_, &PhotosTreeWidget::PhotosOnlySelected
+    , this, &BlockPhotosSelectWidget::PhotosOnlySelected);
+}
 
+int BlockPhotosSelectWidget::AddPhotoToSelectedWidget(uint photo_id)
+{
+  PhotoEntry photo_entry;
+  if(photos_tree_widget_->GetPhotoEntry(photo_id, photo_entry)!=0)
+    return -1;
+  selected_photos_list_widget_->addItem(new QListWidgetItem(photo_entry.file_name));
+  return 0;
+}
+
+void BlockPhotosSelectWidget::SinglePhotoSelected(uint photo_id)
+{
+  selected_photos_list_widget_->clear();
+  AddPhotoToSelectedWidget(photo_id);
+}
+
+void BlockPhotosSelectWidget::PhotosOnlySelected(const std::vector<uint>& photo_ids)
+{
+  selected_photos_list_widget_->clear();
+  for (size_t i = 0; i != photo_ids.size(); ++i)
+  {
+    AddPhotoToSelectedWidget(photo_ids[i]);
+  }
 }
 
 }

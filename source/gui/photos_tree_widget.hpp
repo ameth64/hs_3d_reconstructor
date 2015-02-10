@@ -46,6 +46,7 @@ public:
   int ClearGroups();
   int AddGroup(uint group_id, const GroupEntry& group);
   int AddPhotos(uint group_id, const PhotoContainer& photos);
+  int GetPhotoEntry(uint photo_id, PhotoEntry& photo_entry);
 
 public slots:
   int DeleteGroupsByIds(const std::vector<uint>& group_ids);
@@ -64,7 +65,8 @@ signals:
   void SingleGroupSelected(uint group_id);
   void PhotosOnlySelected(const std::vector<uint>& photo_ids);
   void NothingSelected();
-  void PhotosAndGroupsSelected();
+  void PhotosAndGroupsSelected(const std::vector<uint>& group_ids
+    , const std::vector<uint>& photo_ids);
 
 private:
   ItemMap group_item_map_;

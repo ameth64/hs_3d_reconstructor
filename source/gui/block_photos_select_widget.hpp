@@ -30,7 +30,12 @@ public:
                           const QString& block_description,
                           const GroupEntryContainer& groups);
 
+private slots:
+  void SinglePhotoSelected(uint photo_id);
+  void PhotosOnlySelected(const std::vector<uint>& photo_ids);
+
 private:
+  int AddPhotoToSelectedWidget(uint photo_id);
   BlockInfoWidget* block_info_widget_;
   PhotosTreeWidget* photos_tree_widget_;
   QListWidget* selected_photos_list_widget_;
