@@ -51,20 +51,43 @@ int PhotosTreeWidget::AddGroup(uint group_id, const GroupEntry& group)
   group_item_map_[group_id] = group_item;
   auto itr_photo = group.photos.begin();
   auto itr_photo_end = group.photos.end();
+  Float invalid_value = -std::numeric_limits<Float>::max();
   for (; itr_photo != itr_photo_end; ++itr_photo)
   {
     if (photo_item_map_.find(itr_photo->second.id) == photo_item_map_.end())
     {
       QString photo_item_text = itr_photo->second.file_name;
-      QString x_text = QString::number(double(itr_photo->second.x), 'f', 4);
-      QString y_text = QString::number(double(itr_photo->second.y), 'f', 4);
-      QString z_text = QString::number(double(itr_photo->second.z), 'f', 4);
-      QString pitch_text =
-        QString::number(double(itr_photo->second.pitch), 'f', 4);
-      QString roll_text =
-        QString::number(double(itr_photo->second.roll), 'f', 4);
-      QString heading_text =
-        QString::number(double(itr_photo->second.heading), 'f', 4);
+      QString x_text;
+      if (itr_photo->second.x != invalid_value)
+      {
+        x_text = QString::number(double(itr_photo->second.x), 'f', 4);
+      }
+      QString y_text;
+      if (itr_photo->second.y != invalid_value)
+      {
+        y_text = QString::number(double(itr_photo->second.y), 'f', 4);
+      }
+      QString z_text;
+      if (itr_photo->second.z != invalid_value)
+      {
+        z_text = QString::number(double(itr_photo->second.z), 'f', 4);
+      }
+      QString pitch_text;
+      if (itr_photo->second.pitch != invalid_value)
+      {
+        pitch_text = QString::number(double(itr_photo->second.pitch), 'f', 4);
+      }
+      QString roll_text;
+      if (itr_photo->second.roll != invalid_value)
+      {
+        roll_text = QString::number(double(itr_photo->second.roll), 'f', 4);
+      }
+      QString heading_text;
+      if (itr_photo->second.heading != invalid_value)
+      {
+        heading_text =
+          QString::number(double(itr_photo->second.heading), 'f', 4);
+      }
       QString projection_text = itr_photo->second.projection;
       QTreeWidgetItem* photo_item =
         new QTreeWidgetItem(
@@ -93,6 +116,7 @@ int PhotosTreeWidget::AddPhotos(uint group_id, const PhotoContainer& photos)
   if (itr_group == group_item_map_.end()) return -1;
   auto itr_photo = photos.begin();
   auto itr_photo_end = photos.end();
+  Float invalid_value = -std::numeric_limits<Float>::max();
   for (; itr_photo != itr_photo_end; ++itr_photo)
   {
     if (photo_item_map_.find(itr_photo->first) != photo_item_map_.end())
@@ -100,13 +124,38 @@ int PhotosTreeWidget::AddPhotos(uint group_id, const PhotoContainer& photos)
       continue;
     }
     QString photo_item_text = itr_photo->second.file_name;
-    QString x_text = QString::number(double(itr_photo->second.x));
-    QString y_text = QString::number(double(itr_photo->second.y));
-    QString z_text = QString::number(double(itr_photo->second.z));
-    QString pitch_text = QString::number(double(itr_photo->second.pitch));
-    QString roll_text = QString::number(double(itr_photo->second.roll));
-    QString heading_text =
-      QString::number(double(itr_photo->second.heading));
+    QString x_text;
+    Float x = itr_photo->second.x;
+    if (itr_photo->second.x != invalid_value)
+    {
+      x_text = QString::number(double(itr_photo->second.x), 'f', 4);
+    }
+    QString y_text;
+    if (itr_photo->second.x != invalid_value)
+    {
+      y_text = QString::number(double(itr_photo->second.y), 'f', 4);
+    }
+    QString z_text;
+    if (itr_photo->second.x != invalid_value)
+    {
+      z_text = QString::number(double(itr_photo->second.z), 'f', 4);
+    }
+    QString pitch_text;
+    if (itr_photo->second.x != invalid_value)
+    {
+      pitch_text = QString::number(double(itr_photo->second.pitch), 'f', 4);
+    }
+    QString roll_text;
+    if (itr_photo->second.x != invalid_value)
+    {
+      roll_text = QString::number(double(itr_photo->second.roll), 'f', 4);
+    }
+    QString heading_text;
+    if (itr_photo->second.x != invalid_value)
+    {
+      heading_text =
+        QString::number(double(itr_photo->second.heading), 'f', 4);
+    }
     QString projection_text = itr_photo->second.projection;
     QTreeWidgetItem* photo_item =
       new QTreeWidgetItem(

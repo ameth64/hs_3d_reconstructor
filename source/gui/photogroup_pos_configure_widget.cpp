@@ -83,32 +83,32 @@ PhotogroupPOSConfigureWidget::GetPOSEntries()
 
     QTableWidgetItem* item_x = table_pos_->item(row, 1);
     double x = item_x->text().toDouble(&ok);
-    if (!ok) pos_entry.x = std::numeric_limits<double>::quiet_NaN();
+    if (!ok) pos_entry.x = -std::numeric_limits<double>::max();
     else pos_entry.x = x;
 
     QTableWidgetItem* item_y = table_pos_->item(row, 2);
     double y = item_y->text().toDouble(&ok);
-    if (!ok) pos_entry.y = std::numeric_limits<double>::quiet_NaN();
+    if (!ok) pos_entry.y = -std::numeric_limits<double>::max();
     else pos_entry.y = y;
 
     QTableWidgetItem* item_z = table_pos_->item(row, 3);
     double z = item_z->text().toDouble(&ok);
-    if (!ok) pos_entry.z = std::numeric_limits<double>::quiet_NaN();
+    if (!ok) pos_entry.z = -std::numeric_limits<double>::max();
     else pos_entry.z = z;
 
     QTableWidgetItem* item_pitch = table_pos_->item(row, 4);
     double pitch = item_pitch->text().toDouble(&ok);
-    if (!ok) pos_entry.pitch = std::numeric_limits<double>::quiet_NaN();
+    if (!ok) pos_entry.pitch = -std::numeric_limits<double>::max();
     else pos_entry.pitch = pitch;
 
     QTableWidgetItem* item_roll = table_pos_->item(row, 5);
     double roll = item_roll->text().toDouble(&ok);
-    if (!ok) pos_entry.roll = std::numeric_limits<double>::quiet_NaN();
+    if (!ok) pos_entry.roll = -std::numeric_limits<double>::max();
     else pos_entry.roll = roll;
 
     QTableWidgetItem* item_heading = table_pos_->item(row, 6);
     double heading = item_heading->text().toDouble(&ok);
-    if (!ok) pos_entry.heading = std::numeric_limits<double>::quiet_NaN();
+    if (!ok) pos_entry.heading = -std::numeric_limits<double>::max();
     else pos_entry.heading = heading;
 
     pos_entries.push_back(pos_entry);
