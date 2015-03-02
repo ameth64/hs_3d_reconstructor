@@ -6,7 +6,7 @@
 namespace
 {
 
-TEST(TestPhotoMeasureResource, SimpleTest)
+TEST(TestPOGCPPhotoRelationResource, SimpleTest)
 {
   using namespace hs::recon::db;
   typedef Database::Identifier Identifier;
@@ -31,29 +31,41 @@ TEST(TestPhotoMeasureResource, SimpleTest)
   {
     Value(int(0)),
     Value(int(1)),
-    Value(Float(4567.38)),
-    Value(Float(3027.57))
+    Value(int(1)),
+    Value(int(2)),
+    Value(int(PhotoMeasureResource::TYPE_CONTROL_POINT)),
+    Value(3000.34),
+    Value(2000.14)
   };
   AddRequest add_request2 =
   {
     Value(int(0)),
-    Value(int(2)),
-    Value(Float(2387.57)),
-    Value(Float(2891.98))
+    Value(int(4)),
+    Value(int(7)),
+    Value(int(33)),
+    Value(int(POGCPPhotoRelationResource::TYPE_CONTROL_POINT)),
+    Value(298.35),
+    Value(1222.25)
   };
   AddRequest add_request3 =
   {
     Value(int(0)),
+    Value(int(2)),
     Value(int(3)),
-    Value(Float(5028.76)),
-    Value(Float(388.42))
+    Value(int(1)),
+    Value(int(POGCPPhotoRelationResource::TYPE_CONTROL_POINT)),
+    Value(388.64),
+    Value(2980.17)
   };
   AddRequest add_request4 =
   {
     Value(int(0)),
-    Value(int(4)),
-    Value(Float(1011.41)),
-    Value(Float(2100.34))
+    Value(int(2)),
+    Value(int(8)),
+    Value(int(102)),
+    Value(int(POGCPPhotoRelationResource::TYPE_CHECK_POINT)),
+    Value(3063.35),
+    Value(1117.16)
   };
   AddRequestContainer add_requests;
   add_requests.push_back(add_request1);
@@ -67,7 +79,7 @@ TEST(TestPhotoMeasureResource, SimpleTest)
   true_added_records[4] = add_request4;
 
   ASSERT_EQ(Tester::TEST_SUCCESS, Tester::Test(
-      "test_photo_measure_resource",
+      "test_po_gcp_photo_relation_resource",
       add_requests,
       true_added_records));
 }

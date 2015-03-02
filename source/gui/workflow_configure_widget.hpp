@@ -2,6 +2,11 @@
 #define _HS_3D_RECONSTRUCTOR_WORKFLOW_CONFIGURE_WIDGET_HPP_
 
 #include <QWidget>
+#include <QHBoxLayout>
+#include <QTreeWidget>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QPushButton>
 
 #include "gui/feature_match_configure_widget.hpp"
 #include "gui/feature_match_export_widget.hpp"
@@ -27,15 +32,30 @@ class WorkflowConfigureWidget : public QWidget
 public:
   enum ConfigureType
   {
-    CONFIGURE_FEATURE_MATCH = 0,
+    CONFIGURE_NONE = 0,
+    CONFIGURE_FEATURE_MATCH,
     CONFIGURE_PHOTO_ORIENTATION,
     CONFIGURE_POINT_CLOUD,
     CONFIGURE_SURFACE_MODEL,
     CONFIGURE_TEXTURE
   };
 
-  WorkflowConfigureWidget(ConfigureType start_configure_type,
+  WorkflowConfigureWidget(int start_configure_type,
                           QWidget* parent = 0, Qt::WindowFlags f = 0);
+
+public:
+  ConfigureType FirstConfigureType() const;
+  ConfigureType LastConfigureType() const;
+  void FetchFeatureMatchConfig(
+    workflow::FeatureMatchConfig& feature_match_config);
+  void FetchPhotoOrientationConfig(
+    workflow::PhotoOrientationConfig& photo_orientation_config);
+
+public slots:
+  void SyncTreeNodeCheckState(QTreeWidgetItem* tree_item, int column);
+  void DisplayWidget(QTreeWidgetItem* tree_item, QTreeWidgetItem* previouse);
+  void GotoNextTreeNode();
+  void GotoPreviousTreeNode();
 
 private:
   FeatureMatchConfigureWidget* feature_match_configure_widget_;
@@ -48,6 +68,22 @@ private:
   SurfaceModelExportWidget* surface_model_export_widget_;
   TextureConfigureWidget* texture_configure_widget_;
   TextureExportWidget* texture_export_widget_;
+
+  int start_configure_type_;
+  QHBoxLayout *h_layout_main_;
+  QVBoxLayout *v_layout_widget_;
+  QHBoxLayout *h_layout_config_;
+  QHBoxLayout *h_layout_export_;
+  QHBoxLayout *h_layout_button_;
+  QTreeWidget *tree_widget_;
+  QTreeWidgetItem *tree_item_feature_match_;
+  QTreeWidgetItem *tree_item_photo_orientation_;
+  QTreeWidgetItem *tree_item_point_cloud_;
+  QTreeWidgetItem *tree_item_surface_model_;
+  QTreeWidgetItem *tree_item_texture_;
+
+  QPushButton *button_next_;
+  QPushButton *button_previous_;
 };
 
 }

@@ -21,11 +21,15 @@ public:
   typedef BlockPhotosSelectWidget::PhotoEntry PhotoEntry;
   typedef BlockPhotosSelectWidget::GroupEntry GroupEntry;
   typedef BlockPhotosSelectWidget::GroupEntryContainer GroupEntryContainer;
+  typedef BlockPhotosSelectWidget::BlockInfoEntry BlockInfoEntry;
 
 public:
-  BlockPhotosSelectDialog(const QString& block_name,
-                          const QString& block_description,
+  BlockPhotosSelectDialog(const BlockInfoEntry& block_info_entry,
                           const GroupEntryContainer& groups);
+
+  BlockInfoEntry GetBlockInfo() const;
+
+  void GetSelectedPhotoIds(std::vector<uint>& selected_photo_ids) const;
 
 private:
   BlockPhotosSelectWidget* block_photos_select_widget_;

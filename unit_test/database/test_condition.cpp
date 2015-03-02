@@ -18,7 +18,7 @@ TEST(TestCondition, SimpleTest)
   };
 
   std::string expected_sql_text =
-    "((ID < 9) AND NAME = 'TEST') OR RATIO > 0.5";
+    "((ID < 9) AND NAME = 'TEST') OR RATIO > 0.5000000000";
   ASSERT_EQ(expected_sql_text,
             Or(And(LessThan(fields[0], Value(int(9))),
                    EqualTo(fields[1], Value(std::string("TEST")))),

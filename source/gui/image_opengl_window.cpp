@@ -37,6 +37,16 @@ void ImageOpenGLWindow::ClearImage()
   RenderNow();
 }
 
+int ImageOpenGLWindow::image_width() const
+{
+  return thumbnail_image_render_layer_->image_width();
+}
+
+int ImageOpenGLWindow::image_height() const
+{
+  return thumbnail_image_render_layer_->image_height();
+}
+
 }
 }
 }

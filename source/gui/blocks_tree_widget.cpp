@@ -27,7 +27,7 @@ BlocksTreeWidget::BlocksTreeWidget(QWidget* parent)
 {
   //setSelectionMode(QAbstractItemView::SingleSelection);
   setExpandsOnDoubleClick(false);
-  header()->close();
+  setColumnCount(2);
 
   QObject::connect(this, &QTreeWidget::itemSelectionChanged,
                    this, &BlocksTreeWidget::OnItemSelectionChanged);
@@ -37,17 +37,21 @@ int BlocksTreeWidget::AddBlock(uint block_id, const QString& block_name)
 {
   if (block_item_map_.find(block_id) != block_item_map_.end()) return -1;
   QTreeWidgetItem* block_item =
-    new QTreeWidgetItem(this, QStringList()<<block_name, BLOCK);
+    new QTreeWidgetItem(this, QStringList()<<block_name
+                                           <<tr(""), BLOCK);
   block_item->setData(0, Qt::UserRole, QVariant(block_id));
   block_item->setIcon(0, block_icon_);
   addTopLevelItem(block_item);
   QTreeWidgetItem* photos_item =
-    new QTreeWidgetItem(block_item, QStringList()<<tr("Photos"), PHOTOS);
+    new QTreeWidgetItem(block_item, QStringList()<<tr("Photos")
+                                                 <<tr(""), PHOTOS);
   photos_item->setData(0, Qt::UserRole, QVariant(block_id));
   photos_item->setIcon(0, photos_icon_);
   block_item->addChild(photos_item);
   block_item->setExpanded(true);
   block_item->setIcon(0, block_icon_);
+
+  resizeColumnToContents(0);
 
   block_item_map_[block_id] = block_item;
   photos_item_map_[block_id] = photos_item;
@@ -69,7 +73,8 @@ int BlocksTreeWidget::AddPhotosToBlock(uint block_id,
     if (photo_item_map_.find(itr_photo_name->first) == photo_item_map_.end())
     {
       QTreeWidgetItem* photo_item =
-        new QTreeWidgetItem(photos_item, QStringList()<<itr_photo_name->second,
+        new QTreeWidgetItem(photos_item, QStringList()<<itr_photo_name->second
+                                                      <<tr(""),
                             PHOTO);
       photo_item->setData(0, Qt::UserRole, QVariant(itr_photo_name->first));
       photo_item->setIcon(0, photo_icon_);
@@ -77,6 +82,8 @@ int BlocksTreeWidget::AddPhotosToBlock(uint block_id,
       photo_item_map_[itr_photo_name->first] = photo_item;
     }
   }
+
+  resizeColumnToContents(0);
 
   return 0;
 }
@@ -91,7 +98,8 @@ int BlocksTreeWidget::AddFeatureMatch(uint block_id, uint feature_match_id,
   QTreeWidgetItem* block_item = block_item_map_[block_id];
 
   QTreeWidgetItem* feature_match_item =
-    new QTreeWidgetItem(block_item, QStringList()<<feature_match_name,
+    new QTreeWidgetItem(block_item, QStringList()<<feature_match_name
+                                                 <<tr(""),
                         FEATURE_MATCH);
   feature_match_item->setData(0, Qt::UserRole, QVariant(feature_match_id));
   feature_match_item->setIcon(0, feature_match_icon_);
@@ -99,6 +107,8 @@ int BlocksTreeWidget::AddFeatureMatch(uint block_id, uint feature_match_id,
   block_item->addChild(feature_match_item);
 
   feature_match_item_map_[feature_match_id] = feature_match_item;
+
+  resizeColumnToContents(0);
 
   return 0;
 }
@@ -116,13 +126,16 @@ int BlocksTreeWidget::AddPhotoOrientation(
 
   QTreeWidgetItem* photo_orientation_item =
     new QTreeWidgetItem(feature_match_item,
-                        QStringList()<<photo_orientation_name,
+                        QStringList()<<photo_orientation_name
+                                     <<tr(""),
                         PHOTO_ORIENTATION);
   photo_orientation_item->setData(0, Qt::UserRole,
                                   QVariant(photo_orientation_id));
   photo_orientation_item->setIcon(0, photo_orientation_icon_);
   photo_orientation_item->setExpanded(true);
   feature_match_item->addChild(photo_orientation_item);
+
+  resizeColumnToContents(0);
 
   photo_orientation_item_map_[photo_orientation_id] = photo_orientation_item;
 
@@ -144,11 +157,14 @@ int BlocksTreeWidget::AddPointCloud(uint photo_orientation_id,
 
   QTreeWidgetItem* point_cloud_item =
     new QTreeWidgetItem(photo_orientation_item,
-                        QStringList()<<point_cloud_name, POINT_CLOUD);
+                        QStringList()<<point_cloud_name
+                                     <<tr(""), POINT_CLOUD);
   point_cloud_item->setData(0, Qt::UserRole, QVariant(point_cloud_id));
   point_cloud_item->setIcon(0, point_cloud_icon_);
   point_cloud_item->setExpanded(true);
   photo_orientation_item->addChild(point_cloud_item);
+
+  resizeColumnToContents(0);
 
   point_cloud_item_map_[point_cloud_id] = point_cloud_item;
   return 0;
@@ -170,11 +186,14 @@ int BlocksTreeWidget::AddSurfaceModel(uint point_cloud_id,
 
   QTreeWidgetItem* surface_model_item =
     new QTreeWidgetItem(point_cloud_item,
-                        QStringList()<<surface_model_name, SURFACE_MODEL);
+                        QStringList()<<surface_model_name
+                                     <<tr(""), SURFACE_MODEL);
   surface_model_item->setData(0, Qt::UserRole, QVariant(surface_model_id));
   surface_model_item->setIcon(0, surface_model_icon_);
   surface_model_item->setExpanded(true);
   point_cloud_item->addChild(surface_model_item);
+
+  resizeColumnToContents(0);
 
   surface_model_item_map_[surface_model_id] = surface_model_item;
   return 0;
@@ -217,6 +236,8 @@ int BlocksTreeWidget::AddDEM(uint surface_model_id, uint dem_id,
     surface_model_item->insertChild(i, dem_item);
   }
 
+  resizeColumnToContents(0);
+
   dem_item_map_[dem_id] = dem_item;
   return 0;
 }
@@ -236,11 +257,14 @@ int BlocksTreeWidget::AddTexture(uint surface_model_id, uint texture_id,
 
   QTreeWidgetItem* texture_item =
     new QTreeWidgetItem(surface_model_item,
-                        QStringList()<<texture_name, TEXTURE);
+                        QStringList()<<texture_name
+                                     <<tr(""), TEXTURE);
   texture_item->setData(0, Qt::UserRole, QVariant(texture_id));
   texture_item->setIcon(0, texture_icon_);
   texture_item->setExpanded(true);
   surface_model_item->addChild(texture_item);
+
+  resizeColumnToContents(0);
 
   texture_item_map_[texture_id] = texture_item;
   return 0;
@@ -261,11 +285,14 @@ int BlocksTreeWidget::AddDOM(uint texture_id, uint dom_id,
 
   QTreeWidgetItem* dom_item =
     new QTreeWidgetItem(texture_item,
-                        QStringList()<<dom_name, DOM);
+                        QStringList()<<dom_name
+                                     <<tr(""), DOM);
   dom_item->setData(0, Qt::UserRole, QVariant(dom_id));
   dom_item->setIcon(0, dom_icon_);
   dom_item->setExpanded(true);
   texture_item->addChild(dom_item);
+
+  resizeColumnToContents(0);
 
   dom_item_map_[dom_id] = dom_item;
   return 0;

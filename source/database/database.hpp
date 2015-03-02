@@ -47,6 +47,13 @@ public:
   std::string Name() const;
   std::string DatabaseFilePath() const;
 
+  std::string ThumbnailPath() const;
+  std::string FeatureMatchPath() const;
+  std::string PhotoOrientationPath() const;
+  std::string PointCloudPath() const;
+  std::string SurfaceModelPath() const;
+  std::string TexturePath() const;
+
 private:
   sqlite3* sqlite_db_;
   boost::filesystem::path database_file_path_;

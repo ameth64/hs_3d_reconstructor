@@ -39,6 +39,23 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/block_photos_select_widget.cpp"
   "source/gui/block_photos_select_dialog.cpp"
   "source/gui/block_info_widget.cpp"
+  "source/gui/feature_match_configure_widget.cpp"
+  "source/gui/photo_orientation_configure_widget.cpp"
+  "source/gui/point_cloud_configure_widget.cpp"
+  "source/gui/surface_model_configure_widget.cpp"
+  "source/gui/texture_configure_widget.cpp"
+  "source/gui/feature_match_export_widget.cpp"
+  "source/gui/photo_orientation_export_widget.cpp"
+  "source/gui/point_cloud_export_widget.cpp"
+  "source/gui/surface_model_export_widget.cpp"
+  "source/gui/texture_export_widget.cpp"
+  "source/gui/workflow_configure_widget.cpp"
+  "source/gui/workflow_configure_dialog.cpp"
+  "source/gui/scene_window.cpp"
+  "source/gui/gcps_table_widget.cpp"
+  "source/gui/gcps_pane.cpp"
+  "source/gui/tiepoint_measure_widget.cpp"
+  "source/gui/image_measure_opengl_window.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES
@@ -66,11 +83,28 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS exiv2
   3RDPARTY_DEPS glew
+  3RDPARTY_DEPS proj
+  3RDPARTY_DEPS ceres DEP_LIBS ceres ceres_miniglog
+  3RDPARTY_DEPS opencv
+    DEP_LIBS opencv_calib3d
+             opencv_core
+             opencv_cudaarithm
+             opencv_imgproc
+             opencv_features2d
+             opencv_highgui
+             opencv_flann
+             opencv_nonfree
+  3RDPARTY_DEPS tiff DEP_LIBS tiff
+  3RDPARTY_DEPS jpeg DEP_LIBS jpeg
+  3RDPARTY_DEPS png DEP_LIBS png
+  3RDPARTY_DEPS z DEP_LIBS z
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_graphics DEP_LIBS graphics_qt
+  HS_DEPS hs_cartographics DEP_LIBS cartographics_qt
   LOCAL_DEPS database
+  LOCAL_DEPS workflow
   )
 target_link_libraries(${RECONSTRUCTOR_NAME} ${OPENGL_LIBRARIES})
 
@@ -94,7 +128,6 @@ set(DATABASE_SOURCES
   "source/database/surface_model_resource.cpp"
   "source/database/texture_resource.cpp"
   "source/database/photo_block_relation_resource.cpp"
-  "source/database/gcp_photo_measure_relation_resource.cpp"
   )
 add_definitions(-DBOOST_ALL_NO_LIB)
 hslib_add_library(${DATABASE_NAME} ${HSPRJ_NAME} ${DATABASE_SOURCES})
@@ -112,14 +145,12 @@ set(DATABASE_UTEST_SOURCES
   "unit_test/database/test_photogroup_resource.cpp"
   "unit_test/database/test_photo_resource.cpp"
   "unit_test/database/test_ground_control_point_resource.cpp"
-  "unit_test/database/test_photo_measure_resource.cpp"
   "unit_test/database/test_feature_match_resource.cpp"
   "unit_test/database/test_photo_orientation_resource.cpp"
   "unit_test/database/test_point_cloud_resource.cpp"
   "unit_test/database/test_surface_model_resource.cpp"
   "unit_test/database/test_texture_resource.cpp"
   "unit_test/database/test_photo_block_relation_resource.cpp"
-  "unit_test/database/test_gcp_photo_measure_relation_resource.cpp"
   )
 hslib_add_utest(${DATABASE_NAME} SOURCES ${DATABASE_UTEST_SOURCES})
 hslib_add_dep(${DATABASE_NAME}_utest
@@ -127,6 +158,33 @@ hslib_add_dep(${DATABASE_NAME}_utest
   3RDPARTY_DEPS sqlite
   )
 hslib_post_build(${DATABASE_NAME}_utest)
+
+set(WORKFLOW_NAME "workflow")
+set(WORKFLOW_SOURCES
+  "source/workflow/common/workflow_step.cpp"
+  "source/workflow/feature_match/opencv_feature_match.cpp"
+  "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
+  )
+hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
+hslib_add_dep(${WORKFLOW_NAME}
+  3RDPARTY_DEPS opencv
+    DEP_LIBS opencv_calib3d
+             opencv_core
+             opencv_cudaarithm
+             opencv_imgproc
+             opencv_features2d
+             opencv_highgui
+             opencv_flann
+             opencv_nonfree
+  3RDPARTY_DEPS ceres DEP_LIBS ceres ceres_miniglog
+  3RDPARTY_DEPS tiff DEP_LIBS tiff
+  3RDPARTY_DEPS jpeg DEP_LIBS jpeg
+  3RDPARTY_DEPS png DEP_LIBS png
+  3RDPARTY_DEPS z DEP_LIBS z
+  HS_DEPS hs_image_io DEP_LIBS whole_io
+  HS_DEPS hs_progress DEP_LIBS progress_utility
+  )
+hslib_post_build(${WORKFLOW_NAME})
 
 hs_add_qt_executable(test_manager_pane SOURCES
   "unit_test/gui/test_manager_pane.cpp"

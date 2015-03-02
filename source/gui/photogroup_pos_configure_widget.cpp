@@ -1,9 +1,13 @@
 ﻿#include <string>
 #include <streambuf>
 #include <fstream>
+#include <cmath>
 
 #include <QFileDialog>
 #include <QMessageBox>
+
+#include "hs_cartographics/cartographics_qt/coordinate_system_config_dialog.hpp"
+#include "hs_cartographics/cartographics_format/formatter_proj4.hpp"
 
 #include "gui/photogroup_pos_configure_widget.hpp"
 #include "gui/property_field_asignment_dialog.hpp"
@@ -111,6 +115,11 @@ PhotogroupPOSConfigureWidget::GetPOSEntries()
     if (!ok) pos_entry.heading = -std::numeric_limits<double>::max();
     else pos_entry.heading = heading;
 
+    std::string proj4_code;
+    hs::cartographics::format::HS_FormatterProj4<double> formatter;
+    formatter.CoordinateSystemToString(coordinate_system_, proj4_code);
+    pos_entry.coordinate_system = QString::fromLocal8Bit(proj4_code.c_str());
+
     pos_entries.push_back(pos_entry);
   }
 
@@ -121,6 +130,8 @@ void PhotogroupPOSConfigureWidget::Initialize()
 {
   layout_all_ = new QVBoxLayout(this);
   layout_header_ = new QHBoxLayout;
+  push_button_config_coordinate_system_ =
+    new QPushButton(tr("Config Coordinate System"), this);
   push_button_import_ = new QPushButton(tr("Import"), this);
   push_button_clear_ = new QPushButton(tr("Clear"), this);
   table_pos_ = new QTableWidget(this);
@@ -130,11 +141,15 @@ void PhotogroupPOSConfigureWidget::Initialize()
   layout_all_->addLayout(layout_header_);
   layout_all_->addWidget(table_pos_);
 
+  push_button_config_coordinate_system_->setSizePolicy(
+    QSizePolicy(QSizePolicy::Preferred,
+                QSizePolicy::Preferred));
   push_button_clear_->setSizePolicy(QSizePolicy(QSizePolicy::Preferred,
                                                 QSizePolicy::Preferred));
   push_button_import_->setSizePolicy(QSizePolicy(QSizePolicy::Preferred,
                                                  QSizePolicy::Preferred));
 
+  layout_header_->addWidget(push_button_config_coordinate_system_);
   layout_header_->addStretch();
   layout_header_->addWidget(push_button_clear_);
   layout_header_->addWidget(push_button_import_);
@@ -144,11 +159,78 @@ void PhotogroupPOSConfigureWidget::Initialize()
   table_pos_->resizeColumnsToContents();
 
   QObject::connect(
+    push_button_config_coordinate_system_, &QPushButton::clicked,
+    this,
+    &PhotogroupPOSConfigureWidget::OnPushButtonConfigCoordinateSystemClicked);
+  QObject::connect(
     push_button_import_, &QPushButton::clicked,
     this, &PhotogroupPOSConfigureWidget::OnPushButtonImportClicked);
   QObject::connect(
     push_button_clear_, &QPushButton::clicked,
     this, &PhotogroupPOSConfigureWidget::OnPushButtonClearClicked);
+}
+
+void PhotogroupPOSConfigureWidget::DoPosStatistic(
+  double& x_mean, double& y_mean, double& x_stddev, double& y_stddev)
+{
+  x_mean = 0.0;
+  y_mean = 0.0;
+  x_stddev = 0.0;
+  x_stddev = 0.0;
+  size_t valid_x = 0;
+  size_t valid_y = 0;
+  for (int row = 0; row < table_pos_->rowCount(); row++)
+  {
+    QTableWidgetItem* item_x = table_pos_->item(row, 1);
+    QTableWidgetItem* item_y = table_pos_->item(row, 2);
+    bool ok = false;
+    double x = item_x->text().toDouble(&ok);
+    if (ok)
+    {
+      x_mean += x;
+      valid_x++;
+    }
+    double y = item_y->text().toDouble(&ok);
+    if (ok)
+    {
+      y_mean += y;
+      valid_y++;
+    }
+  }
+  x_mean /= double(valid_x);
+  y_mean /= double(valid_y);
+  for (int row = 0; row < table_pos_->rowCount(); row++)
+  {
+    QTableWidgetItem* item_x = table_pos_->item(row, 1);
+    QTableWidgetItem* item_y = table_pos_->item(row, 2);
+    bool ok = false;
+    double x = item_x->text().toDouble(&ok);
+    if (ok)
+    {
+      x_stddev += (x - x_mean) * (x - x_mean);
+      valid_x++;
+    }
+    double y = item_y->text().toDouble(&ok);
+    if (ok)
+    {
+      y_stddev += (y - y_mean) * (y - y_mean);
+      valid_y++;
+    }
+  }
+  x_stddev /= double(valid_x);
+  y_stddev /= double(valid_y);
+  x_stddev = std::sqrt(x_stddev);
+  y_stddev = std::sqrt(y_stddev);
+}
+
+void PhotogroupPOSConfigureWidget::OnPushButtonConfigCoordinateSystemClicked()
+{
+  hs::cartographics::qt::CoordinateSystemConfigDialog dialog;
+  dialog.SetCoordinateSystem(coordinate_system_);
+  if (dialog.exec())
+  {
+    coordinate_system_ = dialog.GetCoordinateSystem();
+  }
 }
 
 void PhotogroupPOSConfigureWidget::OnPushButtonImportClicked()
@@ -220,6 +302,22 @@ void PhotogroupPOSConfigureWidget::OnPushButtonImportClicked()
             }
           }
           //SetAligned(true);
+        }
+        double x_mean, y_mean, x_stddev, y_stddev;
+        DoPosStatistic(x_mean, y_mean, x_stddev, y_stddev);
+        if ((x_mean > -180 && x_mean < 180) &&
+            (y_mean > -180 && y_mean < 180) &&
+            (x_stddev < 10) &&
+            (y_stddev < 10))
+        {
+          std::string prj4_code = "+proj=longlat +datum=WGS84";
+          hs::cartographics::format::HS_FormatterProj4<double> formatter;
+          formatter.StringToCoordinateSystem(prj4_code,
+                                             coordinate_system_);
+        }
+        else
+        {
+          coordinate_system_ = CoordinateSystem();
         }
       }
     }

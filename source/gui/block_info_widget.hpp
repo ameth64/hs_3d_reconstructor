@@ -12,30 +12,33 @@ namespace hs
 {
 namespace recon
 {
+namespace gui
+{
 
 class BlockInfoWidget : public QWidget
 {
   Q_OBJECT
 public:
-  BlockInfoWidget(const QString& name,
-                  const QString& description,
+  struct BlockInfoEntry
+  {
+    QString name;
+    QString description;
+  };
+public:
+  BlockInfoWidget(const BlockInfoEntry& block_info_entry,
                   QWidget* parent = 0);
 
-signals:
-  void UpdateBlock(const QString& name, const QString& description);
-
-private slots:
-  void OnUpdateClicked();
+  BlockInfoEntry GetBlockInfo() const;
 
 private:
   QLabel* label_name_;
   QLabel* label_description_;
   QLineEdit* line_edit_name_;
   QTextEdit* text_edit_description_;
-  QPushButton* push_button_update_;
   QGridLayout* layout_;
 };
 
+}
 }
 }
 

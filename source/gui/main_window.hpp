@@ -10,8 +10,10 @@
 
 #include "database/database_mediator.hpp"
 
+#include "gui/scene_window.hpp"
 #include "gui/photos_pane.hpp"
 #include "gui/blocks_pane.hpp"
+#include "gui/gcps_pane.hpp"
 
 namespace hs
 {
@@ -51,6 +53,8 @@ private:
 
   PhotosPane* photos_pane_;
   BlocksPane* blocks_pane_;
+  GCPsPane* gcps_pane_;
+  SceneWindow* scene_window_;
 };
 
 }

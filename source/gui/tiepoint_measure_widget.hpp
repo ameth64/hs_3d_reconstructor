@@ -38,6 +38,7 @@ struct TiepointPhoto
   int height;
   Float predicated_pos[2];
   Float measured_pos[2];
+
 };
 
 struct TiepointPhotoAlignment
@@ -83,6 +84,11 @@ private:
 private slots:
   int UpdateImageWindows();
   void OnTimeout();
+  void OnMeasured(uint photo_id, const EIGEN_VECTOR(Float, 2)& position);
+
+signals:
+  void TransmissionMeasured(uint photo_id,
+                            const EIGEN_VECTOR(Float, 2)& position);
 
 private:
   TiepointPhotoContainer tiepoint_photos_;

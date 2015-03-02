@@ -177,6 +177,11 @@ void PhotosPane::Response(int request_flag, void* response)
           photos_tree_widget_->AddGroup(itr_group_entry->first,
                                         itr_group_entry->second);
         }
+        for (int column = 0; column < photos_tree_widget_->columnCount();
+             column++)
+        {
+          photos_tree_widget_->resizeColumnToContents(column);
+        }
 
         break;
       }
@@ -234,6 +239,8 @@ void PhotosPane::OnActionAddPhotogroupTriggered()
         photo_entry.pitch = itr_entry->pitch;
         photo_entry.roll = itr_entry->roll;
         photo_entry.heading = itr_entry->heading;
+        photo_entry.coordinate_system =
+          itr_entry->coordinate_system.toLocal8Bit().data();
         request_add_photos.photos.push_back(photo_entry);
       }
       ((MainWindow*)parent())->database_mediator().Request(
@@ -269,6 +276,11 @@ void PhotosPane::OnActionAddPhotogroupTriggered()
           group_entry.photos[photo_entry.id] = photo_entry;
         }
         photos_tree_widget_->AddGroup(group_entry.id, group_entry);
+        for (int column = 0; column < photos_tree_widget_->columnCount();
+             column++)
+        {
+          photos_tree_widget_->resizeColumnToContents(column);
+        }
       }
     }
   }
@@ -308,20 +320,27 @@ void PhotosPane::OnPhotoSelected(uint photo_id)
     std::string photo_path =
       response.record[db::PhotoResource::PHOTO_FIELD_PATH].ToString();
     QString origin_image_path = QString::fromLocal8Bit(photo_path.c_str());
-    //TODO:应加入缩略图影像读取
+
+    std::string thumbnail_path =
+      response.record[db::PhotoResource::PHOTO_FIELD_THUMBNAIL_PATH].ToString();
     hs::imgio::whole::ImageData thumbnail_image_data;
-    thumbnail_image_data.CreateImage(10, 10, 3);
-    for (int row = 0; row < 10; row++)
+    hs::imgio::whole::ImageIO image_io;
+    if (image_io.LoadImage(thumbnail_path, thumbnail_image_data) != 0)
     {
-      for (int col = 0; col < 10; col++)
+      thumbnail_image_data.CreateImage(10, 10, 3);
+      for (int row = 0; row < 10; row++)
       {
-        for (int channel = 0; channel < 3; channel++)
+        for (int col = 0; col < 10; col++)
         {
-          thumbnail_image_data.GetByte(row, col, channel) =
-            hs::imgio::whole::ImageData::Byte(255);
+          for (int channel = 0; channel < 3; channel++)
+          {
+            thumbnail_image_data.GetByte(row, col, channel) =
+              hs::imgio::whole::ImageData::Byte(255);
+          }
         }
       }
     }
+
     QFileInfo file_info(origin_image_path);
     photo_display_widget_->SetComment(file_info.fileName());
     photo_display_widget_->ResetImage(thumbnail_image_data, origin_image_path);

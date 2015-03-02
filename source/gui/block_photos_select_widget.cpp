@@ -8,15 +8,14 @@ namespace gui
 {
 
 BlockPhotosSelectWidget::BlockPhotosSelectWidget(
-  const QString& block_name, const QString& block_description,
-  const GroupEntryContainer& groups)
+  const BlockInfoEntry& block_info_entry, const GroupEntryContainer& groups)
 {
   QHBoxLayout* layout_all_ = new QHBoxLayout(this);
   splitter_ = new QSplitter(this);
   layout_all_->addWidget(splitter_);
 
   block_info_widget_ =
-    new BlockInfoWidget(block_name, block_description, splitter_);
+    new BlockInfoWidget(block_info_entry, splitter_);
   splitter_->addWidget(block_info_widget_);
 
   selected_photos_list_widget_ = new QListWidget(splitter_);
@@ -31,10 +30,13 @@ BlockPhotosSelectWidget::BlockPhotosSelectWidget(
   }
   splitter_->addWidget(photos_tree_widget_);
   QObject::connect(
-    photos_tree_widget_, &PhotosTreeWidget::PhotoSelected
-    , this, &BlockPhotosSelectWidget::SinglePhotoSelected);
-  QObject::connect(photos_tree_widget_, &PhotosTreeWidget::PhotosOnlySelected
-    , this, &BlockPhotosSelectWidget::PhotosOnlySelected);
+    photos_tree_widget_, &PhotosTreeWidget::PhotoSelected,
+    this, &BlockPhotosSelectWidget::OnSinglePhotoSelected);
+  QObject::connect(photos_tree_widget_, &PhotosTreeWidget::PhotosOnlySelected,
+                   this, &BlockPhotosSelectWidget::OnPhotosOnlySelected);
+  QObject::connect(
+    photos_tree_widget_, &PhotosTreeWidget::PhotosAndGroupsSelected,
+    this, &BlockPhotosSelectWidget::OnPhotosAndGroupsSelected);
 }
 
 int BlockPhotosSelectWidget::AddPhotoToSelectedWidget(uint photo_id)
@@ -42,22 +44,54 @@ int BlockPhotosSelectWidget::AddPhotoToSelectedWidget(uint photo_id)
   PhotoEntry photo_entry;
   if(photos_tree_widget_->GetPhotoEntry(photo_id, photo_entry)!=0)
     return -1;
-  selected_photos_list_widget_->addItem(new QListWidgetItem(photo_entry.file_name));
+  QListWidgetItem* item = new QListWidgetItem(photo_entry.file_name);
+  item->setData(Qt::UserRole, QVariant(photo_id));
+  selected_photos_list_widget_->addItem(item);
   return 0;
 }
 
-void BlockPhotosSelectWidget::SinglePhotoSelected(uint photo_id)
+void BlockPhotosSelectWidget::OnSinglePhotoSelected(uint photo_id)
 {
   selected_photos_list_widget_->clear();
   AddPhotoToSelectedWidget(photo_id);
 }
 
-void BlockPhotosSelectWidget::PhotosOnlySelected(const std::vector<uint>& photo_ids)
+void BlockPhotosSelectWidget::OnPhotosOnlySelected(
+  const std::vector<uint>& photo_ids)
 {
   selected_photos_list_widget_->clear();
   for (size_t i = 0; i != photo_ids.size(); ++i)
   {
     AddPhotoToSelectedWidget(photo_ids[i]);
+  }
+}
+
+void BlockPhotosSelectWidget::OnPhotosAndGroupsSelected(
+  const std::vector<uint>& group_ids,
+  const std::vector<uint>& photo_ids)
+{
+  selected_photos_list_widget_->clear();
+  for (size_t i = 0; i != photo_ids.size(); ++i)
+  {
+    AddPhotoToSelectedWidget(photo_ids[i]);
+  }
+}
+
+BlockPhotosSelectWidget::BlockInfoEntry
+BlockPhotosSelectWidget::GetBlockInfo() const
+{
+  return block_info_widget_->GetBlockInfo();
+}
+
+void BlockPhotosSelectWidget::GetSelectedPhotoIds(
+  std::vector<uint>& selected_photo_ids) const
+{
+  selected_photo_ids.clear();
+  for (int i = 0; i < selected_photos_list_widget_->count(); i++)
+  {
+    QListWidgetItem* item = selected_photos_list_widget_->item(i);
+    uint id = item->data(Qt::UserRole).toUInt();
+    selected_photo_ids.push_back(id);
   }
 }
 

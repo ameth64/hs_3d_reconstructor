@@ -34,6 +34,9 @@ public:
   void SetOriginImage(const ImageData& origin_image_data);
   void ClearImage();
 
+  int image_width() const;
+  int image_height() const;
+
 private:
   PThumbnailImageRenderLayer thumbnail_image_render_layer_;
 };

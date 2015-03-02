@@ -28,7 +28,6 @@ public:
     Float pitch;
     Float roll;
     Float heading;
-    QString projection;
   };
   typedef std::map<uint, PhotoEntry> PhotoContainer;
   struct GroupEntry
@@ -65,8 +64,8 @@ signals:
   void SingleGroupSelected(uint group_id);
   void PhotosOnlySelected(const std::vector<uint>& photo_ids);
   void NothingSelected();
-  void PhotosAndGroupsSelected(const std::vector<uint>& group_ids
-    , const std::vector<uint>& photo_ids);
+  void PhotosAndGroupsSelected(const std::vector<uint>& group_ids,
+                               const std::vector<uint>& photo_ids);
 
 private:
   ItemMap group_item_map_;

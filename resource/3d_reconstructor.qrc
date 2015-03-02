@@ -10,6 +10,12 @@
     <file>images/icon_group_add.png</file>
     <file>images/icon_group_remove.png</file>
     <file>images/icon_gcp.png</file>
+    <file>images/icon_gcp_add.png</file>
+    <file>images/icon_gcp_remove.png</file>
+    <file>images/icon_gcp_import.png</file>
+    <file>images/icon_gcp_show_measurement.png</file>
+    <file>images/icon_gcp_show_estimate.png</file>
+    <file>images/icon_gcp_show_error.png</file>
     <file>images/icon_tiepoint.png</file>
     <file>images/icon_feature_match.png</file>
     <file>images/icon_photo_orientation.png</file>

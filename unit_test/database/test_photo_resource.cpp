@@ -32,48 +32,56 @@ TEST(TestPhotoResource, SimpleTest)
     Value(int(0)),
     Value(int(1)),
     Value(std::string("DSC00432.JPG")),
+    Value(std::string("DSC00432_thumbnail.JPG")),
     Value(Float(108.281637)),
     Value(Float(22.848552)),
     Value(Float(151.665707)),
     Value(Float(78.983)),
     Value(Float(-106.660)),
-    Value(Float(307.951))
+    Value(Float(307.951)),
+    Value(std::string("+prj=latlong +datum=WGS84"))
   };
   AddRequest add_request2 =
   {
     Value(int(0)),
     Value(int(1)),
     Value(std::string("DSC00433.JPG")),
+    Value(std::string("DSC00433_thumbnail.JPG")),
     Value(Float(108.247397)),
     Value(Float(22.886737)),
     Value(Float(151.880472)),
     Value(Float(81.832)),
     Value(Float(-76.571)),
-    Value(Float(339.042))
+    Value(Float(339.042)),
+    Value(std::string("+prj=latlong +datum=WGS84"))
   };
   AddRequest add_request3 =
   {
     Value(int(0)),
     Value(int(1)),
     Value(std::string("DSC00434.JPG")),
+    Value(std::string("DSC00434_thumbnail.JPG")),
     Value(Float(108.187657)),
     Value(Float(22.980626)),
     Value(Float(151.539856)),
     Value(Float(-55.464)),
     Value(Float(-96.998)),
-    Value(Float(329.913))
+    Value(Float(329.913)),
+    Value(std::string("+prj=latlong +datum=WGS84"))
   };
   AddRequest add_request4 =
   {
     Value(int(0)),
     Value(int(1)),
     Value(std::string("DSC00435.JPG")),
+    Value(std::string("DSC00435_thumbnail.JPG")),
     Value(Float(108.179570)),
     Value(Float(22.008955)),
     Value(Float(151.275192)),
     Value(Float(-61.312)),
     Value(Float(-95.387)),
-    Value(Float(329.820))
+    Value(Float(329.820)),
+    Value(std::string("+prj=latlong +datum=WGS84"))
   };
 
   AddRequestContainer add_requests;

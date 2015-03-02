@@ -1,13 +1,17 @@
-﻿#include "gui/tiepoint_measure_widget.hpp"
-
-#include <string>
+﻿#include <string>
 #include <algorithm>
+
+#if 1
 #include <iostream>
+#endif
 
 #include <QScrollBar>
 #include <QFileInfo>
 
 #include "hs_image_io/whole_io/image_io.hpp"
+
+#include "gui/image_measure_opengl_window.hpp"
+#include "gui/tiepoint_measure_widget.hpp"
 
 namespace hs
 {
@@ -19,11 +23,13 @@ namespace gui
 TiepointPhoto::TiepointPhoto()
   : photo_id(std::numeric_limits<uint>::max())
   , photo_path()
+  , width(0)
+  , height(0)
 {
-  predicated_pos[0] = std::numeric_limits<Float>::quiet_NaN();
-  predicated_pos[1] = std::numeric_limits<Float>::quiet_NaN();
-  measured_pos[0] = std::numeric_limits<Float>::quiet_NaN();
-  measured_pos[1] = std::numeric_limits<Float>::quiet_NaN();
+  predicated_pos[0] = std::numeric_limits<Float>::max();
+  predicated_pos[1] = std::numeric_limits<Float>::max();
+  measured_pos[0] = std::numeric_limits<Float>::max();
+  measured_pos[1] = std::numeric_limits<Float>::max();
 }
 
 TiepointPhotoAlignment::TiepointPhotoAlignment()
@@ -211,9 +217,15 @@ int TiepointMeasureWidget::UpdateImageWindows()
     int number_of_adding = size_of_pool - int(displayer_pool_.size());
     for (int i = 0; i < number_of_adding; i++)
     {
-      ImageOpenGLWindow* image_opengl_window = new ImageOpenGLWindow();
+      ImageMeasureOpenGLWindow* image_opengl_window =
+        new ImageMeasureOpenGLWindow();
       Displayer* displayer =
         new Displayer(image_opengl_window, QString(), this);
+      ImageMeasureOpenGLWindow* image_measure_opengl_window =
+        static_cast<ImageMeasureOpenGLWindow*>(image_opengl_window);
+      QObject::connect(image_measure_opengl_window,
+                       &ImageMeasureOpenGLWindow::Measured,
+                       this, &TiepointMeasureWidget::OnMeasured);
       displayer->resize(displayer_width_, displayer_height_);
       displayer->hide();
       displayer_pool_.push_back(displayer);
@@ -237,12 +249,47 @@ int TiepointMeasureWidget::UpdateImageWindows()
       if (itr_displayer != used_displayers_.end())
       {
         kept_displayers[itr_displayer->first] = itr_displayer->second;
+        //移动到合适位置
         itr_displayer->second->move(
           horizontal_gap_ +
           col * (displayer_width_ + horizontal_gap_),
           vertical_gap_ +
           (row - slider_value * alignment_.rows_in_page) *
           (displayer_height_ + vertical_gap_));
+        //重新设置座标
+        auto itr_tiepoint_photo = tiepoint_photos_.find(itr_displayer->first);
+        ImageOpenGLWindow* image_opengl_window =
+          itr_displayer->second->image_window();
+        ImageMeasureOpenGLWindow* image_measure_opengl_window =
+          static_cast<ImageMeasureOpenGLWindow*>(image_opengl_window);
+        if (itr_tiepoint_photo->second.predicated_pos[0] !=
+            std::numeric_limits<Float>::max() &&
+            itr_tiepoint_photo->second.predicated_pos[1] !=
+            std::numeric_limits<Float>::max())
+        {
+          ImageMeasureOpenGLWindow::Position pos_predicated;
+          pos_predicated << itr_tiepoint_photo->second.predicated_pos[0],
+                            itr_tiepoint_photo->second.predicated_pos[1];
+          image_measure_opengl_window->set_pos_predicated(pos_predicated);
+        }
+        else
+        {
+          image_measure_opengl_window->ClearPredicated();
+        }
+        if (itr_tiepoint_photo->second.measured_pos[0] !=
+            std::numeric_limits<Float>::max() &&
+            itr_tiepoint_photo->second.measured_pos[1] !=
+            std::numeric_limits<Float>::max())
+        {
+          ImageMeasureOpenGLWindow::Position pos_measure;
+          pos_measure << itr_tiepoint_photo->second.measured_pos[0],
+                         itr_tiepoint_photo->second.measured_pos[1];
+          image_measure_opengl_window->set_pos_measure(pos_measure);
+        }
+        else
+        {
+          image_measure_opengl_window->ClearMeasure();
+        }
         used_displayers_.erase(itr_displayer);
       }
       else
@@ -259,6 +306,9 @@ int TiepointMeasureWidget::UpdateImageWindows()
     ImageOpenGLWindow* image_opengl_window =
       itr_displayer->second->image_window();
     image_opengl_window->ClearImage();
+    ImageMeasureOpenGLWindow* image_measure_opengl_window =
+      static_cast<ImageMeasureOpenGLWindow*>(image_opengl_window);
+    image_measure_opengl_window->ClearPosition();
     displayer_pool_.push_back(itr_displayer->second);
     itr_displayer = used_displayers_.erase(itr_displayer);
     Lock();
@@ -300,6 +350,29 @@ int TiepointMeasureWidget::UpdateImageWindows()
     image_opengl_window->SetThumbnailImage(
       itr_tiepoint_photo->second.width, itr_tiepoint_photo->second.height,
       image_data);
+    ImageMeasureOpenGLWindow* image_measure_opengl_window =
+      static_cast<ImageMeasureOpenGLWindow*>(image_opengl_window);
+    if (itr_tiepoint_photo->second.predicated_pos[0] !=
+        std::numeric_limits<Float>::max() &&
+        itr_tiepoint_photo->second.predicated_pos[1] !=
+        std::numeric_limits<Float>::max())
+    {
+      ImageMeasureOpenGLWindow::Position pos_predicated;
+      pos_predicated << itr_tiepoint_photo->second.predicated_pos[0],
+                        itr_tiepoint_photo->second.predicated_pos[1];
+      image_measure_opengl_window->set_pos_predicated(pos_predicated);
+    }
+    if (itr_tiepoint_photo->second.measured_pos[0] !=
+        std::numeric_limits<Float>::max() &&
+        itr_tiepoint_photo->second.measured_pos[1] !=
+        std::numeric_limits<Float>::max())
+    {
+      ImageMeasureOpenGLWindow::Position pos_measure;
+      pos_measure << itr_tiepoint_photo->second.measured_pos[0],
+                     itr_tiepoint_photo->second.measured_pos[1];
+      image_measure_opengl_window->set_pos_measure(pos_measure);
+    }
+    image_measure_opengl_window->set_photo_id(itr_tiepoint_photo->first);
     displayer_pool_.pop_back();
     displayer->show();
 
@@ -346,6 +419,12 @@ void TiepointMeasureWidget::OnTimeout()
     }
     itr_result = loading_result_.erase(itr_result);
   }
+}
+
+void TiepointMeasureWidget::OnMeasured(uint photo_id,
+                                       const EIGEN_VECTOR(Float, 2)& position)
+{
+  emit TransmissionMeasured(photo_id, position);
 }
 
 

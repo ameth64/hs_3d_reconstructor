@@ -12,14 +12,13 @@ DatabaseMediator::DatabaseMediator()
   , photogroup_resource_(nullptr)
   , photo_resource_(nullptr)
   , ground_control_point_resource_(nullptr)
-  , photo_measure_resource_(nullptr)
   , feature_match_resource_(nullptr)
   , photo_orientation_resource_(nullptr)
   , point_cloud_resource_(nullptr)
   , surface_model_resource_(nullptr)
   , texture_resource_(nullptr)
   , photo_block_relation_resource_(nullptr)
-  , gcp_photo_measure_relation_resource_(nullptr)
+  , photo_measure_resource_(nullptr)
 {
 }
 
@@ -92,14 +91,13 @@ int DatabaseMediator::Close()
   MEDIATOR_RELEASE_RESOURCE(photogroup_resource_)
   MEDIATOR_RELEASE_RESOURCE(photo_resource_)
   MEDIATOR_RELEASE_RESOURCE(ground_control_point_resource_)
-  MEDIATOR_RELEASE_RESOURCE(photo_measure_resource_)
   MEDIATOR_RELEASE_RESOURCE(feature_match_resource_)
   MEDIATOR_RELEASE_RESOURCE(photo_orientation_resource_)
   MEDIATOR_RELEASE_RESOURCE(point_cloud_resource_)
   MEDIATOR_RELEASE_RESOURCE(surface_model_resource_)
   MEDIATOR_RELEASE_RESOURCE(texture_resource_)
   MEDIATOR_RELEASE_RESOURCE(photo_block_relation_resource_)
-  MEDIATOR_RELEASE_RESOURCE(gcp_photo_measure_relation_resource_)
+  MEDIATOR_RELEASE_RESOURCE(photo_measure_resource_)
 
   return result;
 }
@@ -128,8 +126,6 @@ int DatabaseMediator::RegisterResources()
                                photo_resource_)
     MEDIATOR_REGISTER_RESOURCE(GroundControlPointResource,
                                ground_control_point_resource_)
-    MEDIATOR_REGISTER_RESOURCE(PhotoMeasureResource,
-                               photo_measure_resource_)
     MEDIATOR_REGISTER_RESOURCE(FeatureMatchResource,
                                feature_match_resource_)
     MEDIATOR_REGISTER_RESOURCE(PhotoOrientationResource,
@@ -142,8 +138,8 @@ int DatabaseMediator::RegisterResources()
                                texture_resource_)
     MEDIATOR_REGISTER_RESOURCE(PhotoBlockRelationResource,
                                photo_block_relation_resource_)
-    MEDIATOR_REGISTER_RESOURCE(GCPPhotoMeasureRelationResource,
-                               gcp_photo_measure_relation_resource_)
+    MEDIATOR_REGISTER_RESOURCE(PhotoMeasureResource,
+                               photo_measure_resource_)
     break;
   }
   return result;

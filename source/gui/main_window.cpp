@@ -52,11 +52,38 @@ MainWindow::MainWindow()
 
   photos_pane_ = new PhotosPane(this);
   blocks_pane_ = new BlocksPane(this);
+  gcps_pane_ = new GCPsPane(this);
 
+  scene_window_ = new SceneWindow(0, database_mediator_);
+  scene_window_->SetBackgroundColor(0.2f, 0.1f, 0.2f, 1.0f);
+  scene_window_->hide();
+  QWidget* container = QWidget::createWindowContainer(scene_window_, this);
+  setCentralWidget(container);
+  scene_window_->show();
+
+  setDockNestingEnabled(true);
+  setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
+  setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
+  setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
+  setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
   addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
   tabifyDockWidget(blocks_pane_, photos_pane_);
+  addDockWidget(Qt::BottomDockWidgetArea, gcps_pane_);
 
   database_mediator_.RegisterObserver(photos_pane_);
+  database_mediator_.RegisterObserver(blocks_pane_);
+  database_mediator_.RegisterObserver(gcps_pane_);
+  database_mediator_.RegisterObserver(scene_window_);
+
+  QObject::connect(blocks_pane_, &BlocksPane::PhotoOrientationActivated,
+                   scene_window_, &SceneWindow::SetPhotoOrientation);
+  QObject::connect(blocks_pane_, &BlocksPane::PhotoOrientationActivated,
+                   gcps_pane_, &GCPsPane::UpdatePhotoOrientation);
+  QObject::connect(gcps_pane_, &GCPsPane::GCPRelateLocationState,
+                   scene_window_->action_filter_photos_by_selected_points(),
+                   &QAction::setDisabled);
+  QObject::connect(scene_window_, &SceneWindow::FilterPhotosBySelectedPoints,
+                   gcps_pane_, &GCPsPane::FilterPhotosByPoints);
 
   showMaximized();
 }

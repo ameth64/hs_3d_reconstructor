@@ -253,7 +253,7 @@ std::string SqlFieldValue(const Value& value)
     }
   case FIELD_VALUE_REAL:
     {
-      sql_text = boost::str(boost::format("%1%") %
+      sql_text = boost::str(boost::format("%10.10f") %
                             value.ToFloat());
       break;
     }
