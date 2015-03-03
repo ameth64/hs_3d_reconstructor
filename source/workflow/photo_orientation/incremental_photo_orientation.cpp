@@ -264,7 +264,7 @@ int IncrementalPhotoOrientation::SaveExtrinsics(
     int intrinsic_id = intrinsic_ids[image_intrinsic_map[i]];
     if (image_extrinsic_map.IsValid(i))
     {
-      int extrinsic_id = image_extrinsic_map[i];
+      int extrinsic_id = int(image_extrinsic_map[i]);
       const ExtrinsicParams& extrinsic_params =
         extrinsic_params_set[extrinsic_id];;
       const ExtrinsicParams::Position& position = extrinsic_params.position();

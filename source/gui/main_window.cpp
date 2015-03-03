@@ -1,6 +1,7 @@
 ﻿#include <QFileDialog>
 #include <QCoreApplication>
 #include <QMessageBox>
+#include <QSettings>
 
 #include "gui/main_window.hpp"
 
@@ -16,7 +17,6 @@ namespace gui
 
 MainWindow::MainWindow()
   : QMainWindow()
-  , settings_()
 {
   menu_bar_ = new QMenuBar(this);
   menu_file_ = new QMenu(menu_bar_);
@@ -42,10 +42,9 @@ MainWindow::MainWindow()
   QObject::connect(action_open_project_, &QAction::triggered,
                    this, &MainWindow::OnActionOpenProjectTriggered);
   QObject::connect(action_close_project_, &QAction::triggered,
-                   this, &MainWindow::OnActionCloseProjectTriggered);
+    this, &MainWindow::OnActionCloseProjectTriggered);
 
-  settings_.setValue(tr("default_projects_directory"),
-                     QCoreApplication::applicationDirPath());
+  DefaultSetting();
 
   QWidget* tmp_central_widget = new QWidget(this);
   setCentralWidget(tmp_central_widget);
@@ -58,8 +57,8 @@ MainWindow::MainWindow()
   scene_window_->SetBackgroundColor(0.2f, 0.1f, 0.2f, 1.0f);
   scene_window_->hide();
   QWidget* container = QWidget::createWindowContainer(scene_window_, this);
+  //container->show();
   setCentralWidget(container);
-  scene_window_->show();
 
   setDockNestingEnabled(true);
   setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
@@ -69,6 +68,9 @@ MainWindow::MainWindow()
   addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
   tabifyDockWidget(blocks_pane_, photos_pane_);
   addDockWidget(Qt::BottomDockWidgetArea, gcps_pane_);
+  showMaximized();
+  showNormal();
+  showMaximized();
 
   database_mediator_.RegisterObserver(photos_pane_);
   database_mediator_.RegisterObserver(blocks_pane_);
@@ -84,8 +86,6 @@ MainWindow::MainWindow()
                    &QAction::setDisabled);
   QObject::connect(scene_window_, &SceneWindow::FilterPhotosBySelectedPoints,
                    gcps_pane_, &GCPsPane::FilterPhotosByPoints);
-
-  showMaximized();
 }
 
 MainWindow::~MainWindow()
@@ -99,8 +99,9 @@ hs::recon::db::DatabaseMediator& MainWindow::database_mediator()
 
 void MainWindow::OnActionNewProjectTriggered()
 {
+  QSettings settings;
   QString default_projects_directory =
-    settings_.value(tr("default_projects_directory")).toString();
+    settings.value(tr("default_projects_directory")).toString();
   NewProjectConfigDialog dialog(default_projects_directory, this);
   if (dialog.exec())
   {
@@ -181,6 +182,32 @@ void MainWindow::OnActionCloseProjectTriggered()
     QMessageBox msg_box;
     msg_box.setText(tr("Fail to close database!"));
     msg_box.exec();
+  }
+}
+
+void MainWindow::DefaultSetting()
+{
+  QSettings settings;
+  QString default_projects_directory_key =
+    tr("default_projects_directory");
+  if (!settings.contains(default_projects_directory_key))
+  {
+    settings.setValue(default_projects_directory_key,
+                      QCoreApplication::applicationDirPath());
+  }
+
+  QString intermediate_directory_key = tr("intermediate_directory");
+  if (!settings.contains(intermediate_directory_key))
+  {
+    QString intermediate_path =
+      QCoreApplication::applicationDirPath() + tr("/intermediate");
+    settings.setValue(intermediate_directory_key, intermediate_path);
+  }
+
+  QString number_of_threads_key = tr("number_of_threads");
+  if (!settings.contains(number_of_threads_key))
+  {
+    settings.setValue(number_of_threads_key, uint(1));
   }
 }
 

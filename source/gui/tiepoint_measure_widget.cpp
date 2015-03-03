@@ -310,7 +310,6 @@ int TiepointMeasureWidget::UpdateImageWindows()
       static_cast<ImageMeasureOpenGLWindow*>(image_opengl_window);
     image_measure_opengl_window->ClearPosition();
     displayer_pool_.push_back(itr_displayer->second);
-    itr_displayer = used_displayers_.erase(itr_displayer);
     Lock();
     auto itr_task = loading_task_.find(itr_displayer->first);
     if (itr_task != loading_task_.end())
@@ -318,6 +317,7 @@ int TiepointMeasureWidget::UpdateImageWindows()
       loading_task_.erase(itr_task);
     }
     Unlock();
+    itr_displayer = used_displayers_.erase(itr_displayer);
   }
   used_displayers_.swap(kept_displayers);
 

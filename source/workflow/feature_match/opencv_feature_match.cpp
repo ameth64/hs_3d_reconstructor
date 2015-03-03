@@ -210,12 +210,12 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
       hs::sfm::KeyPairContainer key_pairs;
       for (size_t k = 0; k < descriptors_match.rows; k++)
       {
-        if (distances.at<float>(k, 0) <
-            distances.at<float>(k, 1) * match_threshold)
+        if (distances.at<float>(int(k), 0) <
+            distances.at<float>(int(k), 1) * match_threshold)
         {
           //Found Match!
           key_pairs.push_back(
-            hs::sfm::KeyPair(size_t(indices.at<int>(k, 0)), k));
+            hs::sfm::KeyPair(size_t(indices.at<int>(int(k), 0)), k));
         }
       }
       if (key_pairs.size() > 16)
@@ -239,10 +239,10 @@ int OpenCVFeatureMatch::FilterMatches(
   hs::sfm::MatchContainer& matches_filtered)
 {
   typedef hs::sfm::fundamental::Linear8PointsRansacRefiner<double> Refiner;
-  typedef typename Refiner::Key Key;
-  typedef typename Refiner::KeyPair RefinerKeyPair;
-  typedef typename Refiner::KeyPairContainer RefinerKeyPairContainer;
-  typedef typename Refiner::IndexSet IndexSet;
+  typedef Refiner::Key Key;
+  typedef Refiner::KeyPair RefinerKeyPair;
+  typedef Refiner::KeyPairContainer RefinerKeyPairContainer;
+  typedef Refiner::IndexSet IndexSet;
 
   auto itr_key_pairs = matches_initial.begin();
   auto itr_key_pairs_end = matches_initial.end();
@@ -302,7 +302,7 @@ cv::Mat OpenCVFeatureMatch::LoadDescriptors(const std::string& key_path,
     std::ifstream descriptor_file(descriptor_path,
                                   std::ios::in |std::ios::binary);
     if (!descriptor_file) break;
-    descriptors.create(number_of_keys, 128, CV_32FC1);
+    descriptors.create(int(number_of_keys), 128, CV_32FC1);
     descriptor_file.read((char*)(descriptors.ptr()),
                          number_of_keys * 128 * sizeof(float));
     descriptor_file.close();
@@ -314,25 +314,25 @@ cv::Mat OpenCVFeatureMatch::LoadDescriptors(const std::string& key_path,
 int OpenCVFeatureMatch::RunImplement(WorkflowStepConfig* config)
 {
   int result = 0;
-  progress_manager_.AddSubProgress(0.4);
+  progress_manager_.AddSubProgress(0.4f);
   KeysetContainer keysets;
   result = DetectFeature(config, keysets);
   progress_manager_.FinishCurrentSubProgress();
   if (result != 0) return result;
 
-  progress_manager_.AddSubProgress(0.4);
+  progress_manager_.AddSubProgress(0.4f);
   hs::sfm::MatchContainer matches_initial;
   result = MatchFeatures(config, matches_initial);
   progress_manager_.FinishCurrentSubProgress();
   if (result != 0) return result;
 
-  progress_manager_.AddSubProgress(0.19);
+  progress_manager_.AddSubProgress(0.19f);
   hs::sfm::MatchContainer matches_filtered;
   result = FilterMatches(config, keysets, matches_initial, matches_filtered);
   progress_manager_.FinishCurrentSubProgress();
   if (result != 0) return result;
 
-  progress_manager_.AddSubProgress(0.01);
+  progress_manager_.AddSubProgress(0.01f);
   FeatureMatchConfig* feature_match_config =
     static_cast<FeatureMatchConfig*>(config);
   hs::sfm::fileio::MatchesSaver saver;

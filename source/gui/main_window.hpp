@@ -6,7 +6,6 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QStatusBar>
-#include <QSettings>
 
 #include "database/database_mediator.hpp"
 
@@ -39,6 +38,9 @@ private slots:
   void OnActionCloseProjectTriggered();
 
 private:
+  void DefaultSetting();
+
+private:
   QMenuBar* menu_bar_;
   QMenu* menu_file_;
   QStatusBar* status_bar_;
@@ -48,8 +50,6 @@ private:
   QAction* action_close_project_;
 
   hs::recon::db::DatabaseMediator database_mediator_;
-
-  QSettings settings_;
 
   PhotosPane* photos_pane_;
   BlocksPane* blocks_pane_;

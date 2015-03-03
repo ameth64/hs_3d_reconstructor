@@ -258,9 +258,9 @@ void GCPsTableWidget::OnItemSelectionChanged()
     std::vector<uint> gcp_ids;
     for (size_t i = 0; i < selected_items.size(); i++)
     {
-      if (selected_items[i]->column() == 0)
+      if (selected_items[int(i)]->column() == 0)
       {
-        gcp_ids.push_back(selected_items[i]->data(Qt::UserRole).toUInt());
+        gcp_ids.push_back(selected_items[int(i)]->data(Qt::UserRole).toUInt());
       }
     }
     emit GCPsSelected(gcp_ids);

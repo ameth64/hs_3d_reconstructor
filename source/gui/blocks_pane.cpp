@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QMessageBox>
+#include <QSettings>
 
 #include "gui/blocks_pane.hpp"
 #include "gui/block_photos_select_dialog.hpp"
@@ -631,19 +632,23 @@ void BlocksPane::OnActionAddWorkflowTriggered()
   WorkflowConfigureDialog workflow_configure_dialog(configure_type);
   if (workflow_configure_dialog.exec())
   {
+    QSettings settings;
+    QString intermediate_directory =
+      settings.value(tr("intermediate_directory")).toString();
     WorkflowConfig workflow_config;
     workflow_config.workflow_intermediate_directory =
-      QCoreApplication::applicationDirPath().toLocal8Bit().data();
+      intermediate_directory.toLocal8Bit().data();
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
     workflow_config.workflow_intermediate_directory +=
-      std::string("/intermediate/") + boost::uuids::to_string(uuid) + "/";
-    if (!boost::filesystem::create_directory(boost::filesystem::path(
+      std::string("/") + boost::uuids::to_string(uuid) + "/";
+    //TODO: create_directories return false even that directories created!
+    if (!boost::filesystem::create_directories(boost::filesystem::path(
           workflow_config.workflow_intermediate_directory)))
     {
-      QMessageBox msg_box;
-      msg_box.setText(tr("Fail to create intermediate directory."));
-      msg_box.exec();
-      return;
+      //QMessageBox msg_box;
+      //msg_box.setText(tr("Fail to create intermediate directory."));
+      //msg_box.exec();
+      //return;
     }
 
     //添加feature match

@@ -103,6 +103,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_graphics DEP_LIBS graphics_qt
   HS_DEPS hs_cartographics DEP_LIBS cartographics_qt
+  HS_DEPS hs_progress DEP_LIBS progress_utility
   LOCAL_DEPS database
   LOCAL_DEPS workflow
   )
@@ -167,6 +168,7 @@ set(WORKFLOW_SOURCES
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
+  3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS opencv
     DEP_LIBS opencv_calib3d
              opencv_core
@@ -183,8 +185,17 @@ hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS z DEP_LIBS z
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
+  HS_DEPS hs_optimizor HEADONLY
+  HS_DEPS hs_fit HEADONLY
+  HS_DEPS hs_math HEADONLY
+  HS_DEPS hs_sfm HEADONLY
   )
-hslib_post_build(${WORKFLOW_NAME})
+if (MSVC)
+  set_source_files_properties(
+    "source/workflow/photo_orientation/incremental_photo_orientation.cpp",
+    PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
+
 
 hs_add_qt_executable(test_manager_pane SOURCES
   "unit_test/gui/test_manager_pane.cpp"

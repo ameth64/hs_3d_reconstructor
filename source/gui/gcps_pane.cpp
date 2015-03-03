@@ -308,8 +308,8 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     {
       continue;
     }
-    photo_entry.image_width = width;
-    photo_entry.image_height = height;
+    photo_entry.image_width = int(width);
+    photo_entry.image_height = int(height);
 
     photo_entries_[photo_id] = photo_entry;
   }
@@ -483,7 +483,7 @@ void GCPsPane::OnActionImportGCPTriggered()
           for (size_t i = 0; i < number_of_gcps_to_add; i++)
           {
             request_add_gcps.gcps[i].name =
-              itr_name->second[i].toLocal8Bit().data();
+              itr_name->second[int(i)].toLocal8Bit().data();
           }
           auto itr_x = assigned_field_values.find(labels[1]);
           if (itr_x != assigned_field_values.end() &&
@@ -492,7 +492,7 @@ void GCPsPane::OnActionImportGCPTriggered()
             for (size_t i = 0; i < number_of_gcps_to_add; i++)
             {
               request_add_gcps.gcps[i].x =
-                db::Database::Float(itr_x->second[i].toDouble());
+                db::Database::Float(itr_x->second[int(i)].toDouble());
             }
           }
           auto itr_y = assigned_field_values.find(labels[2]);
@@ -502,7 +502,7 @@ void GCPsPane::OnActionImportGCPTriggered()
             for (size_t i = 0; i < number_of_gcps_to_add; i++)
             {
               request_add_gcps.gcps[i].y =
-                db::Database::Float(itr_y->second[i].toDouble());
+                db::Database::Float(itr_y->second[int(i)].toDouble());
             }
           }
           auto itr_z = assigned_field_values.find(labels[3]);
@@ -512,7 +512,7 @@ void GCPsPane::OnActionImportGCPTriggered()
             for (size_t i = 0; i < number_of_gcps_to_add; i++)
             {
               request_add_gcps.gcps[i].z =
-                db::Database::Float(itr_z->second[i].toDouble());
+                db::Database::Float(itr_z->second[int(i)].toDouble());
             }
           }
           ((MainWindow*)parent())->database_mediator().Request(
@@ -692,6 +692,18 @@ void GCPsPane::OnGCPUpdated(uint gcp_id,
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_UPDATE_GCP,
     request, response, true);
+
+  auto itr_gcp_measure = gcp_measures_.find(gcp_id);
+  if (itr_gcp_measure != gcp_measures_.end())
+  {
+    itr_gcp_measure->second.measure_pos[0] = gcp_updated.measure_pos[0];
+    itr_gcp_measure->second.measure_pos[1] = gcp_updated.measure_pos[1];
+    itr_gcp_measure->second.measure_pos[2] = gcp_updated.measure_pos[2];
+    itr_gcp_measure->second.estimate_pos[0] = gcp_updated.estimate_pos[0];
+    itr_gcp_measure->second.estimate_pos[1] = gcp_updated.estimate_pos[1];
+    itr_gcp_measure->second.estimate_pos[2] = gcp_updated.estimate_pos[2];
+    itr_gcp_measure->second.type = gcp_updated.type;
+  }
 
   ComputeSimilarTransform();
   UpdateTiepointWidget();
