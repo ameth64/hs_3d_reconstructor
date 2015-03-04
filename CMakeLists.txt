@@ -56,6 +56,7 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/gcps_pane.cpp"
   "source/gui/tiepoint_measure_widget.cpp"
   "source/gui/image_measure_opengl_window.cpp"
+  "source/gui/settings_dialog.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES
@@ -84,7 +85,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS exiv2
   3RDPARTY_DEPS glew
   3RDPARTY_DEPS proj
-  3RDPARTY_DEPS ceres DEP_LIBS ceres ceres_miniglog
+  3RDPARTY_DEPS ceres DEP_LIBS ceres
   3RDPARTY_DEPS opencv
     DEP_LIBS opencv_calib3d
              opencv_core
@@ -178,7 +179,8 @@ hslib_add_dep(${WORKFLOW_NAME}
              opencv_highgui
              opencv_flann
              opencv_nonfree
-  3RDPARTY_DEPS ceres DEP_LIBS ceres ceres_miniglog
+             3RDPARTY_DEPS ceres DEP_LIBS ceres
+                                 DEP_STATIC_LIBS ceres_miniglog
   3RDPARTY_DEPS tiff DEP_LIBS tiff
   3RDPARTY_DEPS jpeg DEP_LIBS jpeg
   3RDPARTY_DEPS png DEP_LIBS png
@@ -192,7 +194,7 @@ hslib_add_dep(${WORKFLOW_NAME}
   )
 if (MSVC)
   set_source_files_properties(
-    "source/workflow/photo_orientation/incremental_photo_orientation.cpp",
+    "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
     PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
 

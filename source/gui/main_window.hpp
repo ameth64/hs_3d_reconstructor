@@ -37,17 +37,22 @@ private slots:
   void OnActionOpenProjectTriggered();
   void OnActionCloseProjectTriggered();
 
+  void OnActionPreferencesTriggered();
+
 private:
   void DefaultSetting();
 
 private:
   QMenuBar* menu_bar_;
   QMenu* menu_file_;
+  QMenu* menu_tools_;
   QStatusBar* status_bar_;
 
   QAction* action_new_project_;
   QAction* action_open_project_;
   QAction* action_close_project_;
+
+  QAction* action_preferences_;
 
   hs::recon::db::DatabaseMediator database_mediator_;
 

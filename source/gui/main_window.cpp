@@ -3,10 +3,11 @@
 #include <QMessageBox>
 #include <QSettings>
 
-#include "gui/main_window.hpp"
-
 #include "gui/manager_pane.hpp"
 #include "gui/new_project_config_dialog.hpp"
+#include "gui/settings_dialog.hpp"
+
+#include "gui/main_window.hpp"
 
 namespace hs
 {
@@ -19,23 +20,27 @@ MainWindow::MainWindow()
   : QMainWindow()
 {
   menu_bar_ = new QMenuBar(this);
-  menu_file_ = new QMenu(menu_bar_);
-  menu_file_->setTitle(tr("File"));
+
+  menu_file_ = new QMenu(tr("File"), menu_bar_);
   menu_bar_->addAction(menu_file_->menuAction());
+
+  menu_tools_ = new QMenu(tr("Tools"), menu_bar_);
+  menu_bar_->addAction(menu_tools_->menuAction());
+
   setMenuBar(menu_bar_);
+
   status_bar_ = new QStatusBar(this);
   setStatusBar(status_bar_);
 
-  action_new_project_ = new QAction(this);
-  action_new_project_->setText(tr("New Project"));
-  action_open_project_ = new QAction(this);
-  action_open_project_->setText(tr("Open Project"));
-  action_close_project_ = new QAction(this);
-  action_close_project_->setText(tr("Close Project"));
-
+  action_new_project_ = new QAction(tr("New Project"), this);
+  action_open_project_ = new QAction(tr("Open Project"), this);
+  action_close_project_ = new QAction(tr("Close Project"), this);
   menu_file_->addAction(action_new_project_);
   menu_file_->addAction(action_open_project_);
   menu_file_->addAction(action_close_project_);
+
+  action_preferences_ = new QAction(tr("Preferences"), this);
+  menu_tools_->addAction(action_preferences_);
 
   QObject::connect(action_new_project_, &QAction::triggered,
                    this, &MainWindow::OnActionNewProjectTriggered);
@@ -43,6 +48,9 @@ MainWindow::MainWindow()
                    this, &MainWindow::OnActionOpenProjectTriggered);
   QObject::connect(action_close_project_, &QAction::triggered,
     this, &MainWindow::OnActionCloseProjectTriggered);
+
+  QObject::connect(action_preferences_, &QAction::triggered,
+                   this, &MainWindow::OnActionPreferencesTriggered);
 
   DefaultSetting();
 
@@ -55,9 +63,7 @@ MainWindow::MainWindow()
 
   scene_window_ = new SceneWindow(0, database_mediator_);
   scene_window_->SetBackgroundColor(0.2f, 0.1f, 0.2f, 1.0f);
-  scene_window_->hide();
   QWidget* container = QWidget::createWindowContainer(scene_window_, this);
-  //container->show();
   setCentralWidget(container);
 
   setDockNestingEnabled(true);
@@ -69,8 +75,9 @@ MainWindow::MainWindow()
   tabifyDockWidget(blocks_pane_, photos_pane_);
   addDockWidget(Qt::BottomDockWidgetArea, gcps_pane_);
   showMaximized();
-  showNormal();
-  showMaximized();
+  //加了下面两行则无论在windows还是osx平台上都最大化显示正常，不知道为什么……
+  hide();
+  show();
 
   database_mediator_.RegisterObserver(photos_pane_);
   database_mediator_.RegisterObserver(blocks_pane_);
@@ -209,6 +216,12 @@ void MainWindow::DefaultSetting()
   {
     settings.setValue(number_of_threads_key, uint(1));
   }
+}
+
+void MainWindow::OnActionPreferencesTriggered()
+{
+  SettingsDialog dialog;
+  dialog.exec();
 }
 
 }
