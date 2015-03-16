@@ -73,6 +73,10 @@ void PhotoOrientationConfig::set_point_cloud_path(
 {
   point_cloud_path_ = point_cloud_path;
 }
+void PhotoOrientationConfig::set_number_of_threads(int number_of_threads)
+{
+  number_of_threads_ = number_of_threads;
+}
 
 const hs::sfm::ObjectIndexMap&
 PhotoOrientationConfig::image_intrinsic_map() const
@@ -115,6 +119,10 @@ const std::string& PhotoOrientationConfig::extrinsic_path() const
 const std::string& PhotoOrientationConfig::point_cloud_path() const
 {
   return point_cloud_path_;
+}
+int PhotoOrientationConfig::number_of_threads() const
+{
+  return number_of_threads_;
 }
 
 IncrementalPhotoOrientation::IncrementalPhotoOrientation()
@@ -179,7 +187,7 @@ int IncrementalPhotoOrientation::RunSFM(
   intrinsic_params_set =
     photo_orientation_config->intrinsic_params_set();
 
-  SFM sfm;
+  SFM sfm(100, 8, 2, size_t(photo_orientation_config->number_of_threads()));
   return sfm(image_intrinsic_map,
              matches,
              keysets,

@@ -2,6 +2,12 @@
 #include <iomanip>
 #include <iostream>
 
+#define DEBUG_5POINT 1
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include <opencv2/nonfree/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -9,6 +15,9 @@
 #include "hs_image_io/whole_io/image_io.hpp"
 #include "hs_sfm/sfm_file_io/matches_saver.hpp"
 #include "hs_sfm/fundamental/linear_8_points_ransac_refiner.hpp"
+#if DEBUG_5POINT
+#include "hs_sfm/sfm_utility/matches_tracks_convertor.hpp"
+#endif
 
 #include "opencv_feature_match.hpp"
 
@@ -52,6 +61,10 @@ void FeatureMatchConfig::set_pos_entries(
 {
   pos_entries_ = pos_entries;
 }
+void FeatureMatchConfig::set_number_of_threads(int number_of_threads)
+{
+  number_of_threads_ = number_of_threads;
+}
 
 const std::vector<std::string>& FeatureMatchConfig::image_paths() const
 {
@@ -77,6 +90,10 @@ std::map<size_t, FeatureMatchConfig::PosEntry>
 FeatureMatchConfig::pos_entries() const
 {
   return pos_entries_;
+}
+int FeatureMatchConfig::number_of_threads() const
+{
+  return number_of_threads_;
 }
 
 OpenCVFeatureMatch::OpenCVFeatureMatch()
@@ -131,11 +148,11 @@ int OpenCVFeatureMatch::DetectFeature(WorkflowStepConfig* config,
     key_file.setf(std::ios::fixed);
     key_file<<std::setprecision(6);
     key_file<<number_of_keys<<"\n";
-    for (size_t i = 0; i < number_of_keys; i++)
+    for (size_t j = 0; j < number_of_keys; j++)
     {
-      key_file<<keys[i].pt.x<<" "<<keys[i].pt.y<<"\n";
-      keyset[i] << keys[i].pt.x,
-                   keys[i].pt.y;
+      key_file<<keys[j].pt.x<<" "<<keys[j].pt.y<<"\n";
+      keyset[j] << keys[j].pt.x,
+                   keys[j].pt.y;
     }
     keysets.push_back(keyset);
     key_file.close();
@@ -189,11 +206,20 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
       feature_match_config->descriptor_paths()[i]);
     cv::flann::Index index(descriptors_index,
                            cv::flann::KDTreeIndexParams(4));
-    for (size_t j = 0; j < i; j++)
+    std::cout<<"number_of_threads:"
+             <<feature_match_config->number_of_threads()<<"\n";
+#ifdef _OPENMP
+    omp_set_num_threads(feature_match_config->number_of_threads());
+    omp_lock_t lock;
+    omp_init_lock(&lock);
+#pragma omp parallel for
+#endif
+
+    for (int j = 0; j < i; j++)
     {
       if (!progress_manager_.CheckKeepWorking())
       {
-        break;
+        continue;
       }
       std::cout<<"Matching query image "<<j<<"\n";
       cv::Mat descriptors_match = LoadDescriptors(
@@ -206,7 +232,7 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
 
       const float match_threshold = 0.6f;
 
-      hs::sfm::ImagePair image_pair(i, j);
+      hs::sfm::ImagePair image_pair(i, size_t(j));
       hs::sfm::KeyPairContainer key_pairs;
       for (size_t k = 0; k < descriptors_match.rows; k++)
       {
@@ -220,13 +246,24 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
       }
       if (key_pairs.size() > 16)
       {
+#ifdef _OPENMP
+        omp_set_lock(&lock);
+#endif
         matches[image_pair] = key_pairs;
+#ifdef _OPENMP
+        omp_unset_lock(&lock);
+#endif
+
       }
 
       number_of_matched++;
       progress_manager_.SetCurrentSubProgressCompleteRatio(
         float(number_of_matched) / float(number_of_matches));
     }
+
+#ifdef _OPENMP
+    omp_destroy_lock(&lock);
+#endif
   }
 
   return 0;
@@ -243,6 +280,20 @@ int OpenCVFeatureMatch::FilterMatches(
   typedef Refiner::KeyPair RefinerKeyPair;
   typedef Refiner::KeyPairContainer RefinerKeyPairContainer;
   typedef Refiner::IndexSet IndexSet;
+
+#if DEBUG_5POINT
+  FeatureMatchConfig* feature_match_config =
+    static_cast<FeatureMatchConfig*>(config);
+  std::string constraints_path = feature_match_config->matches_path();
+  size_t pos = constraints_path.rfind('/');
+  constraints_path.erase(constraints_path.begin() + pos + 1,
+                         constraints_path.end());
+  constraints_path += "constraints.txt";
+  std::ofstream constraints_file(constraints_path.c_str());
+
+  std::map<hs::sfm::ImagePair, float> inlier_ratios;
+  std::map<hs::sfm::ImagePair, size_t> inlier_nums;
+#endif
 
   auto itr_key_pairs = matches_initial.begin();
   auto itr_key_pairs_end = matches_initial.end();
@@ -282,8 +333,46 @@ int OpenCVFeatureMatch::FilterMatches(
           itr_key_pairs->second[inlier_indices[i]]);
       }
       matches_filtered[itr_key_pairs->first] = key_pairs_refined;
+#if DEBUG_5POINT
+      inlier_ratios[itr_key_pairs->first] =
+        float(refiner_key_pairs_initial.size()) /
+        float(refiner_key_pairs_refined.size());
+      inlier_nums[itr_key_pairs->first] = inlier_indices.size();
+#endif
     }
   }
+
+#if DEBUG_5POINT
+  size_t number_of_images = feature_match_config->image_paths().size();
+  size_t number_of_image_pairs = matches_filtered.size();
+  constraints_file<<number_of_images<<"\n";
+  constraints_file<<number_of_image_pairs<<"\n";
+  itr_key_pairs = matches_filtered.begin();
+  itr_key_pairs_end = matches_filtered.end();
+  for (; itr_key_pairs != itr_key_pairs_end; ++itr_key_pairs)
+  {
+    constraints_file<<itr_key_pairs->first.first<<" "
+                    <<itr_key_pairs->first.second<<"\n";
+    constraints_file<<"0 0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0 0\n";
+    constraints_file<<inlier_ratios[itr_key_pairs->first]<<"\n";
+    constraints_file<<inlier_nums[itr_key_pairs->first]<<"\n";
+    constraints_file<<"0\n";
+  }
+
+  hs::sfm::TrackContainer tracks;
+  hs::sfm::MatchesTracksConvertor convertor;
+  convertor(matches_filtered, tracks);
+  constraints_file<<tracks.size()<<"\n";
+  for (size_t i = 0; i < tracks.size(); i++)
+  {
+    constraints_file<<tracks[i].size();
+    for (size_t j = 0; j < tracks[i].size(); j++)
+    {
+      constraints_file<<" "<<tracks[i][j].first<<" "<<tracks[i][j].second;
+    }
+    constraints_file<<"\n";
+  }
+#endif
 
   return 0;
 }

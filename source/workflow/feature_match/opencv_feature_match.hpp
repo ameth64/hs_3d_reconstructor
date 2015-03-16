@@ -40,6 +40,7 @@ public:
   void set_matches_path(const std::string matches_path);
   void set_keys_limits(int keys_limits);
   void set_pos_entries(std::map<size_t, PosEntry>& pos_entries);
+  void set_number_of_threads(int number_of_threads);
 
   const std::vector<std::string>& image_paths() const;
   const std::vector<std::string>& key_paths() const;
@@ -47,6 +48,7 @@ public:
   const std::string& matches_path() const;
   int keys_limits() const;
   std::map<size_t, PosEntry> pos_entries() const;
+  int number_of_threads() const;
 
 private:
   std::vector<std::string> image_paths_;
@@ -55,6 +57,7 @@ private:
   std::string matches_path_;
   int keys_limits_;
   std::map<size_t, PosEntry> pos_entries_;
+  int number_of_threads_;
 };
 typedef std::shared_ptr<FeatureMatchConfig> FeatureMatchConfigPtr;
 

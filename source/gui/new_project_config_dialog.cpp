@@ -77,7 +77,7 @@ int NewProjectConfigDialog::ValidateProjectDirectory()
   //验证Project Directory是否存在
   std::string std_project_directory =
     new_project_directory().toLocal8Bit().data();
-  if (boost::filesystem::exists(boost::filesystem::path(std_project_name)))
+  if (boost::filesystem::exists(boost::filesystem::path(std_project_directory)))
   {
     return IC_PROJECT_DIRECTORY_EXIST;
   }

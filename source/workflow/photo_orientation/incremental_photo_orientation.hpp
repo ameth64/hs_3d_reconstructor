@@ -38,6 +38,7 @@ public:
   void set_intrinsic_path(const std::string& intrinsic_path);
   void set_extrinsic_path(const std::string& extrinsic_path);
   void set_point_cloud_path(const std::string& point_cloud_path);
+  void set_number_of_threads(int number_of_threads);
 
   const hs::sfm::ObjectIndexMap& image_intrinsic_map() const;
   const std::string& matches_path() const;
@@ -49,6 +50,7 @@ public:
   const std::string& intrinsic_path() const;
   const std::string& extrinsic_path() const;
   const std::string& point_cloud_path() const;
+  int number_of_threads() const;
 
 private:
   hs::sfm::ObjectIndexMap image_intrinsic_map_;
@@ -61,6 +63,7 @@ private:
   std::string intrinsic_path_;
   std::string extrinsic_path_;
   std::string point_cloud_path_;
+  int number_of_threads_;
 };
 
 typedef std::shared_ptr<PhotoOrientationConfig> PhotoOrientationConfigPtr;

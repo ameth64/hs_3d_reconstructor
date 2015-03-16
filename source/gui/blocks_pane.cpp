@@ -1014,6 +1014,10 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
         pos_entries[i] = pos_entry;
       }
     }
+    QSettings settings;
+    QString number_of_threads_key = tr("number_of_threads");
+    uint number_of_threads = settings.value(number_of_threads_key,
+                                            QVariant(uint(1))).toUInt();
     workflow::FeatureMatchConfigPtr feature_match_config =
       std::static_pointer_cast<workflow::FeatureMatchConfig>(
         workflow_step_entry.config);
@@ -1022,6 +1026,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
     feature_match_config->set_descripor_paths(descriptor_paths);
     feature_match_config->set_pos_entries(pos_entries);
     feature_match_config->set_matches_path(matches_path);
+    feature_match_config->set_number_of_threads(int(number_of_threads));
 
     break;
   }
@@ -1172,6 +1177,10 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
         intrinsic_params_set.push_back(intrinsic_params);
       }
     }
+    QSettings settings;
+    QString number_of_threads_key = tr("number_of_threads");
+    uint number_of_threads = settings.value(number_of_threads_key,
+      QVariant(uint(1))).toUInt();
     workflow::PhotoOrientationConfigPtr photo_orientation_config =
       std::static_pointer_cast<workflow::PhotoOrientationConfig>(
         workflow_step_entry.config);
@@ -1188,6 +1197,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       response_photo_orientation.extrinsic_path);
     photo_orientation_config->set_point_cloud_path(
       response_photo_orientation.point_cloud_path);
+    photo_orientation_config->set_number_of_threads(uint(number_of_threads));
 
     break;
   }
