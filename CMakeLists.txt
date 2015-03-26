@@ -57,6 +57,7 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/tiepoint_measure_widget.cpp"
   "source/gui/image_measure_opengl_window.cpp"
   "source/gui/settings_dialog.cpp"
+  "source/gui/photos_import_progress_dialog.cpp"
   )
 
 set(RECONSTRUCTOR_QT_MODULES
@@ -96,7 +97,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
              opencv_flann
              opencv_nonfree
   3RDPARTY_DEPS tiff DEP_LIBS tiff
-  3RDPARTY_DEPS jpeg DEP_LIBS jpeg
+  3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
   HS_DEPS hs_math HEADONLY
@@ -109,6 +110,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   LOCAL_DEPS workflow
   )
 target_link_libraries(${RECONSTRUCTOR_NAME} ${OPENGL_LIBRARIES})
+hslib_add_mkl_dep(${RECONSTRUCTOR_NAME})
 
 hslib_post_build(${RECONSTRUCTOR_NAME})
 
@@ -179,10 +181,9 @@ hslib_add_dep(${WORKFLOW_NAME}
              opencv_highgui
              opencv_flann
              opencv_nonfree
-             3RDPARTY_DEPS ceres DEP_LIBS ceres
-                                 DEP_STATIC_LIBS ceres_miniglog
+  3RDPARTY_DEPS ceres DEP_LIBS ceres
   3RDPARTY_DEPS tiff DEP_LIBS tiff
-  3RDPARTY_DEPS jpeg DEP_LIBS jpeg
+  3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
   HS_DEPS hs_image_io DEP_LIBS whole_io
@@ -197,7 +198,7 @@ if (MSVC)
     "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
     PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
-
+hslib_add_mkl_dep(${WORKFLOW_NAME})
 
 hs_add_qt_executable(test_manager_pane SOURCES
   "unit_test/gui/test_manager_pane.cpp"
@@ -262,7 +263,7 @@ hslib_add_dep(test_image_opengl_window
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS glew
   3RDPARTY_DEPS tiff
-  3RDPARTY_DEPS jpeg
+  3RDPARTY_DEPS jpeg_turbo
   3RDPARTY_DEPS png
   3RDPARTY_DEPS z
   HS_DEPS hs_math_HEADONLY
@@ -283,7 +284,7 @@ hslib_add_dep(test_tiepoint_measure_widget
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS glew
   3RDPARTY_DEPS tiff
-  3RDPARTY_DEPS jpeg
+  3RDPARTY_DEPS jpeg_turbo
   3RDPARTY_DEPS png
   3RDPARTY_DEPS z
   HS_DEPS hs_math_HEADONLY
@@ -303,7 +304,7 @@ hslib_add_dep(test_image_opengl_widget
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS glew
   3RDPARTY_DEPS tiff
-  3RDPARTY_DEPS jpeg
+  3RDPARTY_DEPS jpeg_turbo
   3RDPARTY_DEPS png
   3RDPARTY_DEPS z
   HS_DEPS hs_math_HEADONLY
@@ -323,7 +324,7 @@ hslib_add_dep(test_image_container_widget
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS glew
   3RDPARTY_DEPS tiff
-  3RDPARTY_DEPS jpeg
+  3RDPARTY_DEPS jpeg_turbo
   3RDPARTY_DEPS png
   3RDPARTY_DEPS z
   HS_DEPS hs_math_HEADONLY

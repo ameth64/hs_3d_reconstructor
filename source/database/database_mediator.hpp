@@ -374,7 +374,7 @@ struct DatabaseRequestHandler<RequestAddPhotos, ResponseAddPhotos>
     response.error_code =
       database_mediator.photo_resource_->Add(add_requests, added_records);
 
-    //将加入的照片数据填充至response变量中，并创建缩略图
+    //将加入的照片数据填充至response变量中
     auto itr_added_record = added_records.begin();
     auto itr_added_record_end = added_records.end();
     for (; itr_added_record != itr_added_record_end; ++itr_added_record)
