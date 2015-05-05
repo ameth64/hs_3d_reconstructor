@@ -14,6 +14,7 @@
 #include "workflow/common/workflow_step.hpp"
 #include "workflow/feature_match/opencv_feature_match.hpp"
 #include "workflow/photo_orientation/incremental_photo_orientation.hpp"
+#include "workflow/point_cloud/pmvs_point_cloud.hpp"
 #include "gui/manager_pane.hpp"
 #include "gui/blocks_tree_widget.hpp"
 
@@ -87,6 +88,11 @@ private:
   int AddPhotoOrientationStep(
     uint feature_match_id,
     workflow::PhotoOrientationConfigPtr photo_orientation_config,
+    WorkflowConfig& workflow_config);
+
+  int AddPointCloudStep(
+    uint photo_orientation_id,
+    workflow::PointCloudConfigPtr point_cloud_config,
     WorkflowConfig& workflow_config);
 
   WorkflowStepPtr SetFeatureMatchStep(

@@ -29,6 +29,8 @@ public:
     workflow::FeatureMatchConfig& feature_match_config);
   void FetchPhotoOrientationConfig(
     workflow::PhotoOrientationConfig& photo_orientation_config);
+  void WorkflowConfigureDialog::FetchPointCloudConfig(
+    workflow::PointCloudConfig& point_cloud_config);
 
 private:
   WorkflowConfigureWidget* workflow_configure_widget_;

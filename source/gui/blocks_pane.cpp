@@ -657,6 +657,7 @@ void BlocksPane::OnActionAddWorkflowTriggered()
     uint block_id = selected_block_id_;
     uint feature_match_id = selected_feature_match_id_;
     uint photo_orientation_id = selected_photo_orientation_id_;
+    uint point_cloud_id = selected_point_cloud_id_;
     bool add_feature_match = true;
     bool add_photo_orientation = true;
     bool add_point_cloud = true;
@@ -708,6 +709,34 @@ void BlocksPane::OnActionAddWorkflowTriggered()
         photo_orientation_id = workflow_config.step_queue.front().id;
       }
     }
+
+    //添加点云
+    if (first_configure_type >
+      WorkflowConfigureWidget::CONFIGURE_POINT_CLOUD ||
+      last_configure_type <
+      WorkflowConfigureWidget::CONFIGURE_POINT_CLOUD)
+    {
+      add_point_cloud = false;
+    }
+
+    if (add_point_cloud)
+    {
+      hs::recon::workflow::PointCloudConfigPtr point_cloud_config(
+        new hs::recon::workflow::PointCloudConfig);
+      workflow_configure_dialog.FetchPointCloudConfig(
+        *point_cloud_config);
+      if (AddPointCloudStep(photo_orientation_id, point_cloud_config,
+                            workflow_config) != 0)
+      {
+        add_point_cloud = false;
+      }
+      else
+      {
+        point_cloud_id = workflow_config.step_queue.front().id;
+      }
+    }
+
+
     if (!workflow_config.step_queue.empty())
     {
       workflow_queue_.push(workflow_config);
@@ -934,6 +963,15 @@ int BlocksPane::AddPhotoOrientationStep(
   {
     return -1;
   }
+}
+
+int AddPointCloudStep(
+  uint photo_orientation_id,
+  workflow::PointCloudConfigPtr point_cloud_config,
+  WorkflowConfig& workflow_config)
+{
+
+  return 0;
 }
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(

@@ -54,6 +54,13 @@ void WorkflowConfigureDialog::FetchPhotoOrientationConfig(
     photo_orientation_config);
 }
 
+void WorkflowConfigureDialog::FetchPointCloudConfig(
+  workflow::PointCloudConfig& point_cloud_config)
+{
+  workflow_configure_widget_->FetchPointCloudConfig(
+    point_cloud_config);
+}
+
 }
 }
 }

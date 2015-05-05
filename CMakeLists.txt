@@ -168,6 +168,7 @@ set(WORKFLOW_SOURCES
   "source/workflow/common/workflow_step.cpp"
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
+  "source/workflow/point_cloud/pmvs_point_cloud.cpp"
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
@@ -186,6 +187,7 @@ hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
+  3RDPARTY_DEPS hs_flowmodule DEP_LIBS point_cloud
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_optimizor HEADONLY
