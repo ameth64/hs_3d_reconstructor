@@ -965,7 +965,7 @@ int BlocksPane::AddPhotoOrientationStep(
   }
 }
 
-int AddPointCloudStep(
+int BlocksPane::AddPointCloudStep(
   uint photo_orientation_id,
   workflow::PointCloudConfigPtr point_cloud_config,
   WorkflowConfig& workflow_config)

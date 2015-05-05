@@ -23,10 +23,10 @@ typedef double Scalar;
 
 typedef std::shared_ptr<PointCloudConfig> PointCloudConfigPtr;
 
-class HS_EXPORT PMVSPointCloud : public WorkflowStep
+class HS_EXPORT PointCloud : public WorkflowStep
 {
 public:
-  PMVSPointCloud();
+  PointCloud();
 
 };
 

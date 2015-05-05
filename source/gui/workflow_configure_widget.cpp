@@ -247,6 +247,14 @@ void WorkflowConfigureWidget::FetchPhotoOrientationConfig(
     photo_orientation_config);
 }
 
+void WorkflowConfigureWidget::FetchPointCloudConfig(
+  workflow::PointCloudConfig& point_cloud_config)
+{
+  point_cloud_configure_widget_->FetchPointCloudConfig(
+    point_cloud_config);
+}
+
+
 void WorkflowConfigureWidget::SyncTreeNodeCheckState(
   QTreeWidgetItem* tree_item, int column)
 {

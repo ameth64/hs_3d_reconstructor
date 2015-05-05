@@ -50,6 +50,8 @@ public:
     workflow::FeatureMatchConfig& feature_match_config);
   void FetchPhotoOrientationConfig(
     workflow::PhotoOrientationConfig& photo_orientation_config);
+  void FetchPointCloudConfig(
+    workflow::PointCloudConfig& point_cloud_config);
 
 public slots:
   void SyncTreeNodeCheckState(QTreeWidgetItem* tree_item, int column);

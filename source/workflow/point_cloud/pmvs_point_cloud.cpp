@@ -7,7 +7,7 @@ namespace recon
 namespace workflow
 {
 
-PMVSPointCloud::PMVSPointCloud()
+PointCloud::PointCloud()
 {
 
 }
