@@ -73,8 +73,11 @@ public:
     REQUEST_GET_PHOTOS_IN_BLOCK,
     REQUEST_ADD_PHOTO_ORIENTATION,
     REQUEST_GET_PHOTO_ORIENTATION,
+    REQUEST_ADD_POINT_CLOUD,
+    REQUEST_GET_POINT_CLOUD,
     REQUEST_UPDATE_FEATURE_MATCH_FLAG,
     REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
+    REQUEST_UPDATE_POINT_CLOUD_FLAG,
     REQUEST_GET_ALL_BLOCKS,
     REQUEST_GET_ALL_FEATURE_MATCHES,
     REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
@@ -1084,8 +1087,139 @@ struct DatabaseRequestHandler<RequestGetPhotoOrientation,
       photo_orientation_path + "extrinsic.txt";
     response.point_cloud_path =
       photo_orientation_path + "sparse_point_cloud.txt";
-
     return response.error_code;
+  }
+};
+
+//Request Add Point Cloud
+struct RequestAddPointCloud
+{
+  REQUEST_HEADER
+    typedef Database::Identifier Identifier;
+  Identifier photo_orientation_id;
+};
+
+struct ResponseAddPointCloud
+{
+  RESPONSE_HEADER
+    typedef Database::Identifier Identifier;
+  Identifier point_cloud_id;
+  Identifier photo_orientation_id;
+  std::string name;
+  std::string path;
+};
+
+template <>
+struct DatabaseRequestHandler<RequestAddPointCloud,
+                              ResponseAddPointCloud>
+{
+  int operator() (const RequestAddPointCloud& request,
+                  ResponseAddPointCloud& response,
+                  DatabaseMediator& database_mediator)
+  {
+    typedef Database::Identifier Identifier;
+    PointCloudResource::AddRequest add_request;
+    add_request[
+      PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID] =
+        int(request.photo_orientation_id);
+      add_request[PointCloudResource::POINT_CLOUD_FIELD_NAME] =
+        std::string("");
+      add_request[PointCloudResource::POINT_CLOUD_FIELD_PATH] =
+        std::string("");
+      add_request[PointCloudResource::POINT_CLOUD_FIELD_FLAG] =
+        int(PointCloudResource::FLAG_NOT_COMPLETED);
+      PointCloudResource::AddRequestContainer add_requests;
+      add_requests.push_back(add_request);
+      PointCloudResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.point_cloud_resource_->Add(add_requests,
+        added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR ||
+        added_records.empty())
+      {
+        return response.error_code;
+      }
+
+      Identifier point_cloud_id = added_records.begin()->first;
+      std::string point_cloud_name =
+        boost::str(boost::format("point_cloud_%1%") % point_cloud_id);
+      boost::filesystem::path point_cloud_path =
+        boost::str(boost::format("%1%/%2%/") %
+        database_mediator.database_.PointCloudPath() %
+        point_cloud_id);
+      if (!boost::filesystem::create_directory(point_cloud_path))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
+        return response.error_code;
+      }
+
+      PointCloudResource::UpdateRequest update_request;
+      update_request[PointCloudResource::POINT_CLOUD_FIELD_NAME] =
+        point_cloud_name;
+      update_request[PointCloudResource::POINT_CLOUD_FIELD_PATH] =
+        point_cloud_path.string();
+      PointCloudResource::UpdateRequestContainer update_requests;
+      update_requests[point_cloud_id] = update_request;
+      PointCloudResource::UpdatedRecordContainer updated_records;
+      response.error_code =
+        database_mediator.point_cloud_resource_->Update(update_requests,
+                                                        updated_records);
+
+      if (response.error_code == DatabaseMediator::NO_ERROR)
+      {
+        response.point_cloud_id = point_cloud_id;;
+        response.photo_orientation_id = request.photo_orientation_id;
+        response.name = point_cloud_name;
+        response.path = point_cloud_path.string();
+      }
+
+      return response.error_code;
+  }
+};
+
+//Request Get Point Cloud
+struct RequestGetPointCloud
+{
+  REQUEST_HEADER
+    Database::Identifier id;
+};
+
+struct ResponseGetPointCloud
+{
+  RESPONSE_HEADER
+    typedef Database::Identifier Identifier;
+  PointCloudResource::Record record;
+  std::string photo_orientation_path;
+};
+
+template <>
+struct DatabaseRequestHandler<RequestGetPointCloud,
+  ResponseGetPointCloud>
+{
+  int operator () (const RequestGetPointCloud& request,
+    ResponseGetPointCloud& response,
+    DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.point_cloud_resource_->GetById(request.id,
+      response.record);
+
+    //获取Photo Orientation id
+    int photo_orientation_id = 
+      response.record[
+        PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt();
+
+    PhotoOrientationResource::Record photo_orientation_record;
+    ResponseGetPhotoOrientation photo_orientation_response;
+    photo_orientation_response.error_code = 
+      database_mediator.photo_orientation_resource_->GetById(
+        photo_orientation_id,photo_orientation_record);
+
+    response.photo_orientation_path = 
+      photo_orientation_record[
+        PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+
+   return response.error_code;
   }
 };
 
@@ -1153,6 +1287,40 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationFlag,
     response.error_code =
       database_mediator.photo_orientation_resource_->Update(update_requests,
                                                             updated_records);
+    return response.error_code;
+  }
+};
+
+//Request Update Point Cloud Flag
+struct RequestUpdatePointCloudFlag
+{
+  REQUEST_HEADER
+    Database::Identifier id;
+  int flag;
+};
+
+struct ResponseUpdatePointCloudFlag
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler<RequestUpdatePointCloudFlag,
+                              ResponseUpdatePointCloudFlag>
+{
+  int operator() (const RequestUpdatePointCloudFlag& request,
+                  ResponseUpdatePointCloudFlag& response,
+    DatabaseMediator& database_mediator)
+  {
+    PointCloudResource::UpdateRequest update_request;
+    update_request[PointCloudResource::POINT_CLOUD_FIELD_FLAG] =
+      request.flag;
+    PointCloudResource::UpdateRequestContainer update_requests;
+    update_requests[request.id] = update_request;
+    PointCloudResource::UpdatedRecordContainer updated_records;
+    response.error_code =
+      database_mediator.point_cloud_resource_->Update(update_requests,
+      updated_records);
     return response.error_code;
   }
 };

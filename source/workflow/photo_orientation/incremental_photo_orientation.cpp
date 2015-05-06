@@ -3,6 +3,10 @@
 #include <iostream>
 #include <array>
 
+#include <boost/property_tree/ptree.hpp> 
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/typeof/typeof.hpp> 
+
 #include "hs_sfm/sfm_file_io/keyset_loader.hpp"
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
 #include "hs_image_io/whole_io/image_data.hpp"
@@ -21,7 +25,6 @@ PhotoOrientationConfig::PhotoOrientationConfig()
 {
   type_ = STEP_PHOTO_ORIENTATION;
 }
-
 
 void PhotoOrientationConfig::set_image_intrinsic_map(
   const hs::sfm::ObjectIndexMap& image_intrinsic_map)
@@ -465,7 +468,6 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
       std::cout<<"SavePointCloud Error!\n";
       break;
     }
-
     break;
   }
   return result;

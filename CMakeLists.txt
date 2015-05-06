@@ -106,6 +106,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   HS_DEPS hs_graphics DEP_LIBS graphics_qt
   HS_DEPS hs_cartographics DEP_LIBS cartographics_qt
   HS_DEPS hs_progress DEP_LIBS progress_utility
+  HS_DEPS hs_flowmodule DEP_LIBS point_cloud
   LOCAL_DEPS database
   LOCAL_DEPS workflow
   )
@@ -169,6 +170,7 @@ set(WORKFLOW_SOURCES
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
+  "source/workflow/point_cloud/pmvs_point_cloud_generate_xml.cpp"
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
