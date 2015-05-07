@@ -818,7 +818,7 @@ void BlocksPane::OnActionAddWorkflowTriggered()
       }
       else
       {
-        feature_match_id = workflow_config.step_queue.front().id;
+        feature_match_id = workflow_config.step_queue.back().id;
       }
     }
 
@@ -843,7 +843,7 @@ void BlocksPane::OnActionAddWorkflowTriggered()
       }
       else
       {
-        photo_orientation_id = workflow_config.step_queue.front().id;
+        photo_orientation_id = workflow_config.step_queue.back().id;
       }
     }
 
@@ -869,14 +869,8 @@ void BlocksPane::OnActionAddWorkflowTriggered()
       }
       else
       {
-        point_cloud_id = workflow_config.step_queue.front().id;
+        point_cloud_id = workflow_config.step_queue.back().id;
       }
-    }
-
-    if (!workflow_config.step_queue.empty())
-    {
-      workflow_queue_.push(workflow_config);
-      timer_->start(500);
     }
 
     //添加surface model
@@ -901,8 +895,9 @@ void BlocksPane::OnActionAddWorkflowTriggered()
       }
       else
       {
-        surface_model_id = workflow_config.step_queue.front().id;
+        surface_model_id = workflow_config.step_queue.back().id;
       }
+
       if (!workflow_config.step_queue.empty())
       {
         workflow_queue_.push(workflow_config);
