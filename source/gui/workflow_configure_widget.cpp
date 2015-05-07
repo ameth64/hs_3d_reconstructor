@@ -85,25 +85,25 @@ WorkflowConfigureWidget::WorkflowConfigureWidget(
   {
     tree_item_point_cloud_->removeChild(tree_item_surface_model_);
     tree_widget_->addTopLevelItem(tree_item_surface_model_);
-    delete tree_item_feature_match_;
-    tree_item_feature_match_ = nullptr;
-    delete tree_item_photo_orientation_;
-    tree_item_photo_orientation_ = nullptr;
     delete tree_item_point_cloud_;
     tree_item_point_cloud_ = nullptr;
+    delete tree_item_photo_orientation_;
+    tree_item_photo_orientation_ = nullptr;
+    delete tree_item_feature_match_;
+    tree_item_feature_match_ = nullptr;
   }
   else if (start_configure_type_ == CONFIGURE_TEXTURE)
   {
     tree_item_surface_model_->removeChild(tree_item_texture_);
     tree_widget_->addTopLevelItem(tree_item_texture_);
-    delete tree_item_feature_match_;
-    tree_item_feature_match_ = nullptr;
-    delete tree_item_photo_orientation_;
-    tree_item_photo_orientation_ = nullptr;
-    delete tree_item_point_cloud_;
-    tree_item_point_cloud_ = nullptr;
     delete tree_item_surface_model_;
     tree_item_surface_model_ = nullptr;
+    delete tree_item_point_cloud_;
+    tree_item_point_cloud_ = nullptr;
+    delete tree_item_photo_orientation_;
+    tree_item_photo_orientation_ = nullptr;
+    delete tree_item_feature_match_;
+    tree_item_feature_match_ = nullptr;
   }
 
   tree_widget_->expandAll();
