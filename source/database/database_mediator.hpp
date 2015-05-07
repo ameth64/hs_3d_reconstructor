@@ -88,7 +88,11 @@ public:
     REQUEST_UPDATE_PHOTO_MEASURE_POS,
     REQUEST_GET_PHOTO_MEASURES_IN_PHOTO_ORIENTATION,
     REQUEST_UPDATE_GCP,
+    REQUEST_ADD_SURFACE_MODEL,
+    REQUEST_GET_SURFACE_MODEL,
+    REQUEST_UPDATE_SURFACE_MODEL_FLAG,
     NUMBER_OF_REQUEST_FLAGS
+
   };
 public:
   DatabaseMediator();
@@ -1856,6 +1860,167 @@ struct DatabaseRequestHandler<RequestUpdateGCP, ResponseUpdateGCP>
             selected_records, updated_records_photo_measure);
       }
     }
+    return response.error_code;
+  }
+};
+
+//Request Add Surface Model
+struct RequestAddSurfaceModel
+{
+  REQUEST_HEADER
+    typedef Database::Identifier Identifier;
+  Identifier point_cloud_id;
+};
+
+struct ResponseAddSurfaceModel
+{
+  RESPONSE_HEADER
+    typedef Database::Identifier Identifier;
+  Identifier surface_model_id;
+  Identifier point_cloud_id;
+  std::string name;
+  std::string path;
+};
+
+template <>
+struct DatabaseRequestHandler<RequestAddSurfaceModel,
+  ResponseAddSurfaceModel>
+{
+  int operator() (const RequestAddSurfaceModel& request,
+    ResponseAddSurfaceModel& response,
+    DatabaseMediator& database_mediator)
+  {
+    typedef Database::Identifier Identifier;
+    SurfaceModelResource::AddRequest add_request;
+    add_request[
+      SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID] =
+        int(request.point_cloud_id);
+      add_request[SurfaceModelResource::SURFACE_MODEL_FIELD_NAME] =
+        std::string("");
+      add_request[SurfaceModelResource::SURFACE_MODEL_FIELD_PATH] =
+        std::string("");
+      add_request[SurfaceModelResource::SURFACE_MODEL_FIELD_FLAG] =
+        SurfaceModelResource::FLAG_NOT_COMPLETED;
+      SurfaceModelResource::AddRequestContainer add_requests;
+      add_requests.push_back(add_request);
+      SurfaceModelResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.surface_model_resource_->Add(add_requests,
+        added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR ||
+        added_records.empty())
+      {
+        return response.error_code;
+      }
+
+      Identifier surface_model_id = added_records.begin()->first;
+      std::string surface_model_name =
+        boost::str(boost::format("surface_model_%1%") % surface_model_id);
+      boost::filesystem::path surface_model_path =
+        boost::str(boost::format("%1%/%2%/") %
+        database_mediator.database_.SurfaceModelPath() %
+        surface_model_id);
+      if (!boost::filesystem::create_directory(surface_model_path))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
+        return response.error_code;
+      }
+
+      SurfaceModelResource::UpdateRequest update_request;
+      update_request[SurfaceModelResource::SURFACE_MODEL_FIELD_NAME] =
+        surface_model_name;
+      update_request[SurfaceModelResource::SURFACE_MODEL_FIELD_PATH] =
+        surface_model_path.string();
+      SurfaceModelResource::UpdateRequestContainer update_requests;
+      update_requests[surface_model_id] = update_request;
+      SurfaceModelResource::UpdatedRecordContainer updated_records;
+      response.error_code =
+        database_mediator.surface_model_resource_->Update(update_requests,
+        updated_records);
+
+      if (response.error_code == DatabaseMediator::NO_ERROR)
+      {
+        response.surface_model_id = surface_model_id;;
+        response.point_cloud_id = request.point_cloud_id;
+        response.name = surface_model_name;
+        response.path = surface_model_path.string();
+      }
+
+      return response.error_code;
+  }
+};
+
+//Reequest Get Surface Model
+struct RequestGetSurfaceModel
+{
+  REQUEST_HEADER
+    Database::Identifier id;
+};
+
+struct ResponseGetSurfaceModel
+{
+  RESPONSE_HEADER
+  SurfaceModelResource::Record record;
+  std::string mesh_path;
+  std::string output_xml_path;
+};
+
+template <>
+struct DatabaseRequestHandler<RequestGetSurfaceModel,
+  ResponseGetSurfaceModel>
+{
+  int operator () (const RequestGetSurfaceModel& request,
+    ResponseGetSurfaceModel& response,
+    DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.surface_model_resource_->GetById(request.id,
+      response.record);
+
+    std::string surface_model_path =
+      response.record[
+        PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+
+        response.mesh_path =
+          surface_model_path + "mesh.ply";
+        response.output_xml_path =
+          surface_model_path + "output.xml";
+
+        return response.error_code;
+  }
+};
+
+
+//Request Update SurfaceModel Flag
+struct RequestUpdateSurfaceModelFlag
+{
+  REQUEST_HEADER
+    Database::Identifier id;
+  int flag;
+};
+
+struct ResponseUpdateSurfaceModelFlag
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler<RequestUpdateSurfaceModelFlag,
+  ResponseUpdateSurfaceModelFlag>
+{
+  int operator() (const RequestUpdateSurfaceModelFlag& request,
+    ResponseUpdateSurfaceModelFlag& response,
+    DatabaseMediator& database_mediator)
+  {
+    SurfaceModelResource::UpdateRequest update_request;
+    update_request[SurfaceModelResource::SURFACE_MODEL_FIELD_FLAG] =
+      request.flag;
+    SurfaceModelResource::UpdateRequestContainer update_requests;
+    update_requests[request.id] = update_request;
+    SurfaceModelResource::UpdatedRecordContainer updated_records;
+    response.error_code =
+      database_mediator.photo_orientation_resource_->Update(update_requests,
+      updated_records);
     return response.error_code;
   }
 };

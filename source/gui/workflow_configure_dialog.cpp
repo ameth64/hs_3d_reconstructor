@@ -61,6 +61,13 @@ void WorkflowConfigureDialog::FetchPointCloudConfig(
     point_cloud_config);
 }
 
+void WorkflowConfigureDialog::FetchSurfaceModelConfig(
+  workflow::MeshSurfaceConfig& surface_model_config)
+{
+  workflow_configure_widget_->FetchSurfaceModelConfig(
+    surface_model_config);
+}
+
 }
 }
 }

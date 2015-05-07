@@ -81,7 +81,12 @@ hs_add_qt_executable(${RECONSTRUCTOR_NAME}
   )
 
 hslib_add_dep(${RECONSTRUCTOR_NAME}
-  3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
+  3RDPARTY_DEPS boost 
+      DEP_LIBS boost_filesystem 
+               boost_system 
+               boost_thread
+               boost_serialization
+               boost_regex
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS exiv2
   3RDPARTY_DEPS glew
@@ -100,6 +105,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
+  3RDPARTY_DEPS jpeg DEP_LIBS jpeg
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
@@ -107,6 +113,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   HS_DEPS hs_cartographics DEP_LIBS cartographics_qt
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_flowmodule DEP_LIBS point_cloud
+  HS_DEPS hs_flowmodule DEP_LIBS mesh_surface
   LOCAL_DEPS database
   LOCAL_DEPS workflow
   )
@@ -170,9 +177,12 @@ set(WORKFLOW_SOURCES
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
+  "source/workflow/mesh_surface/poisson_surface_model.cpp"
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
+  3RDPARTY_DEPS boost DEP_LIBS boost_thread
+  3RDPARTY_DEPS boost DEP_LIBS boost_chrono
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS opencv
     DEP_LIBS opencv_calib3d
@@ -189,6 +199,7 @@ hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
   HS_DEPS hs_flowmodule DEP_LIBS point_cloud
+  HS_DEPS hs_flowmodule DEP_LIBS mesh_surface
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_optimizor HEADONLY

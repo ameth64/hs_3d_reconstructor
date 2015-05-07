@@ -446,6 +446,24 @@ void BlocksPane::OnTimeout()
             }
           case workflow::STEP_SURFACE_MODEL:
             {
+              db::RequestUpdateSurfaceModelFlag request;
+              db::ResponseUpdateSurfaceModelFlag response;
+              request.id = db::Database::Identifier(workflow_step_entry.id);
+              request.flag = db::SurfaceModelResource::FLAG_COMPLETED;
+              ((MainWindow*)parent())->database_mediator().Request(
+                this,
+                db::DatabaseMediator::REQUEST_UPDATE_SURFACE_MODEL_FLAG,
+                request, response, true);
+              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              {
+                QTreeWidgetItem* item =
+                  blocks_tree_widget_->SurfaceModelItem(
+                  workflow_step_entry.id);
+                if (item)
+                {
+                  item->setDisabled(false);
+                }
+              }
               break;
             }
           case workflow::STEP_TEXTURE:
@@ -730,6 +748,7 @@ void BlocksPane::OnActionAddWorkflowTriggered()
     uint feature_match_id = selected_feature_match_id_;
     uint photo_orientation_id = selected_photo_orientation_id_;
     uint point_cloud_id = selected_point_cloud_id_;
+    uint surface_model_id = selected_surface_model_id_;
     bool add_feature_match = true;
     bool add_photo_orientation = true;
     bool add_point_cloud = true;
@@ -814,6 +833,36 @@ void BlocksPane::OnActionAddWorkflowTriggered()
       timer_->start(500);
     }
 
+    //添加surface model
+    if (first_configure_type
+      > WorkflowConfigureWidget::CONFIGURE_SURFACE_MODEL ||
+      last_configure_type
+      < WorkflowConfigureWidget::CONFIGURE_SURFACE_MODEL)
+    {
+      add_surface_model = false;
+    }
+    if (add_surface_model)
+    {
+      hs::recon::workflow::MeshSurfaceConfigPtr surface_model_config(
+        new hs::recon::workflow::MeshSurfaceConfig);
+      workflow_configure_dialog.FetchSurfaceModelConfig(
+        *surface_model_config);
+      if (AddSurfaceModelStep(point_cloud_id
+        , surface_model_config
+        , workflow_config) != 0)
+      {
+        add_surface_model = false;
+      }
+      else
+      {
+        surface_model_id = workflow_config.step_queue.front().id;
+      }
+      if (!workflow_config.step_queue.empty())
+      {
+        workflow_queue_.push(workflow_config);
+        timer_->start(500);
+      }
+    }
   }
 }
 
@@ -1093,6 +1142,47 @@ int BlocksPane::AddPointCloudStep(
     return -1;
   }
 }
+
+int BlocksPane::AddSurfaceModelStep(
+  uint point_cloud_id,
+  workflow::MeshSurfaceConfigPtr surface_model_confg,
+  WorkflowConfig& workflow_config)
+{
+  typedef db::Database::Identifier Identifier;
+  hs::recon::db::RequestAddSurfaceModel request_add_surface_model;
+  hs::recon::db::ResponseAddSurfaceModel response_add_surface_model;
+  request_add_surface_model.point_cloud_id = Identifier(point_cloud_id);
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, hs::recon::db::DatabaseMediator::REQUEST_ADD_SURFACE_MODEL,
+    request_add_surface_model, response_add_surface_model, true);
+  if (response_add_surface_model.error_code ==
+    hs::recon::db::DatabaseMediator::NO_ERROR)
+  {
+    uint surface_model_id = uint(response_add_surface_model.surface_model_id);
+    QString surface_model_name =
+      QString::fromLocal8Bit(response_add_surface_model.name.c_str());
+    blocks_tree_widget_->AddSurfaceModel(point_cloud_id,
+      surface_model_id,
+      surface_model_name);
+    QTreeWidgetItem* feature_match_item =
+      blocks_tree_widget_->FeatureMatchItem(surface_model_id);
+    if (feature_match_item)
+    {
+      feature_match_item->setDisabled(true);
+    }
+    WorkflowStepEntry surface_model_step_entry;
+    surface_model_step_entry.id = uint(surface_model_id);
+    surface_model_step_entry.config = surface_model_confg;
+    workflow_config.step_queue.push(surface_model_step_entry);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
+
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
   const std::string& workflow_intermediate_directory,
@@ -1410,6 +1500,56 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
   const std::string& workflow_intermediate_directory,
   WorkflowStepEntry& workflow_step_entry)
 {
+  typedef hs::recon::db::Database::Identifier Identifier;
+  while (1)
+  {
+    workflow::MeshSurfaceConfigPtr mesh_surface_config =
+      std::static_pointer_cast<workflow::MeshSurfaceConfig>(
+      workflow_step_entry.config);
+    //获取Surface Model数据
+    hs::recon::db::RequestGetSurfaceModel request_surface_model;
+    hs::recon::db::ResponseGetSurfaceModel response_surface_model;
+    request_surface_model.id = Identifier(workflow_step_entry.id);
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
+      request_surface_model, response_surface_model, false);
+    if (response_surface_model.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+    std::string surface_model_path =
+      response_surface_model.record[
+        db::SurfaceModelResource::SURFACE_MODEL_FIELD_PATH].ToString();
+
+   //获取Point Cloud
+   hs::recon::db::RequestGetPointCloud request_point_cloud;
+   hs::recon::db::ResponseGetPointCloud response_point_cloud;
+   request_point_cloud.id = Identifier(workflow_step_entry.id);
+   ((MainWindow*)parent())->database_mediator().Request(
+     this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+     request_point_cloud, response_point_cloud, false);
+   if (response_point_cloud.error_code !=
+     hs::recon::db::Database::NO_ERROR)
+   {
+     break;
+   }
+   std::string point_cloud_path =
+     response_point_cloud.record[
+       db::PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
+   
+   QSettings settings;
+   QString number_of_threads_key = tr("number_of_threads");
+   uint number_of_threads = settings.value(number_of_threads_key,
+       QVariant(uint(1))).toUInt();
+
+   mesh_surface_config->set_xml_path(workflow_intermediate_directory + "surface_model_input.xml");
+   mesh_surface_config->set_core_use(number_of_threads);
+   mesh_surface_config->set_output_dir(surface_model_path);
+   mesh_surface_config->set_point_cloud_path(point_cloud_path + "dense_pointcloud.ply");
+   break;
+  }
+
   return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
 }
 
