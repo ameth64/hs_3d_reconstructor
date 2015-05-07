@@ -31,6 +31,9 @@ public:
     workflow::PhotoOrientationConfig& photo_orientation_config);
   void FetchPointCloudConfig(
     workflow::PointCloudConfig& point_cloud_config);
+  void FetchSurfaceModelConfig(
+    workflow::MeshSurfaceConfig& surface_model_config);
+
 
 private:
   WorkflowConfigureWidget* workflow_configure_widget_;

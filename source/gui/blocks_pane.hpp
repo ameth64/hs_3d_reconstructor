@@ -17,6 +17,7 @@
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 #include "gui/manager_pane.hpp"
 #include "gui/blocks_tree_widget.hpp"
+#include "workflow/mesh_surface/poisson_surface_model.hpp"
 
 namespace hs
 {
@@ -93,6 +94,11 @@ private:
   int AddPointCloudStep(
     uint photo_orientation_id,
     workflow::PointCloudConfigPtr point_cloud_config,
+    WorkflowConfig& workflow_config);
+
+  int AddSurfaceModelStep(
+    uint point_cloud_id,
+    workflow::MeshSurfaceConfigPtr surface_model_config,
     WorkflowConfig& workflow_config);
 
   WorkflowStepPtr SetFeatureMatchStep(

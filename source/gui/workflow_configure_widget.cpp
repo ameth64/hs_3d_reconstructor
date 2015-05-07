@@ -254,6 +254,12 @@ void WorkflowConfigureWidget::FetchPointCloudConfig(
     point_cloud_config);
 }
 
+void WorkflowConfigureWidget::FetchSurfaceModelConfig(
+  workflow::MeshSurfaceConfig& surface_model_config)
+{
+  surface_model_configure_widget_->FetchSurfaceModelConfig(
+    surface_model_config);
+}
 
 void WorkflowConfigureWidget::SyncTreeNodeCheckState(
   QTreeWidgetItem* tree_item, int column)
