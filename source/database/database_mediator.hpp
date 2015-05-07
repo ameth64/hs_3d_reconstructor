@@ -90,6 +90,7 @@ public:
     REQUEST_UPDATE_GCP,
     REQUEST_ADD_SURFACE_MODEL,
     REQUEST_GET_SURFACE_MODEL,
+    REQUEST_GET_ALL_SURFACE_MODELS,
     REQUEST_UPDATE_SURFACE_MODEL_FLAG,
     NUMBER_OF_REQUEST_FLAGS
 
@@ -2025,8 +2026,31 @@ struct DatabaseRequestHandler<RequestUpdateSurfaceModelFlag,
     update_requests[request.id] = update_request;
     SurfaceModelResource::UpdatedRecordContainer updated_records;
     response.error_code =
-      database_mediator.photo_orientation_resource_->Update(update_requests,
+      database_mediator.surface_model_resource_->Update(update_requests,
       updated_records);
+    return response.error_code;
+  }
+};
+
+struct RequestGetAllSurfaceModels
+{
+  REQUEST_HEADER
+};
+struct ResponseGetAllSurfaceModels
+{
+  RESPONSE_HEADER
+    SurfaceModelResource::RecordContainer records;
+};
+template <>
+struct DatabaseRequestHandler<RequestGetAllSurfaceModels,
+  ResponseGetAllSurfaceModels>
+{
+  int operator() (const RequestGetAllSurfaceModels& request,
+    ResponseGetAllSurfaceModels& response,
+    DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.surface_model_resource_->GetAll(response.records);
     return response.error_code;
   }
 };

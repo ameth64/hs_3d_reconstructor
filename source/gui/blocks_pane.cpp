@@ -276,6 +276,49 @@ void BlocksPane::Response(int request_flag, void* response)
           }
         }
 
+        //读取model
+        db::RequestGetAllSurfaceModels surface_model_request;
+        db::ResponseGetAllSurfaceModels surface_model_response;
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, db::DatabaseMediator::REQUEST_GET_ALL_SURFACE_MODELS,
+          surface_model_request, surface_model_response, false);
+        if (surface_model_response.error_code !=
+          db::DatabaseMediator::NO_ERROR)
+          break;
+
+        auto itr_surface_model =
+          surface_model_response.records.begin();
+        auto itr_surface_model_end =
+          surface_model_response.records.end();
+        for (; itr_surface_model != itr_surface_model_end;
+          ++itr_surface_model)
+        {
+          uint surface_model_id = itr_surface_model->first;
+          uint point_cloud_id =
+            uint(itr_surface_model->second[
+              db::SurfaceModelResource::
+                SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt());
+              std::string surface_model_std_name =
+                itr_surface_model->second[
+                  db::SurfaceModelResource::
+                    SURFACE_MODEL_FIELD_NAME].ToString();
+                  QString surface_model_name =
+                    QString::fromLocal8Bit(surface_model_std_name.c_str());
+                  int flag =
+                    itr_surface_model->second[
+                      db::SurfaceModelResource::
+                        SURFACE_MODEL_FIELD_FLAG].ToInt();
+                      if (blocks_tree_widget_->AddSurfaceModel(
+                        point_cloud_id, surface_model_id,
+                        surface_model_name) == 0 &&
+                        flag == db::SurfaceModelResource::FLAG_NOT_COMPLETED)
+                      {
+                        QTreeWidgetItem* item =
+                          blocks_tree_widget_->SurfaceModelItem(surface_model_id);
+                        item->setDisabled(false);
+                      }
+        }
+
         break;
       }
 

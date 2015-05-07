@@ -114,7 +114,7 @@ namespace hs
         config_tree.put("module_list.module_item.module_name",
           "mesh_surface");
         config_tree.put("module_list.module_item.module_version",
-          1.0);
+          "1.0");
         config_tree.put("module_list.module_item.pointcloud",
           config->pointcloud_path());
         config_tree.put("module_list.module_item.option_list.octree_depth",
@@ -167,16 +167,21 @@ namespace hs
         agent->input(surface_model_config->xml_path().c_str());
         agent->start(bm::CBaseDefine::E_MX_ASYNC);
 
-        int progress = 0;
-        while (progress != 100)
+        int ms_progress = 0;
+        while (ms_progress != 100)
         {
+          if (!progress_manager_.CheckKeepWorking())
+          {
+            break;
+          }
 #ifdef WIN32
           Sleep(100);
 #else
           //something like Sleep
 #endif
-          progress = agent->getProgress();
-          printf("Progress : %d\n", progress);
+          ms_progress = agent->getProgress();
+          progress_manager_.SetCurrentSubProgressCompleteRatio(
+            float(ms_progress)/float(100));
 
         }
 
