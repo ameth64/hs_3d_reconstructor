@@ -65,7 +65,7 @@ MainWindow::MainWindow()
   scene_window_->SetBackgroundColor(0.2f, 0.1f, 0.2f, 1.0f);
   QWidget* container = QWidget::createWindowContainer(scene_window_, this);
   setCentralWidget(container);
-
+  resize(800,600);
   setDockNestingEnabled(true);
   setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
   setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
@@ -86,6 +86,8 @@ MainWindow::MainWindow()
 
   QObject::connect(blocks_pane_, &BlocksPane::PhotoOrientationActivated,
                    scene_window_, &SceneWindow::SetPhotoOrientation);
+  QObject::connect(blocks_pane_, &BlocksPane::PointCloudActivated,
+                    scene_window_, &SceneWindow::SetPointCloud);
   QObject::connect(blocks_pane_, &BlocksPane::PhotoOrientationActivated,
                    gcps_pane_, &GCPsPane::UpdatePhotoOrientation);
   QObject::connect(gcps_pane_, &GCPsPane::GCPRelateLocationState,

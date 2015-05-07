@@ -78,6 +78,7 @@ public:
 
 public slots:
   void SetPhotoOrientation(uint photo_orientation_id_);
+  void SetPointCloud(uint point_cloud_id);
 
 protected slots:
   void OnMouseClicked(Qt::KeyboardModifiers state_key,
@@ -100,6 +101,7 @@ private slots:
 
 private:
   void UpdatePhotoOrientation();
+  void UpdatePointCloud();
   void BackupSelectedPointsColor(Float left, Float right,
                                  Float bottom, Float top,
                                  PointCloudData& pcd);
@@ -110,6 +112,7 @@ signals:
 private:
   db::DatabaseMediator& database_mediator_;
   uint photo_orientation_id_;
+  uint point_cloud_id_;
 
   bool is_show_photo_orientation_;
 

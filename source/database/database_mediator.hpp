@@ -81,6 +81,7 @@ public:
     REQUEST_GET_ALL_BLOCKS,
     REQUEST_GET_ALL_FEATURE_MATCHES,
     REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
+    REQUEST_GET_ALL_POINT_CLOUDS,
     REQUEST_ADD_GCPS,
     REQUEST_GET_ALL_GCPS,
     REQUEST_ADD_PHOTO_MEASURE,
@@ -1063,6 +1064,7 @@ struct ResponseGetPhotoOrientation
   std::string intrinsic_path;
   std::string extrinsic_path;
   std::string point_cloud_path;
+  std::string workspace_path;
 };
 
 template <>
@@ -1087,6 +1089,7 @@ struct DatabaseRequestHandler<RequestGetPhotoOrientation,
       photo_orientation_path + "extrinsic.txt";
     response.point_cloud_path =
       photo_orientation_path + "sparse_point_cloud.txt";
+    response.workspace_path = photo_orientation_path;
     return response.error_code;
   }
 };
@@ -1401,6 +1404,31 @@ struct DatabaseRequestHandler<RequestGetAllPhotoOrientations,
     return response.error_code;
   }
 };
+
+//Request Get All Point Cloud
+struct RequestGetAllPointClouds
+{
+  REQUEST_HEADER
+};
+struct ResponseGetAllPointClouds
+{
+  RESPONSE_HEADER
+  PointCloudResource::RecordContainer records;
+};
+template <>
+struct DatabaseRequestHandler<RequestGetAllPointClouds,
+                              ResponseGetAllPointClouds>
+{
+  int operator() (const RequestGetAllPointClouds& request,
+                  ResponseGetAllPointClouds& response,
+                  DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.point_cloud_resource_->GetAll(response.records);
+    return response.error_code;
+  }
+};
+
 
 //Request Add GCPs
 struct RequestAddGCPs

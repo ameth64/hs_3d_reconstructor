@@ -38,6 +38,7 @@ public:
   void set_intrinsic_path(const std::string& intrinsic_path);
   void set_extrinsic_path(const std::string& extrinsic_path);
   void set_point_cloud_path(const std::string& point_cloud_path);
+  void set_workspace_path(const std::string& workspace_path);
   void set_number_of_threads(int number_of_threads);
 
   const hs::sfm::ObjectIndexMap& image_intrinsic_map() const;
@@ -50,6 +51,7 @@ public:
   const std::string& intrinsic_path() const;
   const std::string& extrinsic_path() const;
   const std::string& point_cloud_path() const;
+  const std::string& workspace_path() const;
   int number_of_threads() const;
 
 private:
@@ -63,6 +65,7 @@ private:
   std::string intrinsic_path_;
   std::string extrinsic_path_;
   std::string point_cloud_path_;
+  std::string workspace_path_;
   int number_of_threads_;
 };
 
@@ -108,6 +111,10 @@ private:
                      const hs::sfm::TrackContainer& tracks,
                      const hs::sfm::ObjectIndexMap& track_point_map,
                      const PointContainer& points);
+  int ExportPointCloudInputXML(WorkflowStepConfig* config,
+                               IntrinsicParamsContainer& intrinsic_params_set,
+                               ExtrinsicParamsContainer& extrinsic_params_set,
+                               const hs::sfm::ObjectIndexMap& image_extrinsic_map);
 
 protected:
   virtual int RunImplement(WorkflowStepConfig* config);

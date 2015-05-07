@@ -170,7 +170,6 @@ set(WORKFLOW_SOURCES
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
-  "source/workflow/point_cloud/pmvs_point_cloud_generate_xml.cpp"
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}

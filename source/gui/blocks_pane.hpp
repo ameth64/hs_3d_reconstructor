@@ -77,6 +77,7 @@ private slots:
 
 private:
   void ActivatePhotoOrientationItem(QTreeWidgetItem* photo_orientation_item);
+  void ActivatePointCloudItem(QTreeWidgetItem* point_cloud_item);
 
   int SetWorkflowStep(const std::string& workflow_intermediate_directory,
                       WorkflowStepEntry& workflow_step_entry);
@@ -117,6 +118,7 @@ private:
 
 signals:
   void PhotoOrientationActivated(uint photo_orientation_id);
+  void PointCloudActivated(uint point_cloud_id);
 
 private:
   BlocksTreeWidget* blocks_tree_widget_;
@@ -142,6 +144,7 @@ private:
   uint selected_texture_id_;
 
   uint activated_photo_orientation_id_;
+  uint activated_point_cloud_id_;
 
   QTimer* timer_;
   QProgressBar* progress_bar_;

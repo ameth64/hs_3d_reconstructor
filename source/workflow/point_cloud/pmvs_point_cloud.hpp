@@ -18,18 +18,14 @@ namespace workflow
 class HS_EXPORT PointCloudConfig : public WorkflowStepConfig
 {
 public:
-typedef double Scalar;
-
   PointCloudConfig();
 
-  void set_workspace_path(
-    const std::string& workspace_path);
-  void set_photo_orientation_path(
-    const std::string& photo_orientation_path);
+  void set_workspace_path(const std::string& workspace_path);
+  void set_photo_orientation_path(const std::string& photo_orientation_path);
   void set_number_of_threads(int number_of_threads);
 
-  std::string photo_orientation_path() const;
-  std::string workspace_path() const;
+  const std::string photo_orientation_path() const;
+  const std::string workspace_path() const;
   int number_of_threads() const;
 
 private:
@@ -44,9 +40,9 @@ typedef std::shared_ptr<PointCloudConfig> PointCloudConfigPtr;
 class HS_EXPORT PointCloud : public WorkflowStep
 {
 public:
-  PointCloud();
+  typedef double Scalar;
 
-  int ExportPointCloudInputXML(WorkflowStepConfig* config);
+  PointCloud();
 
 protected:
   virtual int RunImplement(WorkflowStepConfig* config);

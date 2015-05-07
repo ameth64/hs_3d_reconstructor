@@ -37,6 +37,7 @@ BlocksPane::BlocksPane(QWidget* parent)
   , selected_surface_model_id_(std::numeric_limits<uint>::max())
   , selected_texture_id_(std::numeric_limits<uint>::max())
   , activated_photo_orientation_id_(std::numeric_limits<uint>::max())
+  , activated_point_cloud_id_(std::numeric_limits<uint>::max())
 {
   timer_ = new QTimer(this);
   blocks_tree_widget_ = new BlocksTreeWidget(this);
@@ -229,47 +230,48 @@ void BlocksPane::Response(int request_flag, void* response)
           }
         }
 
-//         db::RequestGetAllPhotoOrientations photo_orientations_request;
-//         db::ResponseGetAllPhotoOrientations photo_orientations_response;
-//         ((MainWindow*)parent())->database_mediator().Request(
-//           this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
-//           photo_orientations_request, photo_orientations_response, false);
-//         if (photo_orientations_response.error_code !=
-//           db::DatabaseMediator::NO_ERROR)
-//           break;
-// 
-//         auto itr_photo_orientation =
-//           photo_orientations_response.records.begin();
-//         auto itr_photo_orientation_end =
-//           photo_orientations_response.records.end();
-//         for (; itr_photo_orientation != itr_photo_orientation_end;
-//           ++itr_photo_orientation)
-//         {
-//           uint photo_orientation_id = itr_photo_orientation->first;
-//           uint feature_match_id =
-//           uint(itr_photo_orientation->second[
-//           db::PhotoOrientationResource::
-//           PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
-//           std::string photo_orientation_std_name =
-//           itr_photo_orientation->second[
-//           db::PhotoOrientationResource::
-//           PHOTO_ORIENTATION_FIELD_NAME].ToString();
-//           QString photo_orientation_name =
-//           QString::fromLocal8Bit(photo_orientation_std_name.c_str());
-//           int flag =
-//           itr_photo_orientation->second[
-//           db::PhotoOrientationResource::
-//             PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
-//           if (blocks_tree_widget_->AddPhotoOrientation(
-//             feature_match_id, photo_orientation_id,
-//             photo_orientation_name) == 0 &&
-//             flag == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
-//           {
-//             QTreeWidgetItem* item =
-//               blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
-//             item->setDisabled(false);
-//           }
-//         }
+        //读取点云数据
+        db::RequestGetAllPointClouds point_cloud_request;
+        db::ResponseGetAllPointClouds point_cloud_response;
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, db::DatabaseMediator::REQUEST_GET_ALL_POINT_CLOUDS,
+          point_cloud_request, point_cloud_response, false);
+        if (point_cloud_response.error_code !=
+          db::DatabaseMediator::NO_ERROR)
+          break;
+
+        auto itr_point_cloud =
+          point_cloud_response.records.begin();
+        auto itr_point_cloud_end =
+          point_cloud_response.records.end();
+        for (; itr_point_cloud != itr_point_cloud_end;
+          ++itr_point_cloud)
+        {
+          uint point_cloud_id = itr_point_cloud->first;
+          uint photo_orientation_id =
+            uint(itr_point_cloud->second[
+            db::PointCloudResource::
+            POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+          std::string point_cloud_std_name =
+            itr_point_cloud->second[
+            db::PointCloudResource::
+            POINT_CLOUD_FIELD_NAME].ToString();
+          QString point_cloud_name =
+          QString::fromLocal8Bit(point_cloud_std_name.c_str());
+          int flag =
+          itr_point_cloud->second[
+            db::PointCloudResource::
+            POINT_CLOUD_FIELD_FLAG].ToInt();
+          if (blocks_tree_widget_->AddPointCloud(
+            photo_orientation_id, point_cloud_id,
+            point_cloud_name) == 0 &&
+            flag == db::PointCloudResource::FLAG_NOT_COMPLETED)
+          {
+            QTreeWidgetItem* item =
+              blocks_tree_widget_->PointCloudItem(point_cloud_id);
+            item->setDisabled(false);
+          }
+        }
 
         break;
       }
@@ -435,9 +437,9 @@ void BlocksPane::OnTimeout()
                 if (item)
                 {
                   item->setDisabled(false);
-//                   ActivatePointCloudItem(item);
-//                   emit PhotoOrientationActivated(
-//                     activated_photo_orientation_id_);
+                  ActivatePointCloudItem(item);
+                  emit PointCloudActivated(
+                    activated_point_cloud_id_);
                 }
               }
               break;
@@ -497,6 +499,12 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
     {
       ActivatePhotoOrientationItem(item);
       emit PhotoOrientationActivated(activated_photo_orientation_id_);
+      break;
+    }
+  case BlocksTreeWidget::POINT_CLOUD:
+    {
+      ActivatePointCloudItem(item);
+      emit PointCloudActivated(activated_point_cloud_id_);
       break;
     }
   }
@@ -903,6 +911,23 @@ void BlocksPane::ActivatePhotoOrientationItem(
   photo_orientation_item->setBackground(0, QBrush(QColor(200, 110, 90)));
   activated_photo_orientation_id_ =
     photo_orientation_item->data(0, Qt::UserRole).toUInt();
+}
+
+void BlocksPane::ActivatePointCloudItem(
+  QTreeWidgetItem* point_cloud_item)
+{
+  QTreeWidgetItem* last_point_cloud_item =
+    blocks_tree_widget_->PhotoOrientationItem(activated_point_cloud_id_);
+  if (last_point_cloud_item == point_cloud_item) return;
+  if (last_point_cloud_item)
+  {
+    last_point_cloud_item->setBackground(0, backup_background_);
+  }
+
+  backup_background_ = point_cloud_item->background(0);
+  point_cloud_item->setBackground(0, QBrush(QColor(200, 110, 90)));
+  activated_point_cloud_id_ =
+    point_cloud_item->data(0, Qt::UserRole).toUInt();
 }
 
 int BlocksPane::SetWorkflowStep(
@@ -1330,6 +1355,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       response_photo_orientation.extrinsic_path);
     photo_orientation_config->set_point_cloud_path(
       response_photo_orientation.point_cloud_path);
+    photo_orientation_config->set_workspace_path(
+      response_photo_orientation.workspace_path);
     photo_orientation_config->set_number_of_threads(uint(number_of_threads));
 
     break;
@@ -1345,36 +1372,37 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
   while (1)
   {
 
-  workflow::PointCloudConfigPtr point_cloud_config =
-    std::static_pointer_cast<workflow::PointCloudConfig>(
-    workflow_step_entry.config);
+    workflow::PointCloudConfigPtr point_cloud_config =
+      std::static_pointer_cast<workflow::PointCloudConfig>(
+      workflow_step_entry.config);
 
-  //获取点云数据
-  hs::recon::db::RequestGetPointCloud request_point_cloud;
-  hs::recon::db::ResponseGetPointCloud response_point_cloud;
-  request_point_cloud.id = Identifier(workflow_step_entry.id);
-  ((MainWindow*)parent())->database_mediator().Request(
-    this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
-    request_point_cloud, response_point_cloud, false);
-  if (response_point_cloud.error_code !=
-    hs::recon::db::Database::NO_ERROR)
-  {
+    //获取点云数据
+    hs::recon::db::RequestGetPointCloud request_point_cloud;
+    hs::recon::db::ResponseGetPointCloud response_point_cloud;
+    request_point_cloud.id = Identifier(workflow_step_entry.id);
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+      request_point_cloud, response_point_cloud, false);
+    if (response_point_cloud.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+    std::string point_cloud_path =
+      response_point_cloud.record[
+        db::PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
+    std::string photo_orientation_path = response_point_cloud.photo_orientation_path;
+
+    QSettings settings;
+    QString number_of_threads_key = tr("number_of_threads");
+    uint number_of_threads = settings.value(number_of_threads_key,
+      QVariant(uint(1))).toUInt();
+
+    point_cloud_config->set_workspace_path(point_cloud_path);
+    point_cloud_config->set_photo_orientation_path(photo_orientation_path);
+    point_cloud_config->set_number_of_threads(number_of_threads);
     break;
-  }
-  std::string point_cloud_path =
-    response_point_cloud.record[
-      db::PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
-  std::string photo_orientation_path = response_point_cloud.photo_orientation_path;
-
-  QSettings settings;
-  QString number_of_threads_key = tr("number_of_threads");
-  uint number_of_threads = settings.value(number_of_threads_key,
-    QVariant(uint(1))).toUInt();
-
-  point_cloud_config->set_workspace_path(point_cloud_path);
-  point_cloud_config->set_photo_orientation_path(photo_orientation_path);
-  point_cloud_config->set_number_of_threads(number_of_threads);
-  }
+  }//while(1)
   return WorkflowStepPtr(new workflow::PointCloud);
 }
 

@@ -77,6 +77,12 @@ void SceneWindow::SetPhotoOrientation(uint photo_orientation_id)
   UpdatePhotoOrientation();
 }
 
+void SceneWindow::SetPointCloud(uint point_cloud_id)
+{
+  point_cloud_id_ = point_cloud_id;
+  UpdatePointCloud();
+}
+
 void SceneWindow::OnMouseClicked(Qt::KeyboardModifiers state_key,
                                  Qt::MouseButton mouse_button, QPoint pos)
 {
@@ -328,6 +334,12 @@ void SceneWindow::UpdatePhotoOrientation()
   ViewAll();
   RenderNow();
 }
+
+void SceneWindow::UpdatePointCloud()
+{
+  std::cout << "TODO....\n";
+}
+
 
 void SceneWindow::BackupSelectedPointsColor(Float left, Float right,
                                             Float bottom, Float top,
