@@ -93,6 +93,9 @@ BlocksPane::BlocksPane(QWidget* parent)
     blocks_tree_widget_, &BlocksTreeWidget::PhotoOrientationItemSelected,
     this, &BlocksPane::OnPhotoOrientationItemSelected);
   QObject::connect(
+    blocks_tree_widget_, &BlocksTreeWidget::PointCloudItemSelected,
+    this, &BlocksPane::OnPointCloudItemSelected);
+  QObject::connect(
     blocks_tree_widget_, &BlocksTreeWidget::SurfaceModelItemSelected,
     this, &BlocksPane::OnSurfaceModelItemSelected);
   QObject::connect(
@@ -917,7 +920,7 @@ void BlocksPane::ActivatePointCloudItem(
   QTreeWidgetItem* point_cloud_item)
 {
   QTreeWidgetItem* last_point_cloud_item =
-    blocks_tree_widget_->PhotoOrientationItem(activated_point_cloud_id_);
+    blocks_tree_widget_->PointCloudItem(activated_point_cloud_id_);
   if (last_point_cloud_item == point_cloud_item) return;
   if (last_point_cloud_item)
   {

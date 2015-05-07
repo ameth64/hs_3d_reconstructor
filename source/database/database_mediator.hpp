@@ -1193,6 +1193,7 @@ struct ResponseGetPointCloud
     typedef Database::Identifier Identifier;
   PointCloudResource::Record record;
   std::string photo_orientation_path;
+  std::string dense_pointcloud_path;
 };
 
 template <>
@@ -1206,6 +1207,11 @@ struct DatabaseRequestHandler<RequestGetPointCloud,
     response.error_code =
       database_mediator.point_cloud_resource_->GetById(request.id,
       response.record);
+
+    std::string point_cloud_path = 
+      response.record[PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
+
+    response.dense_pointcloud_path = point_cloud_path + "dense_pointcloud.ply";
 
     //获取Photo Orientation id
     int photo_orientation_id = 

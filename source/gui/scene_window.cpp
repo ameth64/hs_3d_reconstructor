@@ -337,7 +337,30 @@ void SceneWindow::UpdatePhotoOrientation()
 
 void SceneWindow::UpdatePointCloud()
 {
-  std::cout << "TODO....\n";
+  hs::recon::db::RequestGetPointCloud request_point_cloud;
+  hs::recon::db::ResponseGetPointCloud response_point_cloud;
+  request_point_cloud.id =
+    db::Database::Identifier(point_cloud_id_);
+  database_mediator_.Request(
+    this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+    request_point_cloud, response_point_cloud, false);
+  if (response_point_cloud.error_code !=
+    hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+  std::string dense_pointcloud_path =
+    response_point_cloud.dense_pointcloud_path;
+
+  //读取密集点云
+  PointCloudData pcd;
+  hs::graphics::ReadFile<Float>::ReadPointPlyFile(
+    dense_pointcloud_path, pcd);
+  sparse_point_cloud_render_layer_->SetupPointCloudData(pcd);
+
+  ViewAll();
+  RenderNow();
+
 }
 
 
