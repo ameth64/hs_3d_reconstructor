@@ -73,10 +73,10 @@ int PointCloud::RunImplement(WorkflowStepConfig* config)
   std::string point_cloud_xml_out = workspace_path + "point_cloud_output.xml";
 
   boost::property_tree::ptree root; 
-  boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
+  boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
   read_xml(photo_orientation_xml,root,boost::property_tree::xml_parser::trim_whitespace);
   root.put("module_list.module_item.share_section.workspace",workspace_path);
-  write_xml(point_cloud_xml,root,std::locale(),settings);
+  write_xml(point_cloud_xml, root, std::locale(), settings);
 
   bm::CBaseAgent *agent = pc::CPCAgent::create();
   agent->init();
