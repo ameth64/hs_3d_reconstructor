@@ -1528,7 +1528,9 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
    //获取Point Cloud
    hs::recon::db::RequestGetPointCloud request_point_cloud;
    hs::recon::db::ResponseGetPointCloud response_point_cloud;
-   request_point_cloud.id = Identifier(workflow_step_entry.id);
+   request_point_cloud.id = 
+     response_surface_model.record[
+       db::SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt();
    ((MainWindow*)parent())->database_mediator().Request(
      this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
      request_point_cloud, response_point_cloud, false);
@@ -1551,9 +1553,9 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
    mesh_surface_config->set_output_dir(surface_model_path);
    mesh_surface_config->set_point_cloud_path(point_cloud_path + "dense_pointcloud.ply");
    break;
-  }
+  }         
 
-  return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
+  return WorkflowStepPtr(new workflow::PoissonSurface);
 }
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
