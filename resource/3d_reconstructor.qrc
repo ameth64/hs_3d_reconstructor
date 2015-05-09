@@ -28,5 +28,6 @@
     <file>images/icon_block_add.png</file>
     <file>images/icon_block_remove.png</file>
     <file>images/icon_workflow_add.png</file>
+    <file>images/icon_gcp_constrained_optimize.png</file>
 </qresource>
 </RCC>

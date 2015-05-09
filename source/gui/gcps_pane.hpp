@@ -105,6 +105,7 @@ private:
   QIcon icon_show_measurement_;
   QIcon icon_show_estimate_;
   QIcon icon_show_error_;
+  QIcon icon_gcp_constrained_optimize_;
 
   QAction* action_add_gcp_;
   QAction* action_remove_gcps_;
@@ -112,6 +113,7 @@ private:
   QAction* action_show_measurement_;
   QAction* action_show_estimate_;
   QAction* action_show_error_;
+  QAction* action_gcp_constrained_optimize_;
 
   PhotoEntryContainer photo_entries_;
   GCPMeasureContainer gcp_measures_;

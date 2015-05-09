@@ -174,6 +174,7 @@ hslib_post_build(${DATABASE_NAME}_utest)
 set(WORKFLOW_NAME "workflow")
 set(WORKFLOW_SOURCES
   "source/workflow/common/workflow_step.cpp"
+  "source/workflow/common/default_longitude_latitude_convertor.cpp"
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
@@ -195,11 +196,13 @@ hslib_add_dep(${WORKFLOW_NAME}
              opencv_nonfree
   3RDPARTY_DEPS ceres DEP_LIBS ceres
   3RDPARTY_DEPS tiff DEP_LIBS tiff
+  3RDPARTY_DEPS proj DEP_LIBS proj
   3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
   HS_DEPS hs_flowmodule DEP_LIBS point_cloud
   HS_DEPS hs_flowmodule DEP_LIBS mesh_surface
+  HS_DEPS hs_cartographics HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_optimizor HEADONLY

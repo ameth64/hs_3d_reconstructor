@@ -2,8 +2,6 @@
 #include <iomanip>
 #include <iostream>
 
-#define DEBUG_5POINT 1
-
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -14,11 +12,10 @@
 
 #include "hs_image_io/whole_io/image_io.hpp"
 #include "hs_sfm/sfm_file_io/matches_saver.hpp"
+#include "hs_sfm/sfm_file_io/keyset_saver.hpp"
 #include "hs_sfm/fundamental/linear_8_points_ransac_refiner.hpp"
-#if DEBUG_5POINT
-#include "hs_sfm/sfm_utility/matches_tracks_convertor.hpp"
-#endif
 
+#include "workflow/common/default_longitude_latitude_convertor.hpp"
 #include "opencv_feature_match.hpp"
 
 namespace hs
@@ -86,7 +83,7 @@ int FeatureMatchConfig::keys_limits() const
 {
   return keys_limits_;
 }
-std::map<size_t, FeatureMatchConfig::PosEntry>
+const std::map<size_t, FeatureMatchConfig::PosEntry>&
 FeatureMatchConfig::pos_entries() const
 {
   return pos_entries_;
@@ -136,26 +133,26 @@ int OpenCVFeatureMatch::DetectFeature(WorkflowStepConfig* config,
                   image_data.GetBuffer());
     cv::Mat image_gray;
     cv::cvtColor(image, image_gray, cv::COLOR_RGB2GRAY);
+    //TODO:Use pyramid now.
+    cv::Mat image_pyramid;
+    cv::resize(image_gray, image_pyramid,
+               cv::Size(), 0.5, 0.5, cv::INTER_NEAREST);
+
     cv::Mat mask;
     std::vector<cv::KeyPoint> keys;
     cv::Mat descriptors;
-    sift(image_gray, mask, keys, descriptors);
+    sift(image_pyramid, mask, keys, descriptors);
 
     size_t number_of_keys = keys.size();
     Keyset keyset(number_of_keys);
-    std::ofstream key_file(itr_key_path->c_str(), std::ios::out);
-    if (!key_file) return -1;
-    key_file.setf(std::ios::fixed);
-    key_file<<std::setprecision(6);
-    key_file<<number_of_keys<<"\n";
     for (size_t j = 0; j < number_of_keys; j++)
     {
-      key_file<<keys[j].pt.x<<" "<<keys[j].pt.y<<"\n";
-      keyset[j] << keys[j].pt.x,
-                   keys[j].pt.y;
+      keyset[j] << double(keys[j].pt.x) * 2.0,
+                   double(keys[j].pt.y) * 2.0;
     }
+    hs::sfm::fileio::KeysetSaver<double> keyset_saver;
+    keyset_saver(*itr_key_path, keyset);
     keysets.push_back(keyset);
-    key_file.close();
 
     std::ofstream descriptor_file(itr_descriptor_path->c_str(),
                                   std::ios::out | std::ios::binary);
@@ -169,15 +166,195 @@ int OpenCVFeatureMatch::DetectFeature(WorkflowStepConfig* config,
   }
   if (keysets.size() == number_of_images)
   {
+    std::cout<<"Detect features success.\n";
     return 0;
   }
   else
   {
+    std::cout<<"Detect features failed.\n";
     return -1;
   }
 }
 
+int OpenCVFeatureMatch::GuideMatchesByPos(WorkflowStepConfig* config,
+                                          MatchGuide& match_guide)
+{
+  typedef FeatureMatchConfig::PosEntry::CoordinateSystem CoordinateSystem;
+  typedef CoordinateSystem::Projection Projection;
+  typedef DefaultLongitudeLatitudeConvertor::Coordinate Coordinate;
+
+  const size_t KNN = 40;
+
+  FeatureMatchConfig* feature_match_config =
+    static_cast<FeatureMatchConfig*>(config);
+
+  std::map<size_t, FeatureMatchConfig::PosEntry> pos_entries =
+    feature_match_config->pos_entries();
+
+  size_t number_of_images = feature_match_config->image_paths().size();
+  match_guide.resize(number_of_images);
+
+  auto itr_pos = pos_entries.begin();
+  auto itr_pos_end = pos_entries.end();
+  std::vector<size_t> index_map(number_of_images);
+  cv::Mat index_data(int(pos_entries.size()), 3, CV_32FC1);
+  double mean_x = 0.0;
+  double mean_y = 0.0;
+  double mean_z = 0.0;
+  DefaultLongitudeLatitudeConvertor convertor;
+  std::cout<<"Converting pos entries.\n";
+  for (int i = 0; itr_pos != itr_pos_end; ++itr_pos, i++)
+  {
+    if (itr_pos->second.coordinate_system.projection().projection_type() ==
+        Projection::TYPE_LAT_LONG)
+    {
+      Coordinate coordinate_longitude_latitude;
+      coordinate_longitude_latitude << itr_pos->second.x,
+                                       itr_pos->second.y,
+                                       itr_pos->second.z;
+      Coordinate coordinate_cartisian;
+      convertor.ConvertToCartisian(itr_pos->second.coordinate_system,
+                                   coordinate_longitude_latitude,
+                                   coordinate_cartisian);
+      itr_pos->second.x = coordinate_cartisian[0];
+      itr_pos->second.y = coordinate_cartisian[1];
+      itr_pos->second.z = coordinate_cartisian[2];
+    }
+
+    mean_x += itr_pos->second.x;
+    mean_y += itr_pos->second.y;
+    mean_z += itr_pos->second.z;
+    index_map[size_t(i)] = itr_pos->first;
+  }
+  mean_x /= double(pos_entries.size());
+  mean_y /= double(pos_entries.size());
+  mean_z /= double(pos_entries.size());
+  itr_pos = pos_entries.begin();
+  itr_pos_end = pos_entries.end();
+  std::cout<<"Translate pos entries.\n";
+  for (int i = 0; itr_pos != itr_pos_end; ++itr_pos, ++i)
+  {
+    itr_pos->second.x -= mean_x;
+    itr_pos->second.y -= mean_y;
+    itr_pos->second.z -= mean_z;
+    index_data.at<float>(i, 0) = float(itr_pos->second.x);
+    index_data.at<float>(i, 1) = float(itr_pos->second.y);
+    index_data.at<float>(i, 2) = float(itr_pos->second.z);
+  }
+  cv::flann::Index index(index_data, cv::flann::KDTreeIndexParams(4));
+
+  std::vector<size_t> images_no_pos;
+  std::cout<<"Finding images have no pos.\n";
+  for (size_t i = 0; i < number_of_images; i++)
+  {
+    if (pos_entries.find(i) == pos_entries.end())
+    {
+      images_no_pos.push_back(i);
+    }
+  }
+  std::cout<<images_no_pos.size()<<" images have no pos.\n";
+
+  std::cout<<"Adding base matches!\n";
+  for (size_t i = 0; i < number_of_images; i++)
+  {
+    if (number_of_images < KNN + 2 || pos_entries.find(i) == pos_entries.end())
+    {
+      for (size_t j = 0; j < i; j++)
+      {
+        match_guide[i].insert(j);
+      }
+    }
+    else
+    {
+      //将没有pos的照片全部加入匹配
+      auto itr_image_no_pos = images_no_pos.begin();
+      auto itr_image_no_pos_end = images_no_pos.end();
+      for (; itr_image_no_pos != itr_image_no_pos_end; ++itr_image_no_pos)
+      {
+        if (*itr_image_no_pos < i)
+        {
+          match_guide[i].insert(*itr_image_no_pos);
+        }
+      }
+    }
+  }
+
+  std::cout<<"Add pos knn matches.\n";
+  if (pos_entries.size() > KNN + 1)
+  {
+    cv::Mat pos_match = index_data.clone();
+    cv::Mat indices(int(pos_entries.size()), int(KNN + 1), CV_32SC1);
+    cv::Mat distances(int(pos_entries.size()), int(KNN + 1), CV_32FC1);
+    std::cout<<"KNN search neighbors.\n";
+    index.knnSearch(pos_match, indices, distances, int(KNN + 1),
+                    cv::flann::SearchParams(128));
+    std::cout<<"Add knn neighbors.\n";
+
+    for (size_t i = 0; i < pos_entries.size(); i++)
+    {
+      size_t match = index_map[i];
+      for (size_t j = 0; j < KNN + 1; j++)
+      {
+        size_t neighbor = index_map[indices.at<int>(int(i), int(j))];
+        if (neighbor != match)
+        {
+          match_guide[match].insert(neighbor);
+        }
+      }
+    }
+
+    std::cout<<"Eliminate duplicate matches.\n";
+    //剔除重复的匹配
+    for (size_t i = 0; i < number_of_images; i++)
+    {
+      auto itr_match = match_guide[i].begin();
+      auto itr_match_end = match_guide[i].end();
+      for (; itr_match != itr_match_end;)
+      {
+        if (*itr_match > i)
+        {
+          if (match_guide[*itr_match].find(i) == match_guide[*itr_match].end())
+          {
+            match_guide[*itr_match].insert(i);
+          }
+          itr_match = match_guide[i].erase(itr_match);
+        }
+        else
+        {
+          itr_match++;
+        }
+      }
+    }
+
+#if 1
+    std::cout<<"Dumping match guide.\n";
+    MatchGuide match_guide_out = match_guide;
+    for (size_t i = 0; i < number_of_images; i++)
+    {
+      for (size_t j = i + 1; j < number_of_images; j++)
+      {
+        if (match_guide_out[j].find(i) != match_guide_out[j].end())
+        {
+          match_guide_out[i].insert(j);
+        }
+      }
+      std::cout<<"match_guide_out["<<i<<"]:\n";
+      auto itr_guide = match_guide_out[i].begin();
+      auto itr_guide_end = match_guide_out[i].end();
+      for (; itr_guide != itr_guide_end; ++itr_guide)
+      {
+        std::cout<<*itr_guide<<" ";
+      }
+      std::cout<<"\n";
+    }
+#endif
+  }
+
+  return 0;
+}
+
 int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
+                                      const MatchGuide& match_guide,
                                       hs::sfm::MatchContainer& matches)
 {
   matches.clear();
@@ -185,10 +362,14 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
     static_cast<FeatureMatchConfig*>(config);
   size_t number_of_images = feature_match_config->image_paths().size();
   size_t number_of_matches = 0;
+  RandomAccessMatchGuide random_access_match_guide(number_of_images);
   for (size_t i = 0; i < number_of_images; i++)
   {
-    for (size_t j = 0; j < i; j++)
+    auto itr_guide = match_guide[i].begin();
+    auto itr_guide_end = match_guide[i].end();
+    for (; itr_guide != itr_guide_end; ++itr_guide)
     {
+      random_access_match_guide[i].push_back(*itr_guide);
       number_of_matches++;
     }
   }
@@ -215,13 +396,13 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
 #pragma omp parallel for
 #endif
 
-    for (int j = 0; j < i; j++)
+    for (int k = 0; k < int(random_access_match_guide[i].size()); k++)
     {
       if (!progress_manager_.CheckKeepWorking())
       {
         continue;
       }
-      std::cout<<"Matching query image "<<j<<"\n";
+      size_t j = random_access_match_guide[i][k];
       cv::Mat descriptors_match = LoadDescriptors(
         feature_match_config->key_paths()[j],
         feature_match_config->descriptor_paths()[j]);
@@ -232,7 +413,7 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
 
       const float match_threshold = 0.6f;
 
-      hs::sfm::ImagePair image_pair(i, size_t(j));
+      hs::sfm::ImagePair image_pair(i, j);
       hs::sfm::KeyPairContainer key_pairs;
       for (size_t k = 0; k < descriptors_match.rows; k++)
       {
@@ -244,21 +425,22 @@ int OpenCVFeatureMatch::MatchFeatures(WorkflowStepConfig* config,
             hs::sfm::KeyPair(size_t(indices.at<int>(int(k), 0)), k));
         }
       }
-      if (key_pairs.size() > 16)
-      {
 #ifdef _OPENMP
         omp_set_lock(&lock);
 #endif
+      if (key_pairs.size() > 16)
+      {
         matches[image_pair] = key_pairs;
-#ifdef _OPENMP
-        omp_unset_lock(&lock);
-#endif
-
       }
 
       number_of_matched++;
       progress_manager_.SetCurrentSubProgressCompleteRatio(
         float(number_of_matched) / float(number_of_matches));
+
+#ifdef _OPENMP
+        omp_unset_lock(&lock);
+#endif
+
     }
 
 #ifdef _OPENMP
@@ -280,20 +462,6 @@ int OpenCVFeatureMatch::FilterMatches(
   typedef Refiner::KeyPair RefinerKeyPair;
   typedef Refiner::KeyPairContainer RefinerKeyPairContainer;
   typedef Refiner::IndexSet IndexSet;
-
-#if DEBUG_5POINT
-  FeatureMatchConfig* feature_match_config =
-    static_cast<FeatureMatchConfig*>(config);
-  std::string constraints_path = feature_match_config->matches_path();
-  size_t pos = constraints_path.rfind('/');
-  constraints_path.erase(constraints_path.begin() + pos + 1,
-                         constraints_path.end());
-  constraints_path += "constraints.txt";
-  std::ofstream constraints_file(constraints_path.c_str());
-
-  std::map<hs::sfm::ImagePair, float> inlier_ratios;
-  std::map<hs::sfm::ImagePair, size_t> inlier_nums;
-#endif
 
   auto itr_key_pairs = matches_initial.begin();
   auto itr_key_pairs_end = matches_initial.end();
@@ -333,46 +501,8 @@ int OpenCVFeatureMatch::FilterMatches(
           itr_key_pairs->second[inlier_indices[i]]);
       }
       matches_filtered[itr_key_pairs->first] = key_pairs_refined;
-#if DEBUG_5POINT
-      inlier_ratios[itr_key_pairs->first] =
-        float(refiner_key_pairs_initial.size()) /
-        float(refiner_key_pairs_refined.size());
-      inlier_nums[itr_key_pairs->first] = inlier_indices.size();
-#endif
     }
   }
-
-#if DEBUG_5POINT
-  size_t number_of_images = feature_match_config->image_paths().size();
-  size_t number_of_image_pairs = matches_filtered.size();
-  constraints_file<<number_of_images<<"\n";
-  constraints_file<<number_of_image_pairs<<"\n";
-  itr_key_pairs = matches_filtered.begin();
-  itr_key_pairs_end = matches_filtered.end();
-  for (; itr_key_pairs != itr_key_pairs_end; ++itr_key_pairs)
-  {
-    constraints_file<<itr_key_pairs->first.first<<" "
-                    <<itr_key_pairs->first.second<<"\n";
-    constraints_file<<"0 0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0 0\n";
-    constraints_file<<inlier_ratios[itr_key_pairs->first]<<"\n";
-    constraints_file<<inlier_nums[itr_key_pairs->first]<<"\n";
-    constraints_file<<"0\n";
-  }
-
-  hs::sfm::TrackContainer tracks;
-  hs::sfm::MatchesTracksConvertor convertor;
-  convertor(matches_filtered, tracks);
-  constraints_file<<tracks.size()<<"\n";
-  for (size_t i = 0; i < tracks.size(); i++)
-  {
-    constraints_file<<tracks[i].size();
-    for (size_t j = 0; j < tracks[i].size(); j++)
-    {
-      constraints_file<<" "<<tracks[i][j].first<<" "<<tracks[i][j].second;
-    }
-    constraints_file<<"\n";
-  }
-#endif
 
   return 0;
 }
@@ -410,8 +540,11 @@ int OpenCVFeatureMatch::RunImplement(WorkflowStepConfig* config)
   if (result != 0) return result;
 
   progress_manager_.AddSubProgress(0.4f);
+  MatchGuide match_guide;
+  result = GuideMatchesByPos(config, match_guide);
+  if (result != 0) return result;
   hs::sfm::MatchContainer matches_initial;
-  result = MatchFeatures(config, matches_initial);
+  result = MatchFeatures(config, match_guide, matches_initial);
   progress_manager_.FinishCurrentSubProgress();
   if (result != 0) return result;
 

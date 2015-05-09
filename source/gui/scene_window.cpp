@@ -37,9 +37,9 @@ SceneWindow::SceneWindow(QWindow* parent,
   menu_context_->addAction(action_filter_photos_by_selected_points_);
 
   AddRenderLayer(
-    std::static_pointer_cast<RenderLayer>(photo_orientation_render_layer_));
-  AddRenderLayer(
     std::static_pointer_cast<RenderLayer>(sparse_point_cloud_render_layer_));
+  AddRenderLayer(
+    std::static_pointer_cast<RenderLayer>(photo_orientation_render_layer_));
 
   QObject::connect(this, &OpenGLWindow::MouseClicked,
                    this, &SceneWindow::OnMouseClicked);
@@ -213,6 +213,47 @@ void SceneWindow::OnActionFilterPhotosBySelectedPointsTriggered()
   emit FilterPhotosBySelectedPoints(selected_points_);
 }
 
+struct XCompare
+{
+  typedef EIGEN_VECTOR(SceneWindow::Float, 3) Vector3;
+  bool operator() (const Vector3& vertex1, const Vector3& vertex2) const
+  {
+    return vertex1[0] < vertex2[0];
+  }
+};
+
+struct YCompare
+{
+  typedef EIGEN_VECTOR(SceneWindow::Float, 3) Vector3;
+  bool operator() (const Vector3& vertex1, const Vector3& vertex2) const
+  {
+    return vertex1[1] < vertex2[1];
+  }
+};
+struct ZCompare
+{
+  typedef EIGEN_VECTOR(SceneWindow::Float, 3) Vector3;
+  bool operator() (const Vector3& vertex1, const Vector3& vertex2) const
+  {
+    return vertex1[2] < vertex2[2];
+  }
+};
+
+struct DistanceCompare
+{
+  typedef EIGEN_VECTOR(SceneWindow::Float, 3) Vector3;
+
+  DistanceCompare(const Vector3& center)
+    : center_(center) {}
+
+  bool operator() (const Vector3& vertex1, const Vector3& vertex2) const
+  {
+    return (vertex1 - center_).norm() < (vertex2 - center_).norm();
+  }
+
+  const Vector3& center_;
+};
+
 void SceneWindow::UpdatePhotoOrientation()
 {
   hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
@@ -298,13 +339,52 @@ void SceneWindow::UpdatePhotoOrientation()
     orientation_entry.width = itr_intrinsic_entry->second.width;
     orientation_entry.height = itr_intrinsic_entry->second.height;
 
-    orientation_entries.push_back(orientation_entry);
+    if (orientation_entry.extrinsic_params.position()[0] != Float(0) ||
+        orientation_entry.extrinsic_params.position()[1] != Float(0) ||
+        orientation_entry.extrinsic_params.position()[2] != Float(0) ||
+        orientation_entry.extrinsic_params.rotation()[0] != Float(0) ||
+        orientation_entry.extrinsic_params.rotation()[1] != Float(0) ||
+        orientation_entry.extrinsic_params.rotation()[2] != Float(0))
+    {
+      orientation_entries.push_back(orientation_entry);
+    }
   }
 
   //读取稀疏点云
   PointCloudData pcd;
   hs::graphics::ReadFile<Float>::ReadPointPlyFile(
     response_photo_orientation.point_cloud_path, pcd);
+
+  //计算中位数点
+  std::vector<Vector3> vertex_data_order = pcd.VertexData();
+  Vector3 median_point;
+  std::sort(vertex_data_order.begin(), vertex_data_order.end(), XCompare());
+  median_point[0] = vertex_data_order[vertex_data_order.size() / 2][0];
+  std::sort(vertex_data_order.begin(), vertex_data_order.end(), YCompare());
+  median_point[1] = vertex_data_order[vertex_data_order.size() / 2][1];
+  std::sort(vertex_data_order.begin(), vertex_data_order.end(), ZCompare());
+  median_point[2] = vertex_data_order[vertex_data_order.size() / 2][2];
+  std::sort(vertex_data_order.begin(), vertex_data_order.end(),
+            DistanceCompare(median_point));
+  size_t end = size_t(std::ceil(double(median_point.size()) * 0.9));
+  Vector3 min, max;
+  min << std::numeric_limits<Float>::max(),
+         std::numeric_limits<Float>::max(),
+         std::numeric_limits<Float>::max();
+  max << -std::numeric_limits<Float>::max(),
+         -std::numeric_limits<Float>::max(),
+         -std::numeric_limits<Float>::max();
+  for (size_t i = 0; i < end; i++)
+  {
+    min[0] = std::min(min[0], vertex_data_order[i][0]);
+    min[1] = std::min(min[1], vertex_data_order[i][1]);
+    min[2] = std::min(min[2], vertex_data_order[i][2]);
+    max[0] = std::max(max[0], vertex_data_order[i][0]);
+    max[1] = std::max(max[1], vertex_data_order[i][1]);
+    max[2] = std::max(max[2], vertex_data_order[i][2]);
+  }
+  pcd.SetBoundingBox(min, max);
+
   sparse_point_cloud_render_layer_->SetupPointCloudData(pcd);
 
   //计算中心点，以及各张照片距离中心点的平均距离
@@ -328,7 +408,7 @@ void SceneWindow::UpdatePhotoOrientation()
   photo_orientation_render_layer_->SetColor(Float(0.2),
                                             Float(0.3),
                                             Float(0.8),
-                                            Float(1.0));
+                                            Float(0.5));
   photo_orientation_render_layer_->SetCameraSize(mean_distance * Float(0.1));
 
   ViewAll();
