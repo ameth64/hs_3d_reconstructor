@@ -33,6 +33,7 @@ GCPsPane::GCPsPane(QWidget* parent)
   , icon_show_measurement_(":/images/icon_gcp_show_measurement.png")
   , icon_show_estimate_(":/images/icon_gcp_show_estimate.png")
   , icon_show_error_(":/images/icon_gcp_show_error.png")
+  , icon_gcp_constrained_optimize_(":/images/icon_gcp_constrained_optimize.png")
   , photo_orientation_id_(std::numeric_limits<uint>::max())
   , current_gcp_id_(std::numeric_limits<uint>::max())
   , similar_scale_(Scalar(1))
@@ -62,6 +63,10 @@ GCPsPane::GCPsPane(QWidget* parent)
   action_show_error_ =
     new QAction(icon_show_error_, tr("Show Error"), this);
   action_show_error_->setEnabled(true);
+  action_gcp_constrained_optimize_ =
+    new QAction(icon_gcp_constrained_optimize_,
+                tr("GCP Constrained Optimize"), this);
+  action_gcp_constrained_optimize_->setEnabled(false);
 
   tool_bar_ = new QToolBar(this);
   tool_bar_->addAction(action_add_gcp_);
@@ -70,6 +75,7 @@ GCPsPane::GCPsPane(QWidget* parent)
   tool_bar_->addAction(action_show_measurement_);
   tool_bar_->addAction(action_show_estimate_);
   tool_bar_->addAction(action_show_error_);
+  tool_bar_->addAction(action_gcp_constrained_optimize_);
   main_window_->addToolBar(tool_bar_);
 
   QObject::connect(action_add_gcp_, &QAction::triggered,
