@@ -143,7 +143,8 @@ namespace hs
           config->polygon_mesh());
         config_tree.put("module_list.module_item.option_list.output_dir",
           config->output_dir());
-        boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
+        //boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
+        boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
         write_xml(config->xml_path(), config_tree, std::locale(), settings);
         return 0;
         

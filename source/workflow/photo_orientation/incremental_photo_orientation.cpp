@@ -9,6 +9,7 @@
 
 #include "hs_sfm/sfm_file_io/keyset_loader.hpp"
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
+#include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
 #include "hs_image_io/whole_io/image_data.hpp"
 #include "hs_image_io/whole_io/image_io.hpp"
 
@@ -76,6 +77,11 @@ void PhotoOrientationConfig::set_point_cloud_path(
 {
   point_cloud_path_ = point_cloud_path;
 }
+void PhotoOrientationConfig::set_similar_transform_path(
+  const std::string& similar_transform_path)
+{
+  similar_transform_path_ = similar_transform_path;
+}
 void PhotoOrientationConfig::set_workspace_path(
   const std::string& workspace_path)
 {
@@ -84,6 +90,12 @@ void PhotoOrientationConfig::set_workspace_path(
 void PhotoOrientationConfig::set_number_of_threads(int number_of_threads)
 {
   number_of_threads_ = number_of_threads;
+}
+
+void PhotoOrientationConfig::set_pos_entries(
+  const PosEntryContainer& pos_entries)
+{
+  pos_entries_ = pos_entries;
 }
 
 const hs::sfm::ObjectIndexMap&
@@ -128,6 +140,10 @@ const std::string& PhotoOrientationConfig::point_cloud_path() const
 {
   return point_cloud_path_;
 }
+const std::string& PhotoOrientationConfig::similar_transform_path() const
+{
+  return similar_transform_path_;
+}
 const std::string& PhotoOrientationConfig::workspace_path() const
 {
   return workspace_path_;
@@ -135,6 +151,11 @@ const std::string& PhotoOrientationConfig::workspace_path() const
 int PhotoOrientationConfig::number_of_threads() const
 {
   return number_of_threads_;
+}
+const PhotoOrientationConfig::PosEntryContainer&
+PhotoOrientationConfig::pos_entries() const
+{
+  return pos_entries_;
 }
 
 IncrementalPhotoOrientation::IncrementalPhotoOrientation()
@@ -211,6 +232,81 @@ int IncrementalPhotoOrientation::RunSFM(
              track_point_map,
              view_info_indexer,
              &progress_manager_);
+}
+
+int IncrementalPhotoOrientation::SimilarTransformByPosEntries(
+  WorkflowStepConfig* config,
+  const ExtrinsicParamsContainer& extrinsic_params_set,
+  const hs::sfm::ObjectIndexMap& image_extrinsic_map)
+{
+  typedef PhotoOrientationConfig::PosEntry PosEntry;
+  typedef PhotoOrientationConfig::PosEntryContainer PosEntryContainer;
+  typedef hs::sfm::SimilarTransformEstimator<Scalar> Estimator;
+  typedef Estimator::Point Point;
+  typedef Estimator::PointContainer PointContainer;
+  typedef Estimator::Rotation Rotation;
+  typedef Estimator::Translate Translate;
+
+  PhotoOrientationConfig* photo_orientation_config =
+    static_cast<PhotoOrientationConfig*>(config);
+    const PosEntryContainer& pos_entries =
+      photo_orientation_config->pos_entries();
+
+  PointContainer points_extrinsic;
+  PointContainer points_pos;
+  for (size_t image_id = 0; image_id < image_extrinsic_map.Size(); image_id++)
+  {
+    auto itr_pos_entry = pos_entries.find(image_id);
+    if (image_extrinsic_map.IsValid(image_id) &&
+        itr_pos_entry != pos_entries.end())
+    {
+      size_t extrinsic_id = image_extrinsic_map[image_id];
+      const ExtrinsicParams& extrinsic_params =
+        extrinsic_params_set[extrinsic_id];
+      points_extrinsic.push_back(extrinsic_params.position());
+      const PosEntry& pos_entry = itr_pos_entry->second;
+      Point point_pos;
+      point_pos<<pos_entry.x,
+                 pos_entry.y,
+                 pos_entry.z;
+      points_pos.push_back(point_pos);
+    }
+  }
+
+  Estimator estimator;
+  Rotation similar_rotation;
+  Translate similar_translate;
+  Scalar similar_scale;
+  int result = estimator(points_extrinsic, points_pos,
+                         similar_rotation,
+                         similar_translate,
+                         similar_scale);
+
+  if (result == 0)
+  {
+    std::string similar_path =
+      photo_orientation_config->similar_transform_path();
+    std::ofstream similar_file(similar_path);
+    if (!similar_file)
+    {
+      result = -1;
+    }
+    else
+    {
+      similar_file.setf(std::ios::fixed);
+      similar_file<<std::setprecision(10);
+      similar_file<<similar_scale<<"\n";
+      similar_file<<similar_rotation[0]<<"\n";
+      similar_file<<similar_rotation[1]<<"\n";
+      similar_file<<similar_rotation[2]<<"\n";
+      similar_file<<similar_translate[0]<<"\n";
+      similar_file<<similar_translate[1]<<"\n";
+      similar_file<<similar_translate[2];
+      similar_file.close();
+    }
+  }
+
+  return result;
 }
 
 int IncrementalPhotoOrientation::SaveIntrinsics(
@@ -536,7 +632,8 @@ int IncrementalPhotoOrientation::ExportPointCloudInputXML(
   root.put("module_list.module_item.merge_section.quality_threshold",1);
   root.put("module_list.module_item.merge_section.visibility_threshold",2);
 
-  boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
+  //boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
+  boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
   write_xml(point_cloud_input_path,root,std::locale(),settings);
 
   return 0;
@@ -585,6 +682,9 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
       std::cout<<"RunSFM Error!\n";
       break;
     }
+
+    SimilarTransformByPosEntries(
+      config, extrinsic_params_set, image_extrinsic_map);
 
     result = SaveIntrinsics(config, intrinsic_params_set);
     if (result != 0)

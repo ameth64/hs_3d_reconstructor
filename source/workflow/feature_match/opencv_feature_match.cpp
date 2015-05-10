@@ -15,7 +15,6 @@
 #include "hs_sfm/sfm_file_io/keyset_saver.hpp"
 #include "hs_sfm/fundamental/linear_8_points_ransac_refiner.hpp"
 
-#include "workflow/common/default_longitude_latitude_convertor.hpp"
 #include "opencv_feature_match.hpp"
 
 namespace hs
@@ -54,7 +53,7 @@ void FeatureMatchConfig::set_keys_limits(int keys_limits)
   keys_limits_ = keys_limits;
 }
 void FeatureMatchConfig::set_pos_entries(
-  std::map<size_t, PosEntry>& pos_entries)
+  const std::map<size_t, PosEntry>& pos_entries)
 {
   pos_entries_ = pos_entries;
 }
@@ -179,10 +178,6 @@ int OpenCVFeatureMatch::DetectFeature(WorkflowStepConfig* config,
 int OpenCVFeatureMatch::GuideMatchesByPos(WorkflowStepConfig* config,
                                           MatchGuide& match_guide)
 {
-  typedef FeatureMatchConfig::PosEntry::CoordinateSystem CoordinateSystem;
-  typedef CoordinateSystem::Projection Projection;
-  typedef DefaultLongitudeLatitudeConvertor::Coordinate Coordinate;
-
   const size_t KNN = 40;
 
   FeatureMatchConfig* feature_match_config =
@@ -201,26 +196,9 @@ int OpenCVFeatureMatch::GuideMatchesByPos(WorkflowStepConfig* config,
   double mean_x = 0.0;
   double mean_y = 0.0;
   double mean_z = 0.0;
-  DefaultLongitudeLatitudeConvertor convertor;
   std::cout<<"Converting pos entries.\n";
   for (int i = 0; itr_pos != itr_pos_end; ++itr_pos, i++)
   {
-    if (itr_pos->second.coordinate_system.projection().projection_type() ==
-        Projection::TYPE_LAT_LONG)
-    {
-      Coordinate coordinate_longitude_latitude;
-      coordinate_longitude_latitude << itr_pos->second.x,
-                                       itr_pos->second.y,
-                                       itr_pos->second.z;
-      Coordinate coordinate_cartisian;
-      convertor.ConvertToCartisian(itr_pos->second.coordinate_system,
-                                   coordinate_longitude_latitude,
-                                   coordinate_cartisian);
-      itr_pos->second.x = coordinate_cartisian[0];
-      itr_pos->second.y = coordinate_cartisian[1];
-      itr_pos->second.z = coordinate_cartisian[2];
-    }
-
     mean_x += itr_pos->second.x;
     mean_y += itr_pos->second.y;
     mean_z += itr_pos->second.z;

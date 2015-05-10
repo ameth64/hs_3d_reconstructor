@@ -192,33 +192,17 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     response_photo_orientation.record[
       db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
 
-  similar_scale_ =
-    response_photo_orientation.record[
-      db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_SCALE].ToFloat();
-  similar_rotation_[0] =
-    Scalar(response_photo_orientation.record[
-      db::PhotoOrientationResource::
-        PHOTO_ORIENTATION_FIELD_ROTATION_X].ToFloat());
-  similar_rotation_[1] =
-    Scalar(response_photo_orientation.record[
-      db::PhotoOrientationResource::
-        PHOTO_ORIENTATION_FIELD_ROTATION_Y].ToFloat());
-  similar_rotation_[2] =
-    Scalar(response_photo_orientation.record[
-      db::PhotoOrientationResource::
-        PHOTO_ORIENTATION_FIELD_ROTATION_Z].ToFloat());
-  similar_translate_[0] =
-    Scalar(response_photo_orientation.record[
-      db::PhotoOrientationResource::
-        PHOTO_ORIENTATION_FIELD_TRANSLATE_X].ToFloat());
-  similar_translate_[1] =
-    Scalar(response_photo_orientation.record[
-      db::PhotoOrientationResource::
-        PHOTO_ORIENTATION_FIELD_TRANSLATE_Y].ToFloat());
-  similar_translate_[2] =
-    Scalar(response_photo_orientation.record[
-      db::PhotoOrientationResource::
-        PHOTO_ORIENTATION_FIELD_TRANSLATE_Z].ToFloat());
+  std::ifstream similar_file(
+    response_photo_orientation.similar_transform_path.c_str());
+  if (!similar_file) return;
+  similar_file>>similar_scale_;
+  similar_file>>similar_rotation_[0];
+  similar_file>>similar_rotation_[1];
+  similar_file>>similar_rotation_[2];
+  similar_file>>similar_translate_[0];
+  similar_file>>similar_translate_[1];
+  similar_file>>similar_translate_[2];
+  similar_file.close();
 
   std::map<uint, IntrinsicParams> intrinsic_params_set;
   std::ifstream intrinsic_file(
@@ -925,6 +909,19 @@ int GCPsPane::ComputeSimilarTransform()
       similar_translate;
 
     //Update similar transform
+    db::RequestUpdatePhotoOrientationTransform transform_request;
+    db::ResponseUpdatePhotoOrientationTransform transform_response;
+    transform_request.id = photo_orientation_id_;
+    transform_request.scale = similar_scale_;
+    transform_request.rotation_x = similar_rotation_[0];
+    transform_request.rotation_y = similar_rotation_[1];
+    transform_request.rotation_z = similar_rotation_[2];
+    transform_request.translate_x = similar_translate_[0];
+    transform_request.translate_y = similar_translate_[1];
+    transform_request.translate_z = similar_translate_[2];
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_TRANSFORM,
+      transform_request, transform_response, true);
 
     //Set GCP estimate pos
     itr_gcp_measure = gcp_measures_.begin();

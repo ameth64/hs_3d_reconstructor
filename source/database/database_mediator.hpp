@@ -2,6 +2,8 @@
 #define _HS_3D_RECONSTRUCTOR_DATABASE_DATABASE_MEDIATOR_HPP_
 
 #include <set>
+#include <fstream>
+#include <iomanip>
 
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
@@ -77,6 +79,8 @@ public:
     REQUEST_GET_POINT_CLOUD,
     REQUEST_UPDATE_FEATURE_MATCH_FLAG,
     REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
+    REQUEST_UPDATE_PHOTO_ORIENTATION_TRANSFORM,
+    REQUEST_UPDATE_PHOTO_ORIENTATION_COORDINATE_SYSTEM,
     REQUEST_UPDATE_POINT_CLOUD_FLAG,
     REQUEST_GET_ALL_BLOCKS,
     REQUEST_GET_ALL_FEATURE_MATCHES,
@@ -992,20 +996,9 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
       std::string("");
     add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG] =
       int(PhotoOrientationResource::FLAG_NOT_COMPLETED);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_SCALE] =
-      Float(1);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_ROTATION_X] =
-      Float(0);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_ROTATION_Y] =
-      Float(0);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_ROTATION_Z] =
-      Float(0);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_TRANSLATE_X] =
-      Float(0);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_TRANSLATE_Y] =
-      Float(0);
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_TRANSLATE_Z] =
-      Float(0);
+    add_request[
+      PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_COORDINATE_SYSTEM] =
+        std::string("");
     PhotoOrientationResource::AddRequestContainer add_requests;
     add_requests.push_back(add_request);
     PhotoOrientationResource::AddedRecordContainer added_records;
@@ -1045,6 +1038,22 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
 
     if (response.error_code == DatabaseMediator::NO_ERROR)
     {
+      std::string similar_path = photo_orientation_path.string() +
+                                 "/similar_transform.txt";
+      std::ofstream similar_file(similar_path);
+      if (similar_file)
+      {
+        similar_file<<"1\n";
+        similar_file<<"0\n";
+        similar_file<<"0\n";
+        similar_file<<"0\n";
+        similar_file<<"0\n";
+        similar_file<<"0\n";
+        similar_file<<"0";
+
+        similar_file.close();
+      }
+
       response.photo_orientation_id = photo_orientation_id;;
       response.feature_match_id = request.feature_match_id;
       response.name = photo_orientation_name;
@@ -1069,6 +1078,7 @@ struct ResponseGetPhotoOrientation
   std::string intrinsic_path;
   std::string extrinsic_path;
   std::string point_cloud_path;
+  std::string similar_transform_path;
   std::string workspace_path;
 };
 
@@ -1094,6 +1104,8 @@ struct DatabaseRequestHandler<RequestGetPhotoOrientation,
       photo_orientation_path + "extrinsic.txt";
     response.point_cloud_path =
       photo_orientation_path + "sparse_point_cloud.txt";
+    response.similar_transform_path =
+      photo_orientation_path + "similar_transform.txt";
     response.workspace_path = photo_orientation_path;
     return response.error_code;
   }
@@ -1295,6 +1307,120 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationFlag,
     PhotoOrientationResource::UpdateRequest update_request;
     update_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG] =
       request.flag;
+    PhotoOrientationResource::UpdateRequestContainer update_requests;
+    update_requests[request.id] = update_request;
+    PhotoOrientationResource::UpdatedRecordContainer updated_records;
+    response.error_code =
+      database_mediator.photo_orientation_resource_->Update(update_requests,
+                                                            updated_records);
+    return response.error_code;
+  }
+};
+
+//Request Update Photo Orientation Transform
+struct RequestUpdatePhotoOrientationTransform
+{
+  REQUEST_HEADER
+  Identifier id;
+  Float scale;
+  Float translate_x;
+  Float translate_y;
+  Float translate_z;
+  Float rotation_x;
+  Float rotation_y;
+  Float rotation_z;
+};
+
+struct ResponseUpdatePhotoOrientationTransform
+{
+  RESPONSE_HEADER
+  Float scale;
+  Float translate_x;
+  Float translate_y;
+  Float translate_z;
+  Float rotation_x;
+  Float rotation_y;
+  Float rotation_z;
+};
+
+
+template <>
+struct DatabaseRequestHandler<RequestUpdatePhotoOrientationTransform,
+                              ResponseUpdatePhotoOrientationTransform>
+{
+  int operator() (const RequestUpdatePhotoOrientationTransform& request,
+                  ResponseUpdatePhotoOrientationTransform& response,
+                  DatabaseMediator& database_mediator)
+  {
+    PhotoOrientationResource::Record record;
+    response.error_code =
+      database_mediator.photo_orientation_resource_->GetById(request.id,
+                                                             record);
+
+    if (response.error_code == DatabaseMediator::NO_ERROR)
+    {
+      std::string photo_orientation_path =
+        record[
+          PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+      std::string similar_transform_path =
+        photo_orientation_path + "similar_transform.txt";
+
+      std::ofstream similar_file(similar_transform_path);
+      if (similar_file)
+      {
+        similar_file.setf(std::ios::fixed);
+        similar_file<<std::setprecision(10);
+        similar_file<<request.scale<<"\n";
+        similar_file<<request.rotation_x<<"\n";
+        similar_file<<request.rotation_y<<"\n";
+        similar_file<<request.rotation_z<<"\n";
+        similar_file<<request.translate_x<<"\n";
+        similar_file<<request.translate_y<<"\n";
+        similar_file<<request.translate_z;
+
+        response.scale = request.scale;
+        response.rotation_x = request.rotation_x;
+        response.rotation_y = request.rotation_y;
+        response.rotation_z = request.rotation_z;
+        response.translate_x = request.translate_x;
+        response.translate_y = request.translate_y;
+        response.translate_z = request.translate_z;
+      }
+      else
+      {
+        response.error_code = -1;
+      }
+    }
+
+    return response.error_code;
+  }
+};
+
+//Request Update Photo Orientation Coordinate System
+struct RequestUpdatePhotoOrientationCoordinateSystem
+{
+  REQUEST_HEADER
+  Identifier id;
+  std::string coordinate_system;
+};
+
+struct ResponseUpdatePhotoOrientationCoordinateSystem
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler<RequestUpdatePhotoOrientationCoordinateSystem,
+                              ResponseUpdatePhotoOrientationCoordinateSystem>
+{
+  int operator() (const RequestUpdatePhotoOrientationCoordinateSystem& request,
+                  ResponseUpdatePhotoOrientationCoordinateSystem& response,
+                  DatabaseMediator& database_mediator)
+  {
+    PhotoOrientationResource::UpdateRequest update_request;
+    update_request[
+      PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_COORDINATE_SYSTEM] =
+        request.coordinate_system;
     PhotoOrientationResource::UpdateRequestContainer update_requests;
     update_requests[request.id] = update_request;
     PhotoOrientationResource::UpdatedRecordContainer updated_records;

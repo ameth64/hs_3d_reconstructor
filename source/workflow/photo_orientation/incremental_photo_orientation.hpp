@@ -23,6 +23,14 @@ public:
   typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
   typedef EIGEN_STD_VECTOR(IntrinsicParams) IntrinsicParamsContainer;
 
+  struct PosEntry
+  {
+    Scalar x;
+    Scalar y;
+    Scalar z;
+  };
+  typedef std::map<size_t, PosEntry> PosEntryContainer;
+
 public:
   PhotoOrientationConfig();
 
@@ -38,8 +46,10 @@ public:
   void set_intrinsic_path(const std::string& intrinsic_path);
   void set_extrinsic_path(const std::string& extrinsic_path);
   void set_point_cloud_path(const std::string& point_cloud_path);
+  void set_similar_transform_path(const std::string& similar_transform_path);
   void set_workspace_path(const std::string& workspace_path);
   void set_number_of_threads(int number_of_threads);
+  void set_pos_entries(const PosEntryContainer& pos_entries);
 
   const hs::sfm::ObjectIndexMap& image_intrinsic_map() const;
   const std::string& matches_path() const;
@@ -51,8 +61,10 @@ public:
   const std::string& intrinsic_path() const;
   const std::string& extrinsic_path() const;
   const std::string& point_cloud_path() const;
+  const std::string& similar_transform_path() const;
   const std::string& workspace_path() const;
   int number_of_threads() const;
+  const PosEntryContainer& pos_entries() const;
 
 private:
   hs::sfm::ObjectIndexMap image_intrinsic_map_;
@@ -65,7 +77,9 @@ private:
   std::string intrinsic_path_;
   std::string extrinsic_path_;
   std::string point_cloud_path_;
+  std::string similar_transform_path_;
   std::string workspace_path_;
+  PosEntryContainer pos_entries_;
   int number_of_threads_;
 };
 
@@ -101,6 +115,10 @@ private:
              hs::sfm::TrackContainer& tracks,
              hs::sfm::ObjectIndexMap& track_point_map,
              hs::sfm::ViewInfoIndexer& view_info_indexer);
+  int SimilarTransformByPosEntries(
+    WorkflowStepConfig* config,
+    const ExtrinsicParamsContainer& extrinsic_params_set,
+    const hs::sfm::ObjectIndexMap& image_extrinsic_map);
   int SaveIntrinsics(WorkflowStepConfig* config,
                      const IntrinsicParamsContainer& intrinsic_params_set);
   int SaveExtrinsics(WorkflowStepConfig* config,

@@ -131,7 +131,7 @@ void PhotogroupPOSConfigureWidget::Initialize()
   layout_all_ = new QVBoxLayout(this);
   layout_header_ = new QHBoxLayout;
   push_button_config_coordinate_system_ =
-    new QPushButton(tr("Config Coordinate System"), this);
+    new QPushButton(tr("Configure Coordinate System"), this);
   push_button_import_ = new QPushButton(tr("Import"), this);
   push_button_clear_ = new QPushButton(tr("Clear"), this);
   table_pos_ = new QTableWidget(this);

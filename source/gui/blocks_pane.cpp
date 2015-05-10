@@ -12,11 +12,13 @@
 #include <QSettings>
 
 #include "hs_cartographics/cartographics_format/formatter_proj4.hpp"
+#include "hs_cartographics/cartographics_conversion/convertor.hpp"
 
 #include "gui/blocks_pane.hpp"
 #include "gui/block_photos_select_dialog.hpp"
 #include "gui/main_window.hpp"
 #include "gui/workflow_configure_dialog.hpp"
+#include "gui/default_longitude_latitude_convertor.hpp"
 
 namespace hs
 {
@@ -1225,6 +1227,16 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
 {
   typedef hs::recon::db::Database::Identifier Identifier;
   typedef hs::recon::workflow::FeatureMatchConfig::PosEntry PosEntry;
+  typedef DefaultLongitudeLatitudeConvertor::CoordinateSystem
+          CoordinateSystem;
+  typedef CoordinateSystem::Projection Projection;
+  typedef DefaultLongitudeLatitudeConvertor::Scalar Scalar;
+  typedef DefaultLongitudeLatitudeConvertor::Convertor Convertor;
+  typedef DefaultLongitudeLatitudeConvertor::Coordinate Coordinate;
+  typedef DefaultLongitudeLatitudeConvertor::CoordinateContainer
+          CoordinateContainer;
+  typedef hs::cartographics::format::HS_FormatterProj4<Scalar> Formatter;
+
   while (1)
   {
 
@@ -1271,6 +1283,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
     std::vector<std::string> descriptor_paths;
     std::map<size_t, PosEntry> pos_entries;
     double invalid_value = -1e-100;
+    CoordinateSystem coordinate_system;
     for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, i++)
     {
       image_paths.push_back(
@@ -1293,9 +1306,9 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
       std::string coordinate_system_format =
         itr_photo->second[
           db::PhotoResource::PHOTO_FIELD_COORDINATE_SYSTEM].ToString();
-      hs::cartographics::format::HS_FormatterProj4<double> formatter;
+      Formatter formatter;
       formatter.StringToCoordinateSystem(coordinate_system_format,
-                                         pos_entry.coordinate_system);
+                                         coordinate_system);
       if (pos_entry.x > invalid_value &&
           pos_entry.y > invalid_value &&
           pos_entry.z > invalid_value)
@@ -1303,6 +1316,45 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
         pos_entries[i] = pos_entry;
       }
     }
+
+    //转换pos坐标系
+    if (coordinate_system.projection().projection_type() ==
+        Projection::TYPE_LAT_LONG)
+    {
+      CoordinateContainer coordinates_lat_long;
+      auto itr_pos_entry = pos_entries.begin();
+      auto itr_pos_entry_end = pos_entries.end();
+      for (; itr_pos_entry != itr_pos_entry_end; ++itr_pos_entry)
+      {
+        Coordinate coordinate_lat_long;
+        coordinate_lat_long<<itr_pos_entry->second.x,
+                             itr_pos_entry->second.y,
+                             itr_pos_entry->second.z;
+        coordinates_lat_long.push_back(coordinate_lat_long);
+      }
+      DefaultLongitudeLatitudeConvertor default_convertor;
+      CoordinateSystem coordinate_system_cartisian;
+      default_convertor.GetDefaultCoordinateSystem(
+        coordinate_system, coordinates_lat_long, coordinate_system_cartisian);
+
+      Convertor convertor;
+      itr_pos_entry = pos_entries.begin();
+      for (; itr_pos_entry != itr_pos_entry_end; ++itr_pos_entry)
+      {
+        Coordinate coordinate_lat_long;
+        coordinate_lat_long<<itr_pos_entry->second.x,
+                             itr_pos_entry->second.y,
+                             itr_pos_entry->second.z;
+        Coordinate coordinate_cartisian;
+        convertor.CoordinateSystemToCoordinateSystem(
+          coordinate_system, coordinate_system_cartisian,
+          coordinate_lat_long, coordinate_cartisian);
+        itr_pos_entry->second.x = coordinate_cartisian[0];
+        itr_pos_entry->second.y = coordinate_cartisian[1];
+        itr_pos_entry->second.z = coordinate_cartisian[2];
+      }
+    }
+
     QSettings settings;
     QString number_of_threads_key = tr("number_of_threads");
     uint number_of_threads = settings.value(number_of_threads_key,
@@ -1331,6 +1383,18 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
           IntrinsicParams;
   typedef workflow::PhotoOrientationConfig::IntrinsicParamsContainer
           IntrinsicParamsContainer;
+  typedef workflow::PhotoOrientationConfig::PosEntry PosEntry;
+  typedef workflow::PhotoOrientationConfig::PosEntryContainer PosEntryContainer;
+  typedef DefaultLongitudeLatitudeConvertor::CoordinateSystem
+          CoordinateSystem;
+  typedef CoordinateSystem::Projection Projection;
+  typedef DefaultLongitudeLatitudeConvertor::Scalar Scalar;
+  typedef DefaultLongitudeLatitudeConvertor::Convertor Convertor;
+  typedef DefaultLongitudeLatitudeConvertor::Coordinate Coordinate;
+  typedef DefaultLongitudeLatitudeConvertor::CoordinateContainer
+          CoordinateContainer;
+  typedef hs::cartographics::format::HS_FormatterProj4<Scalar> Formatter;
+
   while (1)
   {
     //获取相机朝向数据
@@ -1394,6 +1458,9 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
     hs::sfm::ObjectIndexMap image_intrinsic_map(number_of_photos);
     IntrinsicParamsContainer intrinsic_params_set;
     std::vector<int> intrinsic_ids;
+    double invalid_value = -1e-100;
+    PosEntryContainer pos_entries;
+    CoordinateSystem coordinate_system;
     for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, i++)
     {
       image_paths.push_back(
@@ -1403,6 +1470,26 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
                    feature_match_path %
                    itr_photo->first));
       image_ids.push_back(int(itr_photo->first));
+
+      PosEntry pos_entry;
+      pos_entry.x =
+        itr_photo->second[db::PhotoResource::PHOTO_FIELD_POS_X].ToFloat();
+      pos_entry.y =
+        itr_photo->second[db::PhotoResource::PHOTO_FIELD_POS_Y].ToFloat();
+      pos_entry.z =
+        itr_photo->second[db::PhotoResource::PHOTO_FIELD_POS_Z].ToFloat();
+      std::string coordinate_system_format =
+        itr_photo->second[
+          db::PhotoResource::PHOTO_FIELD_COORDINATE_SYSTEM].ToString();
+      Formatter formatter;
+      formatter.StringToCoordinateSystem(coordinate_system_format,
+                                         coordinate_system);
+      if (pos_entry.x > invalid_value &&
+          pos_entry.y > invalid_value &&
+          pos_entry.z > invalid_value)
+      {
+        pos_entries[i] = pos_entry;
+      }
 
       int photogroup_id =
         itr_photo->second[db::PhotoResource::PHOTO_FIELD_PHOTOGROUP_ID].ToInt();
@@ -1463,8 +1550,48 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
                                          radial2,
                                          radial3);
         intrinsic_params_set.push_back(intrinsic_params);
+
       }
     }
+
+    //转换pos坐标系
+    if (coordinate_system.projection().projection_type() ==
+        Projection::TYPE_LAT_LONG)
+    {
+      CoordinateContainer coordinates_lat_long;
+      auto itr_pos_entry = pos_entries.begin();
+      auto itr_pos_entry_end = pos_entries.end();
+      for (; itr_pos_entry != itr_pos_entry_end; ++itr_pos_entry)
+      {
+        Coordinate coordinate_lat_long;
+        coordinate_lat_long<<itr_pos_entry->second.x,
+                             itr_pos_entry->second.y,
+                             itr_pos_entry->second.z;
+        coordinates_lat_long.push_back(coordinate_lat_long);
+      }
+      DefaultLongitudeLatitudeConvertor default_convertor;
+      CoordinateSystem coordinate_system_cartisian;
+      default_convertor.GetDefaultCoordinateSystem(
+        coordinate_system, coordinates_lat_long, coordinate_system_cartisian);
+
+      Convertor convertor;
+      itr_pos_entry = pos_entries.begin();
+      for (; itr_pos_entry != itr_pos_entry_end; ++itr_pos_entry)
+      {
+        Coordinate coordinate_lat_long;
+        coordinate_lat_long<<itr_pos_entry->second.x,
+                             itr_pos_entry->second.y,
+                             itr_pos_entry->second.z;
+        Coordinate coordinate_cartisian;
+        convertor.CoordinateSystemToCoordinateSystem(
+          coordinate_system, coordinate_system_cartisian,
+          coordinate_lat_long, coordinate_cartisian);
+        itr_pos_entry->second.x = coordinate_cartisian[0];
+        itr_pos_entry->second.y = coordinate_cartisian[1];
+        itr_pos_entry->second.z = coordinate_cartisian[2];
+      }
+    }
+
     QSettings settings;
     QString number_of_threads_key = tr("number_of_threads");
     uint number_of_threads = settings.value(number_of_threads_key,
@@ -1485,9 +1612,12 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       response_photo_orientation.extrinsic_path);
     photo_orientation_config->set_point_cloud_path(
       response_photo_orientation.point_cloud_path);
+    photo_orientation_config->set_similar_transform_path(
+      response_photo_orientation.similar_transform_path);
     photo_orientation_config->set_workspace_path(
       response_photo_orientation.workspace_path);
     photo_orientation_config->set_number_of_threads(uint(number_of_threads));
+    photo_orientation_config->set_pos_entries(pos_entries);
 
     break;
   }

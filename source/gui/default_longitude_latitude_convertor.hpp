@@ -9,15 +9,17 @@ namespace hs
 {
 namespace recon
 {
-namespace workflow
+namespace gui
 {
 
 class HS_EXPORT DefaultLongitudeLatitudeConvertor
 {
 public:
-  typedef hs::cartographics::HS_CoordinateSystem<double> CoordinateSystem;
-  typedef hs::cartographics::conversion::Convertor<double> DefaultConvertor;
-  typedef DefaultConvertor::Coordinate Coordinate;
+  typedef double Scalar;
+  typedef hs::cartographics::HS_CoordinateSystem<Scalar> CoordinateSystem;
+  typedef hs::cartographics::conversion::Convertor<Scalar> Convertor;
+  typedef Convertor::Coordinate Coordinate;
+  typedef Convertor::CoordinateContainer CoordinateContainer;
 
 private:
   typedef CoordinateSystem::Projection Projection;
@@ -28,6 +30,11 @@ public:
   int ConvertToCartisian(const CoordinateSystem& longitude_latitude_system,
                          const Coordinate& coordinate_longitude_latitude,
                          Coordinate& coordinate_cartisian) const;
+
+  int GetDefaultCoordinateSystem(
+    const CoordinateSystem& longitude_latitude_system,
+    const CoordinateContainer& coordinates_longitude_latitude,
+    CoordinateSystem& cartisian_system) const;
 };
 
 }

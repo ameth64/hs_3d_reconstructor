@@ -8,7 +8,6 @@
 
 #include "hs_sfm/sfm_utility/key_type.hpp"
 #include "hs_sfm/sfm_utility/match_type.hpp"
-#include "hs_cartographics/cartographics_utility/coordinate_system.hpp"
 
 #include <opencv2/core/core.hpp>
 
@@ -28,9 +27,6 @@ class HS_EXPORT FeatureMatchConfig : public WorkflowStepConfig
 public:
   struct PosEntry
   {
-    typedef hs::cartographics::HS_CoordinateSystem<double> CoordinateSystem;
-
-    CoordinateSystem coordinate_system;
     double x;
     double y;
     double z;
@@ -44,7 +40,7 @@ public:
   void set_descripor_paths(const std::vector<std::string>& descriptor_paths);
   void set_matches_path(const std::string matches_path);
   void set_keys_limits(int keys_limits);
-  void set_pos_entries(std::map<size_t, PosEntry>& pos_entries);
+  void set_pos_entries(const std::map<size_t, PosEntry>& pos_entries);
   void set_number_of_threads(int number_of_threads);
 
   const std::vector<std::string>& image_paths() const;
