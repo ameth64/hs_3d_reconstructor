@@ -3,10 +3,12 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <string>
 
 #include "hs_sfm/sfm_utility/key_type.hpp"
 #include "hs_sfm/sfm_utility/match_type.hpp"
+#include "hs_cartographics/cartographics_utility/coordinate_system.hpp"
 
 #include <opencv2/core/core.hpp>
 
@@ -26,6 +28,9 @@ class HS_EXPORT FeatureMatchConfig : public WorkflowStepConfig
 public:
   struct PosEntry
   {
+    typedef hs::cartographics::HS_CoordinateSystem<double> CoordinateSystem;
+
+    CoordinateSystem coordinate_system;
     double x;
     double y;
     double z;
@@ -47,7 +52,7 @@ public:
   const std::vector<std::string>& descriptor_paths() const;
   const std::string& matches_path() const;
   int keys_limits() const;
-  std::map<size_t, PosEntry> pos_entries() const;
+  const std::map<size_t, PosEntry>& pos_entries() const;
   int number_of_threads() const;
 
 private:
@@ -66,12 +71,17 @@ class HS_EXPORT OpenCVFeatureMatch : public WorkflowStep
 public:
   typedef hs::sfm::ImageKeys<double> Keyset;
   typedef EIGEN_STD_VECTOR(Keyset) KeysetContainer;
+private:
+  typedef std::vector<std::set<size_t> > MatchGuide;
+  typedef std::vector<std::vector<size_t> > RandomAccessMatchGuide;
 public:
   OpenCVFeatureMatch();
 
 private:
   int DetectFeature(WorkflowStepConfig* config, KeysetContainer& keysets);
+  int GuideMatchesByPos(WorkflowStepConfig* config, MatchGuide& match_guide);
   int MatchFeatures(WorkflowStepConfig* config,
+                    const MatchGuide& match_guide,
                     hs::sfm::MatchContainer& matches);
   int FilterMatches(WorkflowStepConfig* config,
                     const KeysetContainer& keysets,

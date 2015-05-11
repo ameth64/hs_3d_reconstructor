@@ -375,6 +375,7 @@ int IncrementalPhotoOrientation::SavePointCloud(
             colors[point_id][k] = byte;
           }
         }
+        color_flags[point_id] = true;
       }
     }
   }

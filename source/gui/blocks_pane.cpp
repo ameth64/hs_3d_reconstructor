@@ -1,5 +1,4 @@
-﻿#include <iostream>
-#include <set>
+﻿#include <set>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -11,6 +10,8 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QSettings>
+
+#include "hs_cartographics/cartographics_format/formatter_proj4.hpp"
 
 #include "gui/blocks_pane.hpp"
 #include "gui/block_photos_select_dialog.hpp"
@@ -331,7 +332,6 @@ void BlocksPane::OnTimeout()
 {
   if (workflow_queue_.empty())
   {
-    std::cout<<"Finish Working!\n";
     progress_bar_->hide();
     timer_->stop();
   }
@@ -344,7 +344,6 @@ void BlocksPane::OnTimeout()
       {
       case hs::recon::workflow::WorkflowStep::STATE_READY:
         {
-          std::cout<<"Starting!\n";
           WorkflowConfig& workflow = workflow_queue_.front();
           WorkflowStepEntry& workflow_step_entry = workflow.step_queue.front();
           current_step_->Start(workflow_step_entry.config.get());
@@ -384,7 +383,6 @@ void BlocksPane::OnTimeout()
           }
           if (item)
           {
-            std::cout<<"Showing progress bar\n";
             blocks_tree_widget_->setItemWidget(item, 1, progress_bar_);
             progress_bar_->show();
             progress_bar_->setMinimum(0);
@@ -396,14 +394,12 @@ void BlocksPane::OnTimeout()
       case hs::recon::workflow::WorkflowStep::STATE_WORKING:
         {
           float complete_ratio = current_step_->GetCompleteRatio();
-          std::cout<<"complete_ratio:"<<complete_ratio<<"\n";
           progress_bar_->setValue(int(complete_ratio * 100));
           break;
         }
       case hs::recon::workflow::WorkflowStep::STATE_ERROR:
         {
           //终止该Workflow
-          std::cout<<"Error!\n";
           workflow_queue_.pop();
           current_step_ = nullptr;
           progress_bar_->hide();
@@ -411,7 +407,6 @@ void BlocksPane::OnTimeout()
         }
       case hs::recon::workflow::WorkflowStep::STATE_FINISHED:
         {
-          std::cout<<"Finished!\n";
           progress_bar_->setValue(100);
           WorkflowConfig& workflow_config = workflow_queue_.front();
           WorkflowStepEntry workflow_step_entry =
@@ -534,17 +529,14 @@ void BlocksPane::OnTimeout()
       //开始第一个Workflow的第一个step
       if (workflow_queue_.empty())
       {
-        std::cout<<"Finish Working!\n";
         progress_bar_->hide();
         timer_->stop();
       }
       else
       {
-        std::cout<<"Setting!\n";
         WorkflowConfig& workflow_config = workflow_queue_.front();
         if (workflow_config.step_queue.empty())
         {
-          std::cout<<"Step queue empty!\n";
         }
         WorkflowStepEntry& workflow_step_entry =
           workflow_config.step_queue.front();
@@ -777,6 +769,9 @@ void BlocksPane::OnActionAddWorkflowTriggered()
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
     workflow_config.workflow_intermediate_directory +=
       std::string("/") + boost::uuids::to_string(uuid) + "/";
+    //workflow_config.workflow_intermediate_directory +=
+    //  std::string("/69d6b682-6306-49f1-b8d9-604c08ec5f41/");
+
     //TODO: create_directories return false even that directories created!
     if (!boost::filesystem::create_directories(boost::filesystem::path(
           workflow_config.workflow_intermediate_directory)))
@@ -1042,7 +1037,6 @@ int BlocksPane::SetWorkflowStep(
   const std::string& workflow_intermediate_directory,
   WorkflowStepEntry& workflow_step_entry)
 {
-  std::cout<<"type:"<<workflow_step_entry.config->type()<<"\n";
   switch (workflow_step_entry.config->type())
   {
   case workflow::STEP_FEATURE_MATCH:
@@ -1314,6 +1308,12 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
         itr_photo->second[db::PhotoResource::PHOTO_FIELD_POS_Y].ToFloat();
       pos_entry.z =
         itr_photo->second[db::PhotoResource::PHOTO_FIELD_POS_Z].ToFloat();
+      std::string coordinate_system_format =
+        itr_photo->second[
+          db::PhotoResource::PHOTO_FIELD_COORDINATE_SYSTEM].ToString();
+      hs::cartographics::format::HS_FormatterProj4<double> formatter;
+      formatter.StringToCoordinateSystem(coordinate_system_format,
+                                         pos_entry.coordinate_system);
       if (pos_entry.x > invalid_value &&
           pos_entry.y > invalid_value &&
           pos_entry.z > invalid_value)
@@ -1480,7 +1480,6 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
                                          radial1,
                                          radial2,
                                          radial3);
-        std::cout<<"focal_length:"<<focal_length<<"\n";
         intrinsic_params_set.push_back(intrinsic_params);
       }
     }
