@@ -82,17 +82,12 @@ hs_add_qt_executable(${RECONSTRUCTOR_NAME}
   )
 
 hslib_add_dep(${RECONSTRUCTOR_NAME}
-  3RDPARTY_DEPS boost 
-      DEP_LIBS boost_filesystem 
-               boost_system 
+  3RDPARTY_DEPS boost
+      DEP_LIBS boost_filesystem
+               boost_system
                boost_thread
                boost_serialization
                boost_regex
-  3RDPARTY_DEPS eigen HEADONLY
-  3RDPARTY_DEPS exiv2
-  3RDPARTY_DEPS glew
-  3RDPARTY_DEPS proj
-  3RDPARTY_DEPS ceres DEP_LIBS ceres
   3RDPARTY_DEPS opencv
     DEP_LIBS opencv_calib3d
              opencv_core
@@ -102,19 +97,30 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
              opencv_highgui
              opencv_flann
              opencv_nonfree
-  3RDPARTY_DEPS tiff DEP_LIBS tiff
-  3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
-  3RDPARTY_DEPS png DEP_LIBS png
-  3RDPARTY_DEPS z DEP_LIBS z
-  3RDPARTY_DEPS jpeg DEP_LIBS jpeg
+  3RDPARTY_DEPS eigen HEADONLY
+  3RDPARTY_DEPS exiv2
+  3RDPARTY_DEPS glew
+  3RDPARTY_DEPS graclus DEP_STATIC_LIBS graclus
+  3RDPARTY_DEPS levmar DEP_STATIC_LIBS levmar
+  3RDPARTY_DEPS proj
+  3RDPARTY_DEPS ceres
+  3RDPARTY_DEPS tiff
+  3RDPARTY_DEPS jpeg_turbo
+  3RDPARTY_DEPS png
+  3RDPARTY_DEPS z
+  3RDPARTY_DEPS jpeg
+  3RDPARTY_DEPS sqlite
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_graphics DEP_LIBS graphics_qt
   HS_DEPS hs_cartographics DEP_LIBS cartographics_qt
   HS_DEPS hs_progress DEP_LIBS progress_utility
-  HS_DEPS hs_flowmodule DEP_LIBS point_cloud
-  HS_DEPS hs_flowmodule DEP_LIBS mesh_surface
+  HS_DEPS hs_flowmodule
+    DEP_LIBS base_module
+             point_cloud
+             mesh_surface
+             utility_tool
   LOCAL_DEPS database
   LOCAL_DEPS workflow
   )
@@ -183,7 +189,10 @@ set(WORKFLOW_SOURCES
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS boost DEP_LIBS boost_thread
-  3RDPARTY_DEPS boost DEP_LIBS boost_chrono
+                               boost_chrono
+                               boost_regex
+                               boost_system
+                               boost_serialization
   3RDPARTY_DEPS eigen HEADONLY
   3RDPARTY_DEPS opencv
     DEP_LIBS opencv_calib3d
@@ -195,12 +204,14 @@ hslib_add_dep(${WORKFLOW_NAME}
              opencv_flann
              opencv_nonfree
   3RDPARTY_DEPS ceres DEP_LIBS ceres
+  3RDPARTY_DEPS exiv2
   3RDPARTY_DEPS tiff DEP_LIBS tiff
   3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
   3RDPARTY_DEPS png DEP_LIBS png
   3RDPARTY_DEPS z DEP_LIBS z
-  HS_DEPS hs_flowmodule DEP_LIBS point_cloud
-  HS_DEPS hs_flowmodule DEP_LIBS mesh_surface
+  3RDPARTY_DEPS graclus DEP_STATIC_LIBS graclus
+  3RDPARTY_DEPS levmar DEP_STATIC_LIBS levmar
+  HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_optimizor HEADONLY
