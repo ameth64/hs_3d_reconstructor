@@ -31,6 +31,10 @@ namespace hs
         void set_polygon_mesh(const int& polygon_mesh);
         void set_output_dir(const std::string& output_dir);
 
+        void set_dem_x_scale(double dem_x_scale);
+        void set_dem_y_scale(double dem_y_scale);
+        void set_dem_path(const std::string& dem_path);
+
         const std::string& xml_path()const;
         const std::string& pointcloud_path()const;
         const std::string& output_dir()const;
@@ -46,6 +50,10 @@ namespace hs
         const float& cube_ratio()const;
         const float& solver_accuracy()const;
         const float& samples_per_node()const;        
+
+        double dem_x_scale() const;
+        double dem_y_scale() const;
+        const std::string& dem_path() const;
 
       private:
           std::string xml_path_;
@@ -63,6 +71,10 @@ namespace hs
           float cube_ratio_;
           float solver_accuracy_;
           float samples_per_node_;
+
+          double dem_x_scale_;
+          double dem_y_scale_;
+          std::string dem_path_;
       };
       typedef std::shared_ptr<MeshSurfaceConfig> MeshSurfaceConfigPtr;
       class HS_EXPORT PoissonSurface : public WorkflowStep

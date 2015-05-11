@@ -895,11 +895,12 @@ void BlocksPane::OnActionAddWorkflowTriggered()
         surface_model_id = workflow_config.step_queue.back().id;
       }
 
-      if (!workflow_config.step_queue.empty())
-      {
-        workflow_queue_.push(workflow_config);
-        timer_->start(500);
-      }
+    }
+
+    if (!workflow_config.step_queue.empty())
+    {
+      workflow_queue_.push(workflow_config);
+      timer_->start(500);
     }
   }
 }

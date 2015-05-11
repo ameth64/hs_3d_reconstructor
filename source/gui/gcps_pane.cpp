@@ -359,6 +359,8 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
         Point3D point;
         if (TriangulatePoint(gcp_measure.photo_measures, point) == 0)
         {
+          point = similar_scale_ * (similar_rotation_ * point) +
+                  similar_translate_;
           gcp_measure.estimate_pos[0] = point[0];
           gcp_measure.estimate_pos[1] = point[1];
           gcp_measure.estimate_pos[2] = point[2];
@@ -635,6 +637,8 @@ void GCPsPane::OnPhotoMeasured(uint photo_id, const Point2F& image_pos)
       Point3D point;
       if (TriangulatePoint(photo_measures, point) == 0)
       {
+        point = similar_scale_ * (similar_rotation_ * point) +
+                similar_translate_;
         itr_gcp_measure->second.estimate_pos[0] = point[0];
         itr_gcp_measure->second.estimate_pos[1] = point[1];
         itr_gcp_measure->second.estimate_pos[2] = point[2];

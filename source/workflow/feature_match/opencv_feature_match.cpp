@@ -219,7 +219,12 @@ int OpenCVFeatureMatch::GuideMatchesByPos(WorkflowStepConfig* config,
     index_data.at<float>(i, 1) = float(itr_pos->second.y);
     index_data.at<float>(i, 2) = float(itr_pos->second.z);
   }
-  cv::flann::Index index(index_data, cv::flann::KDTreeIndexParams(4));
+
+  cv::flann::Index index;
+  if (pos_entries.size() > 2)
+  {
+    index.build(index_data, cv::flann::KDTreeIndexParams(4));
+  }
 
   std::vector<size_t> images_no_pos;
   std::cout<<"Finding images have no pos.\n";
