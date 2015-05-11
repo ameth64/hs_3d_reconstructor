@@ -989,6 +989,15 @@ void BlocksPane::OnTextureItemSelected(uint texture_id)
 void BlocksPane::ActivatePhotoOrientationItem(
   QTreeWidgetItem* photo_orientation_item)
 {
+  //清除point_cloud_item颜色
+  QTreeWidgetItem* last_point_cloud_item =
+    blocks_tree_widget_->PointCloudItem(activated_point_cloud_id_);
+  if (last_point_cloud_item)
+  {
+    last_point_cloud_item->setBackground(0, backup_background_);
+  }
+
+  //设置photo_orientation_item颜色
   QTreeWidgetItem* last_photo_orientation_item =
     blocks_tree_widget_->PhotoOrientationItem(activated_photo_orientation_id_);
   if (last_photo_orientation_item == photo_orientation_item) return;
@@ -1006,6 +1015,15 @@ void BlocksPane::ActivatePhotoOrientationItem(
 void BlocksPane::ActivatePointCloudItem(
   QTreeWidgetItem* point_cloud_item)
 {
+  //清除photo_orientation_item颜色
+  QTreeWidgetItem* last_photo_orientation_item =
+    blocks_tree_widget_->PhotoOrientationItem(activated_photo_orientation_id_);
+  if (last_photo_orientation_item)
+  {
+    last_photo_orientation_item->setBackground(0, backup_background_);
+  }
+
+  //设置point_cloud_item颜色
   QTreeWidgetItem* last_point_cloud_item =
     blocks_tree_widget_->PointCloudItem(activated_point_cloud_id_);
   if (last_point_cloud_item == point_cloud_item) return;
