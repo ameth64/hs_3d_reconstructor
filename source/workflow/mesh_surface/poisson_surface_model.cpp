@@ -73,6 +73,14 @@ namespace hs
       {
         dem_path_ = dem_path;
       }
+      void MeshSurfaceConfig::set_dem_tile_x_size(int dem_tile_x_size)
+      {
+        dem_tile_x_size_ = dem_tile_x_size;
+      }
+      void MeshSurfaceConfig::set_dem_tile_y_size(int dem_tile_y_size)
+      {
+        dem_tile_y_size_ = dem_tile_y_size;
+      }
 
       const std::string& MeshSurfaceConfig::xml_path()const{
         return xml_path_;
@@ -130,6 +138,14 @@ namespace hs
       const std::string& MeshSurfaceConfig::dem_path() const
       {
         return dem_path_;
+      }
+      int MeshSurfaceConfig::dem_tile_x_size() const
+      {
+        return dem_tile_x_size_;
+      }
+      int MeshSurfaceConfig::dem_tile_y_size() const
+      {
+        return dem_tile_y_size_;
       }
 
       int PoissonSurface::CreateConfigXml(MeshSurfaceConfig* config)
@@ -223,6 +239,18 @@ namespace hs
         return 0;
 
       }
+
+      int PoissonSurface::GenerateDEM(MeshSurfaceConfig* config)
+      {
+        MeshSurfaceConfig* surface_model_config =
+          static_cast<MeshSurfaceConfig*>(config);
+
+        //读取三维模型
+        
+
+        return 0;
+      }
+
       int PoissonSurface::RunImplement(WorkflowStepConfig *config)
       {
         return RunPoissonSurface(config);

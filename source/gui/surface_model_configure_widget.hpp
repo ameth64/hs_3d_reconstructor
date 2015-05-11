@@ -28,6 +28,9 @@ public:
   void FetchSurfaceModelConfig(workflow::MeshSurfaceConfig& mesh_surface_config);
 
 private:
+  void OnButtonBrowseClicked();
+
+private:
   QVBoxLayout* main_layout_;
   QVBoxLayout* group_box_layout_;
 

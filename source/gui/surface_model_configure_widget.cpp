@@ -2,6 +2,7 @@
 
 #include <QIntValidator>
 #include <QDoubleValidator>
+#include <QFileDialog>
 
 namespace hs
 {
@@ -47,11 +48,11 @@ SurfaceModelConfigureWidget::SurfaceModelConfigureWidget(
   layout_dem_scale_ = new QHBoxLayout;
   label_dem_x_scale_ = new QLabel(tr("DEM X Scale:"));
   line_edit_dem_x_scale_ = new QLineEdit;
-  line_edit_dem_x_scale_->setValidator(int_validator);
+  line_edit_dem_x_scale_->setValidator(double_validator);
   line_edit_dem_x_scale_->setText(QString::number(0.1));
   label_dem_y_scale_ = new QLabel(tr("DEM Y Scale:"));
   line_edit_dem_y_scale_ = new QLineEdit;
-  line_edit_dem_y_scale_->setValidator(int_validator);
+  line_edit_dem_y_scale_->setValidator(double_validator);
   line_edit_dem_y_scale_->setText(QString::number(0.1));
   layout_dem_scale_->addWidget(label_dem_x_scale_);
   layout_dem_scale_->addWidget(line_edit_dem_x_scale_);
@@ -62,11 +63,11 @@ SurfaceModelConfigureWidget::SurfaceModelConfigureWidget(
   layout_dem_tile_size_ = new QHBoxLayout;
   label_dem_tile_x_size_ = new QLabel(tr("DEM Tile X Size:"));
   line_edit_dem_tile_x_size_ = new QLineEdit;
-  line_edit_dem_tile_x_size_->setValidator(double_validator);
+  line_edit_dem_tile_x_size_->setValidator(int_validator);
   line_edit_dem_tile_x_size_->setText(QString::number(2048));
   label_dem_tile_y_size_ = new QLabel(tr("DEM Tile Y Size:"));
   line_edit_dem_tile_y_size_ = new QLineEdit;
-  line_edit_dem_tile_y_size_->setValidator(double_validator);
+  line_edit_dem_tile_y_size_->setValidator(int_validator);
   line_edit_dem_tile_y_size_->setText(QString::number(2048));
   layout_dem_tile_size_->addWidget(label_dem_tile_x_size_);
   layout_dem_tile_size_->addWidget(line_edit_dem_tile_x_size_);
@@ -84,6 +85,9 @@ SurfaceModelConfigureWidget::SurfaceModelConfigureWidget(
   group_box_dem_->setChecked(false);
   main_layout_->addWidget(group_box_dem_);
 
+  QObject::connect(
+    button_browse_, &QPushButton::clicked,
+    this,  &SurfaceModelConfigureWidget::OnButtonBrowseClicked);
 }
 
 void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
@@ -130,6 +134,33 @@ void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
     mesh_surface_config.set_solver_accuracy(0.001);
     mesh_surface_config.set_confidence(0);
     mesh_surface_config.set_polygon_mesh(0);
+  }
+
+  if (group_box_dem_->isChecked())
+  {
+    std::string dem_path =
+      line_edit_dem_path_->text().toLocal8Bit().data();
+    mesh_surface_config.set_dem_path(dem_path);
+
+    int dem_tile_x_size = line_edit_dem_tile_x_size_->text().toInt();
+    int dem_tile_y_size = line_edit_dem_tile_y_size_->text().toInt();
+    double dem_x_scale = line_edit_dem_x_scale_->text().toDouble();
+    double dem_y_scale = line_edit_dem_y_scale_->text().toDouble();
+    mesh_surface_config.set_dem_tile_x_size(dem_tile_x_size);
+    mesh_surface_config.set_dem_tile_y_size(dem_tile_y_size);
+    mesh_surface_config.set_dem_x_scale(dem_x_scale);
+    mesh_surface_config.set_dem_y_scale(dem_y_scale);
+  }
+}
+
+void SurfaceModelConfigureWidget::OnButtonBrowseClicked()
+{
+  QFileDialog dialog;
+  dialog.setAcceptMode(QFileDialog::AcceptSave);
+  if (dialog.exec())
+  {
+    QString dem_path = dialog.selectedFiles()[0];
+    line_edit_dem_path_->setText(dem_path);
   }
 }
 

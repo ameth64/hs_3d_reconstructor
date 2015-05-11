@@ -108,7 +108,6 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS jpeg_turbo
   3RDPARTY_DEPS png
   3RDPARTY_DEPS z
-  3RDPARTY_DEPS jpeg
   3RDPARTY_DEPS sqlite
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
@@ -185,6 +184,7 @@ set(WORKFLOW_SOURCES
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
   "source/workflow/mesh_surface/poisson_surface_model.cpp"
+  "source/workflow/texture/rough_texture.cpp"
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
@@ -205,10 +205,10 @@ hslib_add_dep(${WORKFLOW_NAME}
              opencv_nonfree
   3RDPARTY_DEPS ceres DEP_LIBS ceres
   3RDPARTY_DEPS exiv2
-  3RDPARTY_DEPS tiff DEP_LIBS tiff
-  3RDPARTY_DEPS jpeg_turbo DEP_LIBS jpeg_turbo
-  3RDPARTY_DEPS png DEP_LIBS png
-  3RDPARTY_DEPS z DEP_LIBS z
+  3RDPARTY_DEPS tiff
+  3RDPARTY_DEPS jpeg_turbo
+  3RDPARTY_DEPS png
+  3RDPARTY_DEPS z
   3RDPARTY_DEPS graclus DEP_STATIC_LIBS graclus
   3RDPARTY_DEPS levmar DEP_STATIC_LIBS levmar
   HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
