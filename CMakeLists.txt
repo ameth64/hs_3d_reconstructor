@@ -128,6 +128,7 @@ hslib_add_mkl_dep(${RECONSTRUCTOR_NAME})
 
 hslib_post_build(${RECONSTRUCTOR_NAME})
 
+set(CMAKE_AUTOMOC OFF)
 set(DATABASE_NAME "database")
 set(DATABASE_SOURCES
   "source/database/database.cpp"
@@ -218,6 +219,7 @@ hslib_add_dep(${WORKFLOW_NAME}
   HS_DEPS hs_fit HEADONLY
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
+  HS_DEPS hs_texture HEADONLY
   )
 if (MSVC)
   set_source_files_properties(
@@ -225,6 +227,37 @@ if (MSVC)
     PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
 hslib_add_mkl_dep(${WORKFLOW_NAME})
+
+set(WORKFLOW_UTEST_SOURCES
+  "unit_test/workflow/main.cpp"
+  "unit_test/workflow/test_pmvs_point_cloud.cpp"
+  )
+hslib_add_utest(${WORKFLOW_NAME} SOURCES ${WORKFLOW_UTEST_SOURCES})
+hslib_add_dep(${WORKFLOW_NAME}_utest
+  3RDPARTY_DEPS boost DEP_LIBS boost_thread
+                               boost_chrono
+                               boost_regex
+                               boost_system
+                               boost_serialization
+  3RDPARTY_DEPS eigen HEADONLY
+  3RDPARTY_DEPS ceres DEP_LIBS ceres
+  3RDPARTY_DEPS exiv2
+  3RDPARTY_DEPS tiff
+  3RDPARTY_DEPS jpeg_turbo
+  3RDPARTY_DEPS png
+  3RDPARTY_DEPS z
+  3RDPARTY_DEPS graclus DEP_STATIC_LIBS graclus
+  3RDPARTY_DEPS levmar DEP_STATIC_LIBS levmar
+  HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
+  HS_DEPS hs_image_io DEP_LIBS whole_io
+  HS_DEPS hs_progress DEP_LIBS progress_utility
+  HS_DEPS hs_optimizor HEADONLY
+  HS_DEPS hs_fit HEADONLY
+  HS_DEPS hs_math HEADONLY
+  HS_DEPS hs_sfm HEADONLY
+  )
+hslib_add_mkl_dep(${WORKFLOW_NAME}_utest)
+hslib_post_build(${WORKFLOW_NAME}_utest)
 
 hs_add_qt_executable(test_manager_pane SOURCES
   "unit_test/gui/test_manager_pane.cpp"

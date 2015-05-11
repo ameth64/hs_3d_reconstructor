@@ -1,4 +1,5 @@
 ﻿#include <set>
+#include <fstream>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -322,6 +323,39 @@ void BlocksPane::Response(int request_flag, void* response)
                       }
         }
 
+        //读取Texture
+        db::RequestGetAllTextures texture_request;
+        db::ResponseGetAllTextures texture_response;
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, db::DatabaseMediator::REQUEST_GET_ALL_TEXTURES,
+          texture_request, texture_response, false);
+        if (texture_response.error_code != db::DatabaseMediator::NO_ERROR)
+          break;
+
+        auto itr_texture = texture_response.records.begin();
+        auto itr_texture_end = texture_response.records.end();
+        for (; itr_texture != itr_texture_end; ++itr_texture)
+        {
+          uint texture_id = uint(itr_texture->first);
+          uint surface_model_id =
+            uint(itr_texture->second[
+              db::TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID].ToInt());
+          std::string texture_std_name =
+            itr_texture->second[
+              db::TextureResource::TEXTURE_FIELD_NAME].ToString();
+          QString texture_name =
+            QString::fromLocal8Bit(texture_std_name.c_str());
+          int flag = itr_texture->second[
+                       db::TextureResource::TEXTURE_FIELD_FLAG].ToInt();
+          if (blocks_tree_widget_->AddTexture(surface_model_id, texture_id,
+                                              texture_name) == 0 &&
+              flag == db::TextureResource::FLAG_NOT_COMPLETED)
+          {
+            QTreeWidgetItem* item =
+              blocks_tree_widget_->TextureItem(texture_id);
+            item->setDisabled(false);
+          }
+        }
         break;
       }
 
@@ -511,6 +545,22 @@ void BlocksPane::OnTimeout()
             }
           case workflow::STEP_TEXTURE:
             {
+              db::RequestUpdateTextureFlag request;
+              db::ResponseUpdateTextureFlag response;
+              request.id = db::Database::Identifier(workflow_step_entry.id);
+              request.flag = db::TextureResource::FLAG_COMPLETED;
+              ((MainWindow*)parent())->database_mediator().Request(
+                this, db::DatabaseMediator::REQUEST_UPDATE_TEXTURE_FLAG,
+                request, response, true);
+              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              {
+                QTreeWidgetItem* item =
+                  blocks_tree_widget_->TextureItem(workflow_step_entry.id);
+                if (item)
+                {
+                  item->setDisabled(false);
+                }
+              }
               break;
             }
           }
@@ -897,6 +947,29 @@ void BlocksPane::OnActionAddWorkflowTriggered()
 
     }
 
+    //添加texture
+    if (first_configure_type
+      > WorkflowConfigureWidget::CONFIGURE_TEXTURE ||
+      last_configure_type
+      < WorkflowConfigureWidget::CONFIGURE_TEXTURE)
+    {
+      add_texture = false;
+    }
+    if (add_texture)
+    {
+      hs::recon::workflow::TextureConfigPtr texture_config(
+        new hs::recon::workflow::TextureConfig);
+      workflow_configure_dialog.FetchTextureConfig(
+        *texture_config);
+      if (AddTextureStep(surface_model_id
+        , texture_config
+        , workflow_config) != 0)
+      {
+        add_texture = false;
+      }
+
+    }
+
     if (!workflow_config.step_queue.empty())
     {
       workflow_queue_.push(workflow_config);
@@ -1220,11 +1293,11 @@ int BlocksPane::AddSurfaceModelStep(
     blocks_tree_widget_->AddSurfaceModel(point_cloud_id,
       surface_model_id,
       surface_model_name);
-    QTreeWidgetItem* feature_match_item =
-      blocks_tree_widget_->FeatureMatchItem(surface_model_id);
-    if (feature_match_item)
+    QTreeWidgetItem* surface_model_item =
+      blocks_tree_widget_->SurfaceModelItem(surface_model_id);
+    if (surface_model_item)
     {
-      feature_match_item->setDisabled(true);
+      surface_model_item->setDisabled(true);
     }
     WorkflowStepEntry surface_model_step_entry;
     surface_model_step_entry.id = uint(surface_model_id);
@@ -1238,7 +1311,44 @@ int BlocksPane::AddSurfaceModelStep(
   }
 }
 
-
+int BlocksPane::AddTextureStep(
+  uint surface_model_id,
+  workflow::TextureConfigPtr texture_config,
+  WorkflowConfig& workflow_config)
+{
+  typedef db::Database::Identifier Identifier;
+  hs::recon::db::RequestAddTexture request_add_texture;
+  hs::recon::db::ResponseAddTexture response_add_texture;
+  request_add_texture.surface_model_id = Identifier(surface_model_id);
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, hs::recon::db::DatabaseMediator::REQUEST_ADD_TEXTURE,
+    request_add_texture, response_add_texture, true);
+  if (response_add_texture.error_code ==
+    hs::recon::db::DatabaseMediator::NO_ERROR)
+  {
+    uint texture_id = uint(response_add_texture.texture_id);
+    QString texture_name =
+      QString::fromLocal8Bit(response_add_texture.name.c_str());
+    blocks_tree_widget_->AddTexture(surface_model_id,
+                                    texture_id,
+                                    texture_name);
+    QTreeWidgetItem* texture_item =
+      blocks_tree_widget_->TextureItem(texture_id);
+    if (texture_item)
+    {
+      texture_item->setDisabled(true);
+    }
+    WorkflowStepEntry texture_step_entry;
+    texture_step_entry.id = uint(texture_id);
+    texture_step_entry.config = texture_config;
+    workflow_config.step_queue.push(texture_step_entry);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
   const std::string& workflow_intermediate_directory,
@@ -1748,7 +1858,100 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
   const std::string& workflow_intermediate_directory,
   WorkflowStepEntry& workflow_step_entry)
 {
-  return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
+  typedef hs::recon::db::Database::Identifier Identifier;
+  while (1)
+  {
+    workflow::TextureConfigPtr texture_config =
+      std::static_pointer_cast<workflow::TextureConfig>(
+      workflow_step_entry.config);
+    //获取Texture数据
+    hs::recon::db::RequestGetTexture request_texture;
+    hs::recon::db::ResponseGetTexture response_texture;
+    request_texture.id = Identifier(workflow_step_entry.id);
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_TEXTURE,
+      request_texture, response_texture, false);
+    if (response_texture.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+    std::string texture_path =
+      response_texture.record[
+        db::TextureResource::TEXTURE_FIELD_PATH].ToString();
+
+    //获取Surface Model
+    hs::recon::db::RequestGetSurfaceModel request_surface_model;
+    hs::recon::db::ResponseGetSurfaceModel response_surface_model;
+    request_surface_model.id = 
+      response_texture.record[
+        db::TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID].ToInt();
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
+      request_surface_model, response_surface_model, false);
+    if (response_texture.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+    std::string surface_model_path = response_surface_model.mesh_path;
+    Identifier point_cloud_id =
+      response_surface_model.record[
+        db::SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt();
+
+    //获取point cloud
+    db::RequestGetPointCloud request_point_cloud;
+    db::ResponseGetPointCloud response_point_cloud;
+    request_point_cloud.id = point_cloud_id;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+      request_point_cloud, response_point_cloud, false);
+    if (response_point_cloud.error_code != hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+
+    Identifier photo_orientation_id =
+      response_point_cloud.record[
+      db::PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt();
+
+    //获取photo orientation
+    db::RequestGetPhotoOrientation request_photo_orientation;
+    db::ResponseGetPhotoOrientation response_photo_orientation;
+    request_photo_orientation.id = photo_orientation_id;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+      request_photo_orientation, response_photo_orientation, false);
+    if (response_photo_orientation.error_code !=
+        hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+
+    std::ifstream similar_file(
+      response_photo_orientation.similar_transform_path);
+    if (!similar_file) break;
+    workflow::TextureConfig::SimilarTransform similar_transform;
+    similar_file>>similar_transform.scale
+                >>similar_transform.rotation[0]
+                >>similar_transform.rotation[1]
+                >>similar_transform.rotation[2]
+                >>similar_transform.translate[0]
+                >>similar_transform.translate[1]
+                >>similar_transform.translate[2];
+
+    QSettings settings;
+    QString number_of_threads_key = tr("number_of_threads");
+    uint number_of_threads = settings.value(number_of_threads_key,
+        QVariant(uint(1))).toUInt();
+
+    texture_config->set_surface_model_path(surface_model_path);
+    texture_config->set_similar_transform(similar_transform);
+
+    break;
+  }
+
+  return WorkflowStepPtr(new workflow::RoughTexture);
 }
 
 }

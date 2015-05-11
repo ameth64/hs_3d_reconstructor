@@ -68,6 +68,12 @@ void WorkflowConfigureDialog::FetchSurfaceModelConfig(
     surface_model_config);
 }
 
+void WorkflowConfigureDialog::FetchTextureConfig(
+  workflow::TextureConfig& texture_config)
+{
+  workflow_configure_widget_->FetchTextureConfig(texture_config);
+}
+
 }
 }
 }

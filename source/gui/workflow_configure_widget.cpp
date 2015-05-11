@@ -261,6 +261,13 @@ void WorkflowConfigureWidget::FetchSurfaceModelConfig(
     surface_model_config);
 }
 
+void WorkflowConfigureWidget::FetchTextureConfig(
+  workflow::TextureConfig& texture_config)
+{
+  texture_configure_widget_->FetchTextureConfig(
+    texture_config);
+}
+
 void WorkflowConfigureWidget::SyncTreeNodeCheckState(
   QTreeWidgetItem* tree_item, int column)
 {

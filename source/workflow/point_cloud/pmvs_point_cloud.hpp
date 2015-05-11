@@ -44,7 +44,7 @@ public:
 
   PointCloud();
 
-protected:
+ protected:
   virtual int RunImplement(WorkflowStepConfig* config);
 
 };

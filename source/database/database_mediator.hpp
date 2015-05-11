@@ -93,9 +93,13 @@ public:
     REQUEST_GET_PHOTO_MEASURES_IN_PHOTO_ORIENTATION,
     REQUEST_UPDATE_GCP,
     REQUEST_ADD_SURFACE_MODEL,
+    REQUEST_ADD_TEXTURE,
     REQUEST_GET_SURFACE_MODEL,
+    REQUEST_GET_TEXTURE,
     REQUEST_GET_ALL_SURFACE_MODELS,
+    REQUEST_GET_ALL_TEXTURES,
     REQUEST_UPDATE_SURFACE_MODEL_FLAG,
+    REQUEST_UPDATE_TEXTURE_FLAG,
     NUMBER_OF_REQUEST_FLAGS
 
   };
@@ -2083,6 +2087,92 @@ struct DatabaseRequestHandler<RequestAddSurfaceModel,
   }
 };
 
+//Request Add Texture
+struct RequestAddTexture
+{
+  REQUEST_HEADER
+  typedef Database::Identifier Identifier;
+  Identifier surface_model_id;
+};
+
+struct ResponseAddTexture
+{
+  RESPONSE_HEADER
+  typedef Database::Identifier Identifier;
+  Identifier texture_id;
+  Identifier surface_model_id;
+  std::string name;
+  std::string path;
+};
+
+template <>
+struct DatabaseRequestHandler<RequestAddTexture,
+                              ResponseAddTexture>
+{
+  int operator() (const RequestAddTexture& request,
+                  ResponseAddTexture& response,
+                  DatabaseMediator& database_mediator)
+  {
+    typedef Database::Identifier Identifier;
+    TextureResource::AddRequest add_request;
+    add_request[
+      TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID] =
+        int(request.surface_model_id);
+      add_request[TextureResource::TEXTURE_FIELD_NAME] =
+        std::string("");
+      add_request[TextureResource::TEXTURE_FIELD_PATH] =
+        std::string("");
+      add_request[TextureResource::TEXTURE_FIELD_FLAG] =
+        TextureResource::FLAG_NOT_COMPLETED;
+      TextureResource::AddRequestContainer add_requests;
+      add_requests.push_back(add_request);
+      TextureResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.texture_resource_->Add(add_requests,
+        added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR ||
+        added_records.empty())
+      {
+        return response.error_code;
+      }
+
+      Identifier texture_id = added_records.begin()->first;
+      std::string texture_name =
+        boost::str(boost::format("texture_%1%") % texture_id);
+      boost::filesystem::path texture_path =
+        boost::str(boost::format("%1%/%2%/") %
+        database_mediator.database_.TexturePath() %
+        texture_id);
+      if (!boost::filesystem::create_directory(texture_path))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
+        return response.error_code;
+      }
+
+      TextureResource::UpdateRequest update_request;
+      update_request[TextureResource::TEXTURE_FIELD_NAME] =
+        texture_name;
+      update_request[TextureResource::TEXTURE_FIELD_PATH] =
+        texture_path.string();
+      TextureResource::UpdateRequestContainer update_requests;
+      update_requests[texture_id] = update_request;
+      TextureResource::UpdatedRecordContainer updated_records;
+      response.error_code =
+        database_mediator.texture_resource_->Update(update_requests,
+        updated_records);
+
+      if (response.error_code == DatabaseMediator::NO_ERROR)
+      {
+        response.texture_id = texture_id;;
+        response.surface_model_id = request.surface_model_id;
+        response.name = texture_name;
+        response.path = texture_path.string();
+      }
+
+      return response.error_code;
+  }
+};
+
 //Reequest Get Surface Model
 struct RequestGetSurfaceModel
 {
@@ -2123,6 +2213,33 @@ struct DatabaseRequestHandler<RequestGetSurfaceModel,
   }
 };
 
+//Reequest Get Texture
+struct RequestGetTexture
+{
+  REQUEST_HEADER
+  Database::Identifier id;
+};
+
+struct ResponseGetTexture
+{
+  RESPONSE_HEADER
+  TextureResource::Record record;
+};
+
+template <>
+struct DatabaseRequestHandler<RequestGetTexture, ResponseGetTexture>
+{
+  int operator () (const RequestGetTexture& request,
+                   ResponseGetTexture& response,
+    DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.texture_resource_->GetById(request.id,
+                                                   response.record);
+
+    return response.error_code;
+  }
+};
 
 //Request Update SurfaceModel Flag
 struct RequestUpdateSurfaceModelFlag
@@ -2158,6 +2275,41 @@ struct DatabaseRequestHandler<RequestUpdateSurfaceModelFlag,
   }
 };
 
+//Request Update Texture Flag
+struct RequestUpdateTextureFlag
+{
+  REQUEST_HEADER
+  Database::Identifier id;
+  int flag;
+};
+
+struct ResponseUpdateTextureFlag
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler<RequestUpdateTextureFlag,
+                              ResponseUpdateTextureFlag>
+{
+  int operator() (const RequestUpdateTextureFlag& request,
+                  ResponseUpdateTextureFlag& response,
+                  DatabaseMediator& database_mediator)
+  {
+    TextureResource::UpdateRequest update_request;
+    update_request[TextureResource::TEXTURE_FIELD_FLAG] =
+      request.flag;
+    TextureResource::UpdateRequestContainer update_requests;
+    update_requests[request.id] = update_request;
+    TextureResource::UpdatedRecordContainer updated_records;
+    response.error_code =
+      database_mediator.texture_resource_->Update(update_requests,
+                                                  updated_records);
+    return response.error_code;
+  }
+};
+
+//Request Get All Surface Models
 struct RequestGetAllSurfaceModels
 {
   REQUEST_HEADER
@@ -2177,6 +2329,30 @@ struct DatabaseRequestHandler<RequestGetAllSurfaceModels,
   {
     response.error_code =
       database_mediator.surface_model_resource_->GetAll(response.records);
+    return response.error_code;
+  }
+};
+
+//Request Get All Texture
+struct RequestGetAllTextures
+{
+  REQUEST_HEADER
+};
+struct ResponseGetAllTextures
+{
+  RESPONSE_HEADER
+  TextureResource::RecordContainer records;
+};
+template <>
+struct DatabaseRequestHandler<RequestGetAllTextures,
+                              ResponseGetAllTextures>
+{
+  int operator() (const RequestGetAllTextures& request,
+                  ResponseGetAllTextures& response,
+                  DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.texture_resource_->GetAll(response.records);
     return response.error_code;
   }
 };

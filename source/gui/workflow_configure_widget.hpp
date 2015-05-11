@@ -54,6 +54,8 @@ public:
     workflow::PointCloudConfig& point_cloud_config);
   void FetchSurfaceModelConfig(
     workflow::MeshSurfaceConfig& surface_model_config);
+  void FetchTextureConfig(
+    workflow::TextureConfig& texture_config);
 
 public slots:
   void SyncTreeNodeCheckState(QTreeWidgetItem* tree_item, int column);

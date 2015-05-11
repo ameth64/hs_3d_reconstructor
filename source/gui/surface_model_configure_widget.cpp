@@ -19,8 +19,6 @@ SurfaceModelConfigureWidget::SurfaceModelConfigureWidget(
   setLayout(main_layout_);
   group_box_layout_ = new QVBoxLayout;
 
-  layout_group_box_dem_ = new QVBoxLayout;
-
   combo_box_ = new QComboBox;
   combo_box_->setEditable(false);
   QStringList item_text;
@@ -31,63 +29,10 @@ SurfaceModelConfigureWidget::SurfaceModelConfigureWidget(
   combo_box_->setCurrentIndex(1);
   group_box_layout_->addWidget(combo_box_);
 
-  layout_dem_path_ = new QHBoxLayout;
-  label_dem_path_ = new QLabel(tr("DEM Path:"));
-  line_edit_dem_path_ = new QLineEdit;
-  line_edit_dem_path_->setEnabled(false);
-  button_browse_ = new QPushButton(tr("Browse"));
-  layout_dem_path_->addWidget(label_dem_path_);
-  layout_dem_path_->addWidget(line_edit_dem_path_);
-  layout_dem_path_->addWidget(button_browse_);
-  layout_group_box_dem_->addLayout(layout_dem_path_);
-
-  QIntValidator* int_validator = new QIntValidator(this);
-  int_validator->setBottom(0);
-  QDoubleValidator* double_validator = new QDoubleValidator(this);
-  double_validator->setBottom(0.0);
-  layout_dem_scale_ = new QHBoxLayout;
-  label_dem_x_scale_ = new QLabel(tr("DEM X Scale:"));
-  line_edit_dem_x_scale_ = new QLineEdit;
-  line_edit_dem_x_scale_->setValidator(double_validator);
-  line_edit_dem_x_scale_->setText(QString::number(0.1));
-  label_dem_y_scale_ = new QLabel(tr("DEM Y Scale:"));
-  line_edit_dem_y_scale_ = new QLineEdit;
-  line_edit_dem_y_scale_->setValidator(double_validator);
-  line_edit_dem_y_scale_->setText(QString::number(0.1));
-  layout_dem_scale_->addWidget(label_dem_x_scale_);
-  layout_dem_scale_->addWidget(line_edit_dem_x_scale_);
-  layout_dem_scale_->addWidget(label_dem_y_scale_);
-  layout_dem_scale_->addWidget(line_edit_dem_y_scale_);
-  layout_group_box_dem_->addLayout(layout_dem_scale_);
-
-  layout_dem_tile_size_ = new QHBoxLayout;
-  label_dem_tile_x_size_ = new QLabel(tr("DEM Tile X Size:"));
-  line_edit_dem_tile_x_size_ = new QLineEdit;
-  line_edit_dem_tile_x_size_->setValidator(int_validator);
-  line_edit_dem_tile_x_size_->setText(QString::number(2048));
-  label_dem_tile_y_size_ = new QLabel(tr("DEM Tile Y Size:"));
-  line_edit_dem_tile_y_size_ = new QLineEdit;
-  line_edit_dem_tile_y_size_->setValidator(int_validator);
-  line_edit_dem_tile_y_size_->setText(QString::number(2048));
-  layout_dem_tile_size_->addWidget(label_dem_tile_x_size_);
-  layout_dem_tile_size_->addWidget(line_edit_dem_tile_x_size_);
-  layout_dem_tile_size_->addWidget(label_dem_tile_y_size_);
-  layout_dem_tile_size_->addWidget(line_edit_dem_tile_y_size_);
-  layout_group_box_dem_->addLayout(layout_dem_tile_size_);
-
   group_box_ = new QGroupBox(tr("Surface Model Configure"), this);
   group_box_->setLayout(group_box_layout_);
   main_layout_->addWidget(group_box_);
 
-  group_box_dem_ = new QGroupBox(tr("DEM Configure"), this);
-  group_box_dem_->setLayout(layout_group_box_dem_);
-  group_box_dem_->setCheckable(true);
-  group_box_dem_->setChecked(false);
-  main_layout_->addWidget(group_box_dem_);
-
-  QObject::connect(
-    button_browse_, &QPushButton::clicked,
-    this,  &SurfaceModelConfigureWidget::OnButtonBrowseClicked);
 }
 
 void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
@@ -136,32 +81,6 @@ void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
     mesh_surface_config.set_polygon_mesh(0);
   }
 
-  if (group_box_dem_->isChecked())
-  {
-    std::string dem_path =
-      line_edit_dem_path_->text().toLocal8Bit().data();
-    mesh_surface_config.set_dem_path(dem_path);
-
-    int dem_tile_x_size = line_edit_dem_tile_x_size_->text().toInt();
-    int dem_tile_y_size = line_edit_dem_tile_y_size_->text().toInt();
-    double dem_x_scale = line_edit_dem_x_scale_->text().toDouble();
-    double dem_y_scale = line_edit_dem_y_scale_->text().toDouble();
-    mesh_surface_config.set_dem_tile_x_size(dem_tile_x_size);
-    mesh_surface_config.set_dem_tile_y_size(dem_tile_y_size);
-    mesh_surface_config.set_dem_x_scale(dem_x_scale);
-    mesh_surface_config.set_dem_y_scale(dem_y_scale);
-  }
-}
-
-void SurfaceModelConfigureWidget::OnButtonBrowseClicked()
-{
-  QFileDialog dialog;
-  dialog.setAcceptMode(QFileDialog::AcceptSave);
-  if (dialog.exec())
-  {
-    QString dem_path = dialog.selectedFiles()[0];
-    line_edit_dem_path_->setText(dem_path);
-  }
 }
 
 }

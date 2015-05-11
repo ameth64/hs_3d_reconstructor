@@ -18,6 +18,7 @@
 #include "gui/manager_pane.hpp"
 #include "gui/blocks_tree_widget.hpp"
 #include "workflow/mesh_surface/poisson_surface_model.hpp"
+#include "workflow/texture/rough_texture.hpp"
 
 namespace hs
 {
@@ -100,6 +101,11 @@ private:
   int AddSurfaceModelStep(
     uint point_cloud_id,
     workflow::MeshSurfaceConfigPtr surface_model_config,
+    WorkflowConfig& workflow_config);
+
+  int AddTextureStep(
+    uint surface_model_id,
+    workflow::TextureConfigPtr texture_config,
     WorkflowConfig& workflow_config);
 
   WorkflowStepPtr SetFeatureMatchStep(

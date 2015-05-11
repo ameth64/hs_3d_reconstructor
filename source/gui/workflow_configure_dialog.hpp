@@ -33,7 +33,8 @@ public:
     workflow::PointCloudConfig& point_cloud_config);
   void FetchSurfaceModelConfig(
     workflow::MeshSurfaceConfig& surface_model_config);
-
+  void FetchTextureConfig(
+    workflow::TextureConfig& texture_config);
 
 private:
   WorkflowConfigureWidget* workflow_configure_widget_;

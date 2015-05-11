@@ -61,26 +61,6 @@ namespace hs
       void MeshSurfaceConfig::set_output_dir(const std::string& output_dir){
         output_dir_ = output_dir;
       }
-      void MeshSurfaceConfig::set_dem_x_scale(double dem_x_scale)
-      {
-        dem_x_scale_ = dem_x_scale;
-      }
-      void MeshSurfaceConfig::set_dem_y_scale(double dem_y_scale)
-      {
-        dem_y_scale_ = dem_y_scale;
-      }
-      void MeshSurfaceConfig::set_dem_path(const std::string& dem_path)
-      {
-        dem_path_ = dem_path;
-      }
-      void MeshSurfaceConfig::set_dem_tile_x_size(int dem_tile_x_size)
-      {
-        dem_tile_x_size_ = dem_tile_x_size;
-      }
-      void MeshSurfaceConfig::set_dem_tile_y_size(int dem_tile_y_size)
-      {
-        dem_tile_y_size_ = dem_tile_y_size;
-      }
 
       const std::string& MeshSurfaceConfig::xml_path()const{
         return xml_path_;
@@ -126,26 +106,6 @@ namespace hs
       }
       const float& MeshSurfaceConfig::samples_per_node()const{
         return samples_per_node_;
-      }
-      double MeshSurfaceConfig::dem_x_scale() const
-      {
-        return dem_x_scale_;
-      }
-      double MeshSurfaceConfig::dem_y_scale() const
-      {
-        return dem_y_scale_;
-      }
-      const std::string& MeshSurfaceConfig::dem_path() const
-      {
-        return dem_path_;
-      }
-      int MeshSurfaceConfig::dem_tile_x_size() const
-      {
-        return dem_tile_x_size_;
-      }
-      int MeshSurfaceConfig::dem_tile_y_size() const
-      {
-        return dem_tile_y_size_;
       }
 
       int PoissonSurface::CreateConfigXml(MeshSurfaceConfig* config)
@@ -238,17 +198,6 @@ namespace hs
         ms::CMSAgent::destroy((ms::CMSAgent*)agent);
         return 0;
 
-      }
-
-      int PoissonSurface::GenerateDEM(MeshSurfaceConfig* config)
-      {
-        MeshSurfaceConfig* surface_model_config =
-          static_cast<MeshSurfaceConfig*>(config);
-
-        //读取三维模型
-        
-
-        return 0;
       }
 
       int PoissonSurface::RunImplement(WorkflowStepConfig *config)
