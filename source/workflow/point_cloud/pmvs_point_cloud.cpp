@@ -63,9 +63,6 @@ int PointCloud::RunImplement(WorkflowStepConfig* config)
 {
   PointCloudConfig* point_cloud_config =
     static_cast<PointCloudConfig*>(config);
-
-  std::cout << "Runing...PointCloud\n";
-
   std::string workspace_path = point_cloud_config->workspace_path();
   std::string photo_orientation_xml = 
     point_cloud_config->photo_orientation_path() + "point_cloud_input.xml";
@@ -83,18 +80,21 @@ int PointCloud::RunImplement(WorkflowStepConfig* config)
   agent->input(point_cloud_xml.c_str());
   agent->start(bm::CBaseDefine::E_MX_ASYNC);
 
+  int pc_progress = 0;
   while(agent->getState() == bm::CBaseDefine::E_MS_BUSY)
   {
 #if WIN32
     Sleep(1000);
 #endif
+    pc_progress = agent->getProgress();
+    progress_manager_.SetCurrentSubProgressCompleteRatio(
+      float(pc_progress)/float(100));
   }
 
   agent->stop();
   agent->output(point_cloud_xml_out.c_str());
   agent->uninit();
   pc::CPCAgent::destroy((pc::CPCAgent*)agent);
-
 
   return 0;
 }
