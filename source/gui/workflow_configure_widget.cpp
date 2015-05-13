@@ -329,22 +329,25 @@ void WorkflowConfigureWidget::DisplayWidget(
     //texture_export_widget_->show();
   }
 
-  if (tree_item->child(0) == NULL)
+  if (tree_item)
   {
-    button_next_->setDisabled(true);
-  }
-  else
-  {
-    button_next_->setDisabled(false);
-  }
+	if (tree_item->child(0) == NULL)
+	{
+	  button_next_->setDisabled(true);
+	}
+	else
+	{
+	  button_next_->setDisabled(false);
+	}
 
-  if (tree_item->parent() == NULL)
-  {
-    button_previous_->setDisabled(true);
-  }
-  else
-  {
-    button_previous_->setDisabled(false);
+	if (tree_item->parent() == NULL)
+	{
+	  button_previous_->setDisabled(true);
+	}
+	else
+	{
+	  button_previous_->setDisabled(false);
+	}
   }
 
 }

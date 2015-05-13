@@ -1858,7 +1858,13 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
   const std::string& workflow_intermediate_directory,
   WorkflowStepEntry& workflow_step_entry)
 {
-  typedef hs::recon::db::Database::Identifier Identifier;
+  typedef db::Database::Identifier Identifier;
+  typedef workflow::TextureConfig::Scalar Scalar;
+  typedef workflow::TextureConfig::IntrinsicParams IntrinsicParams;
+  typedef workflow::TextureConfig::ExtrinsicParams ExtrinsicParams;
+  typedef workflow::TextureConfig::ImageParams ImageParams;
+  typedef workflow::TextureConfig::ImageParamsContainer ImageParamsContainer;
+
   while (1)
   {
     workflow::TextureConfigPtr texture_config =
@@ -1939,6 +1945,101 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
                 >>similar_transform.translate[0]
                 >>similar_transform.translate[1]
                 >>similar_transform.translate[2];
+    similar_file.close();
+
+    std::ifstream intrinsic_file(response_photo_orientation.intrinsic_path);
+    EIGEN_STD_MAP(size_t, IntrinsicParams) intrinsic_map;
+    if (intrinsic_file)
+    {
+      while (!intrinsic_file.eof())
+      {
+        std::string line;
+        std::getline(intrinsic_file, line);
+        if (line.empty()) break;
+        std::stringstream ss(line);
+        size_t id;
+        Scalar focal_length, skew, principal_x, principal_y, pixel_ratio,
+               k1, k2, k3, d1, d2;
+        ss>>id>>focal_length>>skew>>principal_x>>principal_y>>pixel_ratio
+          >>k1>>k2>>k3>>d1>>d2;
+        intrinsic_map[id] = IntrinsicParams(focal_length,
+                                            skew,
+                                            principal_x,
+                                            principal_y,
+                                            pixel_ratio,
+                                            k1,
+                                            k2,
+                                            k3,
+                                            d1,
+                                            d2);
+      }
+      intrinsic_file.close();
+    }
+
+    std::ifstream extrinsic_file(response_photo_orientation.extrinsic_path);
+    ImageParamsContainer images;
+    if (extrinsic_file)
+    {
+      while (!extrinsic_file.eof())
+      {
+        std::string line;
+        std::getline(extrinsic_file, line);
+        if (line.empty()) break;
+        std::stringstream ss(line);
+
+        ExtrinsicParams extrinsic_params;
+        size_t photo_id, intrinsic_id;
+        ss>>photo_id>>intrinsic_id
+          >>extrinsic_params.position()[0]
+          >>extrinsic_params.position()[1]
+          >>extrinsic_params.position()[2]
+          >>extrinsic_params.rotation()[0]
+          >>extrinsic_params.rotation()[1]
+          >>extrinsic_params.rotation()[2];
+        extrinsic_params.rotation() =
+          extrinsic_params.rotation() * similar_transform.rotation.Inverse();
+        extrinsic_params.position() =
+          similar_transform.scale * (similar_transform.rotation *
+                                      extrinsic_params.position()) +
+          similar_transform.translate;
+        auto itr_intrinsic = intrinsic_map.find(intrinsic_id);
+        if (itr_intrinsic == intrinsic_map.end()) continue;
+        db::RequestGetPhotogroup request_group;
+        db::ResponseGetPhotogroup response_group;
+        request_group.id = db::Database::Identifier(intrinsic_id);
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
+          request_group, response_group, false);
+        if (response_group.error_code != db::DatabaseMediator::NO_ERROR)
+        {
+          continue;
+        }
+        db::RequestGetPhoto request_photo;
+        db::ResponseGetPhoto response_photo;
+        request_photo.id = db::Database::Identifier(photo_id);
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, db::DatabaseMediator::REQUEST_GET_PHOTO,
+          request_photo, response_photo, false);
+        if (response_photo.error_code != db::DatabaseMediator::NO_ERROR)
+        {
+          continue;
+        }
+        ImageParams image;
+        image.intrinsic_params = itr_intrinsic->second;
+        image.extrinsic_params = extrinsic_params;
+        image.image_width =
+          response_group.record[
+            db::PhotogroupResource::PHOTOGROUP_FIELD_WIDTH].ToInt();
+        image.image_height =
+          response_group.record[
+            db::PhotogroupResource::PHOTOGROUP_FIELD_HEIGHT].ToInt();
+        image.image_path =
+          response_photo.record[
+            db::PhotoResource::PHOTO_FIELD_PATH].ToString();
+        images.push_back(image);
+      }
+      extrinsic_file.close();
+    }
 
     QSettings settings;
     QString number_of_threads_key = tr("number_of_threads");
@@ -1947,6 +2048,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
 
     texture_config->set_surface_model_path(surface_model_path);
     texture_config->set_similar_transform(similar_transform);
+    texture_config->set_images(images);
 
     break;
   }

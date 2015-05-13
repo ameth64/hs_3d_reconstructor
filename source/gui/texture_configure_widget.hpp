@@ -26,7 +26,8 @@ public:
   void FetchTextureConfig(workflow::TextureConfig& texture_config);
 
 private:
-  void OnButtonBrowseClicked();
+  void OnButtonBrowseDEMClicked();
+  void OnButtonBrowseDOMClicked();
 
 private:
   QVBoxLayout* main_layout_;
@@ -37,7 +38,7 @@ private:
   QHBoxLayout* layout_dem_path_;
   QLabel* label_dem_path_;
   QLineEdit* line_edit_dem_path_;
-  QPushButton* button_browse_;
+  QPushButton* button_browse_dem_;
 
   QHBoxLayout* layout_dem_scale_;
   QLabel* label_dem_x_scale_;
@@ -50,6 +51,26 @@ private:
   QLineEdit* line_edit_dem_tile_x_size_;
   QLabel* label_dem_tile_y_size_;
   QLineEdit* line_edit_dem_tile_y_size_;
+
+  QGroupBox* group_box_dom_;
+  QVBoxLayout* layout_group_box_dom_;
+
+  QHBoxLayout* layout_dom_path_;
+  QLabel* label_dom_path_;
+  QLineEdit* line_edit_dom_path_;
+  QPushButton* button_browse_dom_;
+
+  QHBoxLayout* layout_dom_scale_;
+  QLabel* label_dom_x_scale_;
+  QLineEdit* line_edit_dom_x_scale_;
+  QLabel* label_dom_y_scale_;
+  QLineEdit* line_edit_dom_y_scale_;
+
+  QHBoxLayout* layout_dom_tile_size_;
+  QLabel* label_dom_tile_x_size_;
+  QLineEdit* line_edit_dom_tile_x_size_;
+  QLabel* label_dom_tile_y_size_;
+  QLineEdit* line_edit_dom_tile_y_size_;
 };
 
 }
