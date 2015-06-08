@@ -130,7 +130,7 @@ void PhotoFilesSelectWidget::OnAddPhotosClicked()
 {
   QFileDialog dialog;
   dialog.setFileMode(QFileDialog::ExistingFiles);
-  dialog.setNameFilter(tr("JPEG Files (*.jpg)"));
+  dialog.setNameFilter(tr("JPEG Files (*.jpg | *.JPG)"));
   if (dialog.exec())
   {
     QStringList file_names = dialog.selectedFiles();
