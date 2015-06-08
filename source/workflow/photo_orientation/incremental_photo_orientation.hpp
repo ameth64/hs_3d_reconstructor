@@ -3,7 +3,7 @@
 
 #include "hs_sfm/sfm_utility/camera_type.hpp"
 #include "hs_sfm/sfm_utility/match_type.hpp"
-#include "hs_sfm/incremental/incremental.hpp"
+#include "hs_sfm/sfm_pipeline/incremental_sfm.hpp"
 
 #include "hs_3d_reconstructor/config/hs_config.hpp"
 
@@ -92,7 +92,7 @@ public:
 
 private:
   typedef PhotoOrientationConfig::Scalar Scalar;
-  typedef hs::sfm::incremental::IncrementalSFM<Scalar> SFM;
+  typedef hs::sfm::pipeline::IncrementalSFM<Scalar> SFM;
   typedef SFM::Keyset Keyset;
   typedef SFM::KeysetContainer KeysetContainer;
   typedef SFM::ExtrinsicParams ExtrinsicParams;

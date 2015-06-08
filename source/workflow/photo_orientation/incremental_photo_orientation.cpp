@@ -632,8 +632,8 @@ int IncrementalPhotoOrientation::ExportPointCloudInputXML(
   root.put("module_list.module_item.merge_section.quality_threshold",1);
   root.put("module_list.module_item.merge_section.visibility_threshold",2);
 
-  //boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
-  boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
+  boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
+  //boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
   write_xml(point_cloud_input_path,root,std::locale(),settings);
 
   return 0;

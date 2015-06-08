@@ -109,6 +109,20 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS png
   3RDPARTY_DEPS z
   3RDPARTY_DEPS sqlite
+  3RDPARTY_DEPS openmvg
+    DEP_STATIC_LIBS openMVG_sfm
+                    openMVG_multiview
+                    openMVG_lInftyComputerVision
+                    openMVG_numeric
+                    openMVG_kvld
+                    openMVG_features
+                    openMVG_system
+                    openMVG_stlplus
+  3RDPARTY_DEPS osi_clp
+    DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
+  3RDPARTY_DEPS cereal HEADONLY
+  3RDPARTY_DEPS lemon
+  3RDPARTY_DEPS flann DEP_STATIC_LIBS flann
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
@@ -212,6 +226,19 @@ hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS z
   3RDPARTY_DEPS graclus DEP_STATIC_LIBS graclus
   3RDPARTY_DEPS levmar DEP_STATIC_LIBS levmar
+  3RDPARTY_DEPS openmvg
+    DEP_STATIC_LIBS openMVG_sfm
+                    openMVG_multiview
+                    openMVG_lInftyComputerVision
+                    openMVG_numeric
+                    openMVG_kvld
+                    openMVG_features
+                    openMVG_system
+                    openMVG_stlplus
+  3RDPARTY_DEPS osi_clp
+    DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
+  3RDPARTY_DEPS cereal HEADONLY
+  3RDPARTY_DEPS lemon
   HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
