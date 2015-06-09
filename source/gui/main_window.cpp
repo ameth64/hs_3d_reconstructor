@@ -24,6 +24,9 @@ MainWindow::MainWindow()
   menu_file_ = new QMenu(tr("File"), menu_bar_);
   menu_bar_->addAction(menu_file_->menuAction());
 
+	menu_view_ = new QMenu(tr("View"), menu_bar_);
+	menu_bar_->addAction(menu_view_->menuAction());
+
   menu_tools_ = new QMenu(tr("Tools"), menu_bar_);
   menu_bar_->addAction(menu_tools_->menuAction());
 
@@ -39,6 +42,13 @@ MainWindow::MainWindow()
   menu_file_->addAction(action_open_project_);
   menu_file_->addAction(action_close_project_);
 
+	action_photos_pane_ = new QAction(tr("Photos Pane"),this);
+	action_blocks_pane_ = new QAction(tr("Blocks Pane"),this);
+	action_gcps_pane_ = new QAction(tr("GCPs Pane"),this);
+	menu_view_->addAction(action_photos_pane_);
+	menu_view_->addAction(action_blocks_pane_);
+	menu_view_->addAction(action_gcps_pane_);
+
   action_preferences_ = new QAction(tr("Preferences"), this);
   menu_tools_->addAction(action_preferences_);
 
@@ -48,6 +58,15 @@ MainWindow::MainWindow()
                    this, &MainWindow::OnActionOpenProjectTriggered);
   QObject::connect(action_close_project_, &QAction::triggered,
     this, &MainWindow::OnActionCloseProjectTriggered);
+
+  QObject::connect(action_photos_pane_, &QAction::triggered,
+                   this, &MainWindow::OnActionPhotosPaneTriggered);
+
+  QObject::connect(action_blocks_pane_, &QAction::triggered,
+                   this, &MainWindow::OnActionBlocksPaneTriggered);
+
+  QObject::connect(action_gcps_pane_, &QAction::triggered,
+                   this, &MainWindow::OnActionGCPsPaneTriggered);
 
   QObject::connect(action_preferences_, &QAction::triggered,
                    this, &MainWindow::OnActionPreferencesTriggered);
@@ -218,6 +237,25 @@ void MainWindow::DefaultSetting()
   {
     settings.setValue(number_of_threads_key, uint(1));
   }
+}
+
+void MainWindow::OnActionPhotosPaneTriggered()
+{
+	if(photos_pane_->isHidden())
+		photos_pane_->show();
+	photos_pane_->raise();
+}
+void MainWindow::OnActionBlocksPaneTriggered()
+{
+	if(blocks_pane_->isHidden())
+		blocks_pane_->show();
+	blocks_pane_->raise();
+}
+void MainWindow::OnActionGCPsPaneTriggered()
+{
+	if(gcps_pane_->isHidden())
+		gcps_pane_->show();
+	gcps_pane_->raise();
 }
 
 void MainWindow::OnActionPreferencesTriggered()

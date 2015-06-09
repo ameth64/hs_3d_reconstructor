@@ -37,6 +37,10 @@ private slots:
   void OnActionOpenProjectTriggered();
   void OnActionCloseProjectTriggered();
 
+	void OnActionPhotosPaneTriggered();
+	void OnActionBlocksPaneTriggered();
+	void OnActionGCPsPaneTriggered();
+
   void OnActionPreferencesTriggered();
 
 private:
@@ -44,13 +48,18 @@ private:
 
 private:
   QMenuBar* menu_bar_;
-  QMenu* menu_file_;
+  QMenu* menu_file_; 
+	QMenu* menu_view_;
   QMenu* menu_tools_;
   QStatusBar* status_bar_;
 
   QAction* action_new_project_;
   QAction* action_open_project_;
   QAction* action_close_project_;
+
+	QAction* action_photos_pane_;
+	QAction* action_blocks_pane_;
+	QAction* action_gcps_pane_;
 
   QAction* action_preferences_;
 

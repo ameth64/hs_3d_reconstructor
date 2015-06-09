@@ -12,11 +12,15 @@ WorkflowConfigureDialog::WorkflowConfigureDialog(
   QWidget* parent, Qt::WindowFlags f)
   : QDialog(parent, f)
 {
+  //this->setMinimumSize(500, 600);
+
   layout_ = new QVBoxLayout(this);
 
   workflow_configure_widget_ =
     new WorkflowConfigureWidget(start_configure_type, this);
+
   layout_->addWidget(workflow_configure_widget_);
+  this->adjustSize();
 
   dialog_button_box_ok_cancel_ =
     new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
