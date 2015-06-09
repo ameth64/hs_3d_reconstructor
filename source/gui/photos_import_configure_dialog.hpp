@@ -39,6 +39,7 @@ private slots:
   void OnPhotoFileEntriesChanged();
 
 private:
+  int CheckValid();
   QPushButton* push_button_previous_;
   QPushButton* push_button_next_;
   QVBoxLayout* layout_all_;

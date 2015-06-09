@@ -131,7 +131,10 @@ void PhotosImportConfigureDialog::OnPushButtonNextClicked()
     }
   case STATE_CONFIG_INFO_POS:
     {
-      accept();
+      if (CheckValid() == 0)
+      {
+        accept();
+      }
       break;
     }
   }
@@ -148,7 +151,33 @@ void PhotosImportConfigureDialog::OnPhotoFileEntriesChanged()
     push_button_next_->setEnabled(true);
   }
 }
+int PhotosImportConfigureDialog::CheckValid()
+{
+  QMessageBox msg_box;
+  PhotogroupInfo photo_info = GetPhotogroupInfo();
+  if (photo_info.width <= 0 || photo_info.height <= 0)
+  {
+    msg_box.setText(tr("Photo Dimension Invalid!"));
+    msg_box.exec();
+    return -1;
+  }
 
+  if (photo_info.focal_length <= 0)
+  {
+    msg_box.setText(tr("Focal Length Invalid!"));
+    msg_box.exec();
+    return -2;
+  }
+
+  if (photo_info.pixel_size_x <= 0 || photo_info.pixel_size_y <= 0)
+  {
+    msg_box.setText(tr("Pixel Size Invalid!"));
+    msg_box.exec();
+    return -3;
+  }
+
+  return 0;
+}
 }
 }
 }
