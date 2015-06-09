@@ -12,8 +12,6 @@ WorkflowConfigureDialog::WorkflowConfigureDialog(
   QWidget* parent, Qt::WindowFlags f)
   : QDialog(parent, f)
 {
-  //this->setMinimumSize(500, 600);
-
   layout_ = new QVBoxLayout(this);
 
   workflow_configure_widget_ =

@@ -298,7 +298,7 @@ int PropertyFieldAsignmentWidget::DisplayRecords()
       table_widget_property_assignment_->setItem(i, j, item);
     }
   }
-  table_widget_property_assignment_->resizeColumnsToContents();
+  //table_widget_property_assignment_->resizeColumnsToContents();
 
   return 0;
 }

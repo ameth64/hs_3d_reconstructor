@@ -60,7 +60,6 @@ public:
 public slots:
   void SyncTreeNodeCheckState(QTreeWidgetItem* tree_item, int column);
   void DisplayWidget(QTreeWidgetItem* tree_item, QTreeWidgetItem* previouse);
-  void DisplayWidgeti(QTreeWidgetItem* tree_item, int column);
   void GotoNextTreeNode();
   void GotoPreviousTreeNode();
 

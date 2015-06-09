@@ -107,7 +107,7 @@ WorkflowConfigureWidget::WorkflowConfigureWidget(
   }
 
   tree_widget_->expandAll();
-  tree_widget_->setMinimumWidth(200);
+  tree_widget_->setMinimumWidth(280);
 
   feature_match_configure_widget_ =
     new FeatureMatchConfigureWidget(this);
@@ -160,8 +160,6 @@ WorkflowConfigureWidget::WorkflowConfigureWidget(
                    this, &WorkflowConfigureWidget::SyncTreeNodeCheckState);
   QObject::connect(tree_widget_, &QTreeWidget::currentItemChanged,
                    this, &WorkflowConfigureWidget::DisplayWidget);
-  QObject::connect(tree_widget_, &QTreeWidget::itemPressed,
-                   this, &WorkflowConfigureWidget::DisplayWidgeti);
   QObject::connect(button_next_, &QPushButton::clicked,
                    this, &WorkflowConfigureWidget::GotoNextTreeNode);
   QObject::connect(button_previous_, &QPushButton::clicked,
@@ -353,67 +351,6 @@ void WorkflowConfigureWidget::DisplayWidget(
 	}
   }
 
-}
-
-void WorkflowConfigureWidget::DisplayWidgeti(QTreeWidgetItem* tree_item, int column)
-{
-  feature_match_configure_widget_->hide();
-  photo_orientation_configure_widget_->hide();
-  point_cloud_configure_widget_->hide();
-  surface_model_configure_widget_->hide();
-  texture_configure_widget_->hide();
-
-  //feature_match_export_widget_->hide();
-  //photo_orientation_export_widget_->hide();
-  //point_cloud_export_widget_->hide();
-  //surface_model_export_widget_->hide();
-  //texture_export_widget_->hide();
-  if (tree_item == tree_item_feature_match_)
-  {
-    feature_match_configure_widget_->show();
-    //feature_match_export_widget_->show();
-  }
-  else if (tree_item == tree_item_photo_orientation_)
-  {
-    photo_orientation_configure_widget_->show();
-    //photo_orientation_export_widget_->show();
-  }
-  else if (tree_item == tree_item_point_cloud_)
-  {
-    point_cloud_configure_widget_->show();
-    //point_cloud_export_widget_->show();
-  }
-  else if (tree_item == tree_item_surface_model_)
-  {
-    surface_model_configure_widget_->show();
-    //surface_model_export_widget_->show();
-  }
-  else if (tree_item == tree_item_texture_)
-  {
-    texture_configure_widget_->show();
-    //texture_export_widget_->show();
-  }
-
-  if (tree_item)
-  {
-  if (tree_item->child(0) == NULL)
-  {
-    button_next_->setDisabled(true);
-  }
-  else
-  {
-    button_next_->setDisabled(false);
-  }
-
-  if (tree_item->parent() == NULL)
-  {
-    button_previous_->setDisabled(true);
-  }
-  else
-  {
-    button_previous_->setDisabled(false);
-  }
-  }
 }
 
 void WorkflowConfigureWidget::GotoNextTreeNode()

@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QSettings>
+#include <QDebug>
 
 #include "gui/manager_pane.hpp"
 #include "gui/new_project_config_dialog.hpp"
@@ -73,9 +74,10 @@ MainWindow::MainWindow()
 
   DefaultSetting();
 
-  QWidget* tmp_central_widget = new QWidget(this);
-  setCentralWidget(tmp_central_widget);
+  //QWidget* tmp_central_widget = new QWidget(this);
+  //setCentralWidget(tmp_central_widget);
 
+  QSize wh = size();
   photos_pane_ = new PhotosPane(this);
   blocks_pane_ = new BlocksPane(this);
   gcps_pane_ = new GCPsPane(this);
@@ -84,7 +86,7 @@ MainWindow::MainWindow()
   scene_window_->SetBackgroundColor(0.2f, 0.1f, 0.2f, 1.0f);
   QWidget* container = QWidget::createWindowContainer(scene_window_, this);
   setCentralWidget(container);
-  resize(800,600);
+  //resize(800,600);
   setDockNestingEnabled(true);
   setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
   setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
@@ -93,10 +95,10 @@ MainWindow::MainWindow()
   addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
   tabifyDockWidget(blocks_pane_, photos_pane_);
   addDockWidget(Qt::BottomDockWidgetArea, gcps_pane_);
-  showMaximized();
+  //showMaximized();
   //加了下面两行则无论在windows还是osx平台上都最大化显示正常，不知道为什么……
-  hide();
-  show();
+  //hide();
+  //show();
 
   database_mediator_.RegisterObserver(photos_pane_);
   database_mediator_.RegisterObserver(blocks_pane_);

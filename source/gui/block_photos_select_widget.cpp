@@ -10,6 +10,7 @@ namespace gui
 BlockPhotosSelectWidget::BlockPhotosSelectWidget(
   const BlockInfoEntry& block_info_entry, const GroupEntryContainer& groups)
 {
+  setMinimumSize(800, 600);
   QHBoxLayout* layout_all_ = new QHBoxLayout(this);
   splitter_ = new QSplitter(this);
   layout_all_->addWidget(splitter_);
@@ -22,6 +23,7 @@ BlockPhotosSelectWidget::BlockPhotosSelectWidget(
   splitter_->addWidget(selected_photos_list_widget_);
 
   photos_tree_widget_ = new PhotosTreeWidget(splitter_);
+  photos_tree_widget_->setColumnWidth(0, 300);
   auto itr_group = groups.begin();
   auto itr_group_end = groups.end();
   for (; itr_group != itr_group_end;++itr_group)

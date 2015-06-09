@@ -23,7 +23,7 @@ PointCloudConfigureWidget::PointCloudConfigureWidget(
   layout_inbox_->addLayout(layout_point_cloud_quality_);
 
   label_point_cloud_quality_ =
-    new QLabel(tr("Point Cloud Quality "), group_box_);
+    new QLabel(tr("Point Cloud Quality"), group_box_);
   layout_point_cloud_quality_->addWidget(label_point_cloud_quality_);
 
   combo_box_ = new QComboBox;
@@ -34,7 +34,7 @@ PointCloudConfigureWidget::PointCloudConfigureWidget(
             << tr("High");
   combo_box_->addItems(item_text);
   combo_box_->setCurrentIndex(1);
-  layout_inbox_->addWidget(combo_box_);
+  layout_point_cloud_quality_->addWidget(combo_box_);
 
 }
 

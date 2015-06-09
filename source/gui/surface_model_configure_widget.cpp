@@ -17,21 +17,30 @@ SurfaceModelConfigureWidget::SurfaceModelConfigureWidget(
 {
   main_layout_ = new QVBoxLayout;
   setLayout(main_layout_);
+
+  group_box_ = new QGroupBox(tr("Surface Model Configure"), this);
+  main_layout_->addWidget(group_box_);
+
   group_box_layout_ = new QVBoxLayout;
+  group_box_->setLayout(group_box_layout_);
+  layout_surface_model_quality_ = new QHBoxLayout;
+  group_box_layout_->addLayout(layout_surface_model_quality_);
+
+  label_surface_model_quality_ =
+    new QLabel(tr("Surface Model Quality "), group_box_);
+  layout_surface_model_quality_->addWidget(label_surface_model_quality_);
 
   combo_box_ = new QComboBox;
   combo_box_->setEditable(false);
   QStringList item_text;
   item_text << tr("Low")
-    << tr("Medium")
-    << tr("High");
+            << tr("Medium")
+            << tr("High");
   combo_box_->addItems(item_text);
   combo_box_->setCurrentIndex(1);
-  group_box_layout_->addWidget(combo_box_);
+  layout_surface_model_quality_->addWidget(combo_box_);
 
-  group_box_ = new QGroupBox(tr("Surface Model Configure"), this);
-  group_box_->setLayout(group_box_layout_);
-  main_layout_->addWidget(group_box_);
+
 
 }
 
@@ -48,7 +57,7 @@ void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
     mesh_surface_config.set_iso_divide(6);
     mesh_surface_config.set_samples_per_node(1.0);
     mesh_surface_config.set_min_iters(6);
-    mesh_surface_config.set_solver_accuracy(0.001);
+    mesh_surface_config.set_solver_accuracy(0.001f);
     mesh_surface_config.set_confidence(0);
     mesh_surface_config.set_polygon_mesh(0);
   }
@@ -56,13 +65,13 @@ void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
   {
     mesh_surface_config.set_octree_depth(8);
     mesh_surface_config.set_min_depth(5);
-    mesh_surface_config.set_point_weight(4.0);
-    mesh_surface_config.set_cube_ratio(1.1);
+    mesh_surface_config.set_point_weight(4.0f);
+    mesh_surface_config.set_cube_ratio(1.1f);
     mesh_surface_config.set_solver_divide(8);
     mesh_surface_config.set_iso_divide(8);
-    mesh_surface_config.set_samples_per_node(1.0);
+    mesh_surface_config.set_samples_per_node(1.0f);
     mesh_surface_config.set_min_iters(8);
-    mesh_surface_config.set_solver_accuracy(0.001);
+    mesh_surface_config.set_solver_accuracy(0.001f);
     mesh_surface_config.set_confidence(0);
     mesh_surface_config.set_polygon_mesh(0);
   }
@@ -70,13 +79,13 @@ void SurfaceModelConfigureWidget::FetchSurfaceModelConfig(
   {
     mesh_surface_config.set_octree_depth(10);
     mesh_surface_config.set_min_depth(7);
-    mesh_surface_config.set_point_weight(5.5);
-    mesh_surface_config.set_cube_ratio(1.1);
+    mesh_surface_config.set_point_weight(5.5f);
+    mesh_surface_config.set_cube_ratio(1.1f);
     mesh_surface_config.set_solver_divide(10);
     mesh_surface_config.set_iso_divide(10);
-    mesh_surface_config.set_samples_per_node(1.0);
+    mesh_surface_config.set_samples_per_node(1.0f);
     mesh_surface_config.set_min_iters(10);
-    mesh_surface_config.set_solver_accuracy(0.001);
+    mesh_surface_config.set_solver_accuracy(0.001f);
     mesh_surface_config.set_confidence(0);
     mesh_surface_config.set_polygon_mesh(0);
   }
