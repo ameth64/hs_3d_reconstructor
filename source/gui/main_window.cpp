@@ -3,6 +3,8 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QDebug>
+#include <QApplication>
+#include <QDesktopWidget>
 
 #include "gui/manager_pane.hpp"
 #include "gui/new_project_config_dialog.hpp"
@@ -126,6 +128,11 @@ MainWindow::MainWindow()
     this, &MainWindow::OnActionNewProjectTriggered);
   QObject::connect(start_up_dialog_, &StartUpDialog::OpenProject,
     this, &MainWindow::OnActionOpenProjectTriggered);
+
+  QDesktopWidget* desk = QApplication::desktop();
+  resize(desk->availableGeometry().size());
+  showMaximized();
+
   start_up_dialog_->resize(800,200);
   start_up_dialog_->exec();
 }
