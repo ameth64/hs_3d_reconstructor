@@ -13,6 +13,7 @@
 #include "gui/photos_pane.hpp"
 #include "gui/blocks_pane.hpp"
 #include "gui/gcps_pane.hpp"
+#include "gui/start_up_dialog.hpp"
 
 namespace hs
 {
@@ -32,7 +33,7 @@ public:
 public:
   hs::recon::db::DatabaseMediator& database_mediator();
 
-private slots:
+public slots:
   void OnActionNewProjectTriggered();
   void OnActionOpenProjectTriggered();
   void OnActionCloseProjectTriggered();
@@ -69,6 +70,7 @@ private:
   BlocksPane* blocks_pane_;
   GCPsPane* gcps_pane_;
   SceneWindow* scene_window_;
+  StartUpDialog* start_up_dialog_;
 };
 
 }

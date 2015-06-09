@@ -191,7 +191,7 @@ void BlocksPane::Response(int request_flag, void* response)
           {
             QTreeWidgetItem* item =
               blocks_tree_widget_->FeatureMatchItem(feature_match_id);
-            item->setDisabled(false);
+            item->setDisabled(true);
           }
         }
 
@@ -233,7 +233,7 @@ void BlocksPane::Response(int request_flag, void* response)
           {
             QTreeWidgetItem* item =
               blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
-            item->setDisabled(false);
+            item->setDisabled(true);
           }
         }
 
@@ -276,7 +276,7 @@ void BlocksPane::Response(int request_flag, void* response)
           {
             QTreeWidgetItem* item =
               blocks_tree_widget_->PointCloudItem(point_cloud_id);
-            item->setDisabled(false);
+            item->setDisabled(true);
           }
         }
 
@@ -319,7 +319,7 @@ void BlocksPane::Response(int request_flag, void* response)
                       {
                         QTreeWidgetItem* item =
                           blocks_tree_widget_->SurfaceModelItem(surface_model_id);
-                        item->setDisabled(false);
+                        item->setDisabled(true);
                       }
         }
 
@@ -353,7 +353,7 @@ void BlocksPane::Response(int request_flag, void* response)
           {
             QTreeWidgetItem* item =
               blocks_tree_widget_->TextureItem(texture_id);
-            item->setDisabled(false);
+            item->setDisabled(true);
           }
         }
         break;
@@ -1295,6 +1295,7 @@ int BlocksPane::AddSurfaceModelStep(
       surface_model_name);
     QTreeWidgetItem* surface_model_item =
       blocks_tree_widget_->SurfaceModelItem(surface_model_id);
+
     if (surface_model_item)
     {
       surface_model_item->setDisabled(true);
@@ -2059,3 +2060,4 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
 }
 }
 }
+

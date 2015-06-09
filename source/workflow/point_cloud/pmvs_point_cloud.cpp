@@ -115,31 +115,31 @@ float PointCloudConfig::c_accuracy_threshold() const
 }
 float PointCloudConfig::c_coverage_threshold() const
 {
-	return c_coverage_threshold_;
+  return c_coverage_threshold_;
 }
 int PointCloudConfig::c_cluster_size() const
 {
-	return c_cluster_size_;
+  return c_cluster_size_;
 }
 float PointCloudConfig::p_consistency_threshold() const
 {
-	return p_consistency_threshold_;
+  return p_consistency_threshold_;
 }
 float PointCloudConfig::p_group_threshold() const
 {
-	return p_group_threshold_;
+  return p_group_threshold_;
 }
 int PointCloudConfig::p_visibility_threshold() const
 {
-	return p_visibility_threshold_;
+  return p_visibility_threshold_;
 }
 int PointCloudConfig::m_quality_threshold() const
 {
-	return m_quality_threshold_;
+  return m_quality_threshold_;
 }
 int PointCloudConfig::m_visibility_threshold() const
 {
-	return m_visibility_threshold_;
+  return m_visibility_threshold_;
 }
 
 PointCloud::PointCloud()
