@@ -9,6 +9,8 @@
 
 #include "gui/main_window.hpp"
 
+#include "gui/start_up_dialog.hpp"
+
 namespace hs
 {
 namespace recon
@@ -30,6 +32,9 @@ MainWindow::MainWindow()
   setMenuBar(menu_bar_);
 
   status_bar_ = new QStatusBar(this);
+
+  start_up_dialog_ = new StartUpDialog(this);
+
   setStatusBar(status_bar_);
 
   action_new_project_ = new QAction(tr("New Project"), this);
@@ -95,6 +100,13 @@ MainWindow::MainWindow()
                    &QAction::setDisabled);
   QObject::connect(scene_window_, &SceneWindow::FilterPhotosBySelectedPoints,
                    gcps_pane_, &GCPsPane::FilterPhotosByPoints);
+
+  QObject::connect(start_up_dialog_, &StartUpDialog::NewProjcet,
+    this, &MainWindow::OnActionNewProjectTriggered);
+  QObject::connect(start_up_dialog_, &StartUpDialog::OpenProject,
+    this, &MainWindow::OnActionOpenProjectTriggered);
+  start_up_dialog_->resize(800,200);
+  start_up_dialog_->exec();
 }
 
 MainWindow::~MainWindow()
@@ -126,7 +138,7 @@ void MainWindow::OnActionNewProjectTriggered()
     {
     case hs::recon::db::Database::ERROR_DATABASE_DIRECTORY_EXIST:
       {
-        msg_box.setText(tr("Project directory exist!"));
+        msg_box.setText(tr("Project    exist!"));
         msg_box.exec();
         break;
       }
@@ -142,6 +154,10 @@ void MainWindow::OnActionNewProjectTriggered()
         msg_box.exec();
         break;
       }
+    case hs::recon::db::Database::NO_ERROR:
+     {
+      start_up_dialog_->close();
+     }
     }
   }
 }
@@ -175,6 +191,10 @@ void MainWindow::OnActionOpenProjectTriggered()
         msg_box.exec();
         break;
       }
+    case hs::recon::db::Database::NO_ERROR:
+     {
+      start_up_dialog_->close();
+     }
     }
   }
 }
