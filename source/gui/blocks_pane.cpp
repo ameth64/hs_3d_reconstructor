@@ -1295,6 +1295,7 @@ int BlocksPane::AddSurfaceModelStep(
       surface_model_name);
     QTreeWidgetItem* surface_model_item =
       blocks_tree_widget_->SurfaceModelItem(surface_model_id);
+
     if (surface_model_item)
     {
       surface_model_item->setDisabled(true);
@@ -1789,7 +1790,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
 
     point_cloud_config->set_workspace_path(point_cloud_path);
     point_cloud_config->set_photo_orientation_path(photo_orientation_path);
-    point_cloud_config->set_number_of_threads(number_of_threads);
+    point_cloud_config->set_s_number_of_threads(number_of_threads);
     break;
   }//while(1)
   return WorkflowStepPtr(new workflow::PointCloud);
@@ -2059,3 +2060,4 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
 }
 }
 }
+
