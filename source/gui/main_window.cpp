@@ -128,6 +128,8 @@ MainWindow::MainWindow()
     this, &MainWindow::OnActionNewProjectTriggered);
   QObject::connect(start_up_dialog_, &StartUpDialog::OpenProject,
     this, &MainWindow::OnActionOpenProjectTriggered);
+  QObject::connect(start_up_dialog_, &StartUpDialog::OpenProjectWithFile,
+    this, &MainWindow::OpenProject);
 
   QDesktopWidget* desk = QApplication::desktop();
   resize(desk->availableGeometry().size());
@@ -184,6 +186,11 @@ void MainWindow::OnActionNewProjectTriggered()
       }
     case hs::recon::db::Database::NO_ERROR:
      {
+      QString db_file_path
+        = QString::fromStdString(std_new_project_directory) + tr("/")
+        + QFileInfo(QString::fromStdString(std_new_project_directory)).fileName()
+        + tr(".3db");
+      start_up_dialog_->SetCurrentFile(db_file_path);
       start_up_dialog_->close();
      }
     }
@@ -198,32 +205,7 @@ void MainWindow::OnActionOpenProjectTriggered()
   if (dialog.exec())
   {
     QString database_file = dialog.selectedFiles()[0];
-    std::string std_database_file = database_file.toLocal8Bit().data();
-    QMessageBox msg_box;
-    hs::recon::db::RequestOpenDatabase request;
-    hs::recon::db::ResponseOpenDatabase response;
-    request.database_file = std_database_file;
-    switch (database_mediator_.Request(
-        nullptr, hs::recon::db::DatabaseMediator::REQUEST_OPEN_DATABASE,
-        request, response, true))
-    {
-    case hs::recon::db::Database::ERROR_FAIL_TO_OPEN_SQLITE_DATABASE:
-      {
-        msg_box.setText(tr("Fail to open database!"));
-        msg_box.exec();
-        break;
-      }
-    case hs::recon::db::Database::ERROR_DATABASE_FILE_NOT_EXIST:
-      {
-        msg_box.setText(tr("Database file not exist!"));
-        msg_box.exec();
-        break;
-      }
-    case hs::recon::db::Database::NO_ERROR:
-     {
-      start_up_dialog_->close();
-     }
-    }
+    OpenProject(database_file);
   }
 }
 
@@ -291,6 +273,37 @@ void MainWindow::OnActionPreferencesTriggered()
 {
   SettingsDialog dialog;
   dialog.exec();
+}
+
+void MainWindow::OpenProject(const QString& database_file)
+{
+  std::string std_database_file = database_file.toLocal8Bit().data();
+  QMessageBox msg_box;
+  hs::recon::db::RequestOpenDatabase request;
+  hs::recon::db::ResponseOpenDatabase response;
+  request.database_file = std_database_file;
+  switch (database_mediator_.Request(
+    nullptr, hs::recon::db::DatabaseMediator::REQUEST_OPEN_DATABASE,
+    request, response, true))
+  {
+  case hs::recon::db::Database::ERROR_FAIL_TO_OPEN_SQLITE_DATABASE:
+  {
+    msg_box.setText(tr("Fail to open database!"));
+    msg_box.exec();
+    break;
+  }
+  case hs::recon::db::Database::ERROR_DATABASE_FILE_NOT_EXIST:
+  {
+    msg_box.setText(tr("Database file not exist!"));
+    msg_box.exec();
+    break;
+  }
+  case hs::recon::db::Database::NO_ERROR:
+  {
+    start_up_dialog_->SetCurrentFile(database_file);
+    start_up_dialog_->close();
+  }
+  }
 }
 
 }

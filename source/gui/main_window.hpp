@@ -37,11 +37,10 @@ public slots:
   void OnActionNewProjectTriggered();
   void OnActionOpenProjectTriggered();
   void OnActionCloseProjectTriggered();
-
+  void OpenProject(const QString &database_file);
 	void OnActionPhotosPaneTriggered();
 	void OnActionBlocksPaneTriggered();
 	void OnActionGCPsPaneTriggered();
-
   void OnActionPreferencesTriggered();
 
 private:
