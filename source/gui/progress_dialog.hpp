@@ -33,14 +33,14 @@ public:
   hs::progress::ProgressManager* GetProgressManagerPtr();
 
   template <typename... Args>
-  void Start(Args ... a)
+  void Start(Args&& ... a)
   {
     progress_manager_.StartWorking();
     //working_thread_ =
     //  std::thread(FunctionWrapper<typename std::decay<Function>::type, Args...>,
     //              std::forward<Function>(f), std::forward<Args>(a)...);
 
-    working_thread_ = std::thread(a...);
+    working_thread_ = std::thread(std::forward<Args>(a)...);
     timer_->start(100);
     QObject::connect(timer_, &QTimer::timeout,
                      this, &ProgressDialog::OnTimeout);
