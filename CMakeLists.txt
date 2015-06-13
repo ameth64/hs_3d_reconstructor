@@ -61,6 +61,12 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/default_longitude_latitude_convertor.cpp"
   )
 
+if (MSVC)
+  set_source_files_properties(
+    "source/gui/gcps_pane.cpp"
+    PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
+
 set(RECONSTRUCTOR_QT_MODULES
   "Widgets"
   "Core"
@@ -118,6 +124,8 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
                     openMVG_features
                     openMVG_system
                     openMVG_stlplus
+                    openMVG_image
+                    openMVG_vlsift
   3RDPARTY_DEPS osi_clp
     DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
   3RDPARTY_DEPS cereal HEADONLY
@@ -195,6 +203,9 @@ hslib_post_build(${DATABASE_NAME}_utest)
 set(WORKFLOW_NAME "workflow")
 set(WORKFLOW_SOURCES
   "source/workflow/common/workflow_step.cpp"
+  "source/workflow/feature_match/feature_match_config.cpp"
+  "source/workflow/feature_match/feature_match_step.cpp"
+  "source/workflow/feature_match/openmvg_feature_match.cpp"
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
@@ -235,6 +246,8 @@ hslib_add_dep(${WORKFLOW_NAME}
                     openMVG_features
                     openMVG_system
                     openMVG_stlplus
+                    openMVG_image
+                    openMVG_vlsift
   3RDPARTY_DEPS osi_clp
     DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
   3RDPARTY_DEPS cereal HEADONLY
@@ -251,6 +264,7 @@ hslib_add_dep(${WORKFLOW_NAME}
 if (MSVC)
   set_source_files_properties(
     "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
+    "source/workflow/feature_match/openmvg_feature_match.cpp"
     PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
 hslib_add_mkl_dep(${WORKFLOW_NAME})

@@ -8,7 +8,7 @@
 #include <QLabel>
 #include <QLineEdit>
 
-#include "workflow/feature_match/opencv_feature_match.hpp"
+#include "workflow/feature_match/feature_match_config.hpp"
 
 namespace hs
 {

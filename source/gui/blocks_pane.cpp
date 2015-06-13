@@ -15,6 +15,9 @@
 #include "hs_cartographics/cartographics_format/formatter_proj4.hpp"
 #include "hs_cartographics/cartographics_conversion/convertor.hpp"
 
+#include "workflow/feature_match//openmvg_feature_match.hpp"
+//#include "workflow/feature_match/opencv_feature_match.hpp"
+
 #include "gui/blocks_pane.hpp"
 #include "gui/block_photos_select_dialog.hpp"
 #include "gui/main_window.hpp"
@@ -1500,7 +1503,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
 
     break;
   }
-  return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
+  //return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
+  return WorkflowStepPtr(new workflow::OpenMVGFeatureMatch);
 }
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
@@ -1538,6 +1542,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
     {
       break;
     }
+
+    //TODO:Need to modify to portable.
     std::string photo_orientation_path =
       response_photo_orientation.record[
         db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
@@ -1560,6 +1566,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       Identifier(
         response_feature_match.record[
           db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
+    //TODO:Need to modify to portable.
     std::string feature_match_path =
       response_feature_match.record[
         db::FeatureMatchResource::FEATURE_MATCH_FIELD_PATH].ToString();
@@ -1741,6 +1748,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       response_photo_orientation.extrinsic_path);
     photo_orientation_config->set_point_cloud_path(
       response_photo_orientation.point_cloud_path);
+    photo_orientation_config->set_tracks_path(
+      response_photo_orientation.tracks_path);
     photo_orientation_config->set_similar_transform_path(
       response_photo_orientation.similar_transform_path);
     photo_orientation_config->set_workspace_path(

@@ -1082,6 +1082,7 @@ struct ResponseGetPhotoOrientation
   std::string intrinsic_path;
   std::string extrinsic_path;
   std::string point_cloud_path;
+  std::string tracks_path;
   std::string similar_transform_path;
   std::string workspace_path;
 };
@@ -1108,6 +1109,8 @@ struct DatabaseRequestHandler<RequestGetPhotoOrientation,
       photo_orientation_path + "extrinsic.txt";
     response.point_cloud_path =
       photo_orientation_path + "sparse_point_cloud.txt";
+    response.tracks_path =
+      photo_orientation_path + "tracks.bin";
     response.similar_transform_path =
       photo_orientation_path + "similar_transform.txt";
     response.workspace_path = photo_orientation_path;

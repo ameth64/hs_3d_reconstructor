@@ -7,6 +7,8 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/typeof/typeof.hpp> 
 
+#include <cereal/archives/json.hpp>
+
 #include "hs_sfm/sfm_file_io/keyset_loader.hpp"
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
@@ -77,6 +79,11 @@ void PhotoOrientationConfig::set_point_cloud_path(
 {
   point_cloud_path_ = point_cloud_path;
 }
+void PhotoOrientationConfig::set_tracks_path(
+  const std::string& tracks_path)
+{
+  tracks_path_ = tracks_path;
+}
 void PhotoOrientationConfig::set_similar_transform_path(
   const std::string& similar_transform_path)
 {
@@ -139,6 +146,10 @@ const std::string& PhotoOrientationConfig::extrinsic_path() const
 const std::string& PhotoOrientationConfig::point_cloud_path() const
 {
   return point_cloud_path_;
+}
+const std::string& PhotoOrientationConfig::tracks_path() const
+{
+  return tracks_path_;
 }
 const std::string& PhotoOrientationConfig::similar_transform_path() const
 {
@@ -510,6 +521,38 @@ int IncrementalPhotoOrientation::SavePointCloud(
   return 0;
 }
 
+int IncrementalPhotoOrientation::SaveTracks(
+  WorkflowStepConfig* config,
+  const hs::sfm::TrackContainer& tracks,
+  const hs::sfm::ObjectIndexMap& track_point_map)
+{
+  PhotoOrientationConfig* photo_orientation_config =
+    static_cast<PhotoOrientationConfig*>(config);
+
+  const std::vector<int> image_ids =
+    photo_orientation_config->image_ids();
+  const std::string& tracks_path =
+    photo_orientation_config->tracks_path();
+
+  hs::sfm::TrackContainer tracks_wrap = tracks;
+  for (size_t i = 0; i < tracks_wrap.size(); i++)
+  {
+    for (size_t j = 0; j < tracks_wrap[i].size(); j++)
+    {
+      tracks_wrap[i][j].first = size_t(image_ids[tracks_wrap[i][j].first]);
+    }
+  }
+
+  {
+    std::ofstream tracks_file(tracks_path);
+    cereal::JSONOutputArchive archive(tracks_file);
+    archive(tracks_wrap, track_point_map);
+  }
+
+
+  return 0;
+}
+
 int IncrementalPhotoOrientation::ExportPointCloudInputXML(
   WorkflowStepConfig* config,
   IntrinsicParamsContainer& intrinsic_params_set,
@@ -705,6 +748,12 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
     {
       std::cout<<"SavePointCloud Error!\n";
       break;
+    }
+
+    result = SaveTracks(config, tracks, track_point_map);
+    if (result != 0)
+    {
+      std::cout<<"SaveTracks Error!\n";
     }
 
     //输出point_cloud_input_xml
