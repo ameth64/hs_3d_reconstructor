@@ -69,7 +69,7 @@ void PhotogroupPOSConfigureWidget::SetPhotoPaths(const QStringList& photo_paths)
       table_pos_->setItem(i, j, item);
     }
   }
-  table_pos_->resizeColumnsToContents();
+  //table_pos_->resizeColumnsToContents();
 }
 
 PhotogroupPOSConfigureWidget::POSEntryContainer

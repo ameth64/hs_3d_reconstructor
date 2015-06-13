@@ -16,7 +16,9 @@ WorkflowConfigureDialog::WorkflowConfigureDialog(
 
   workflow_configure_widget_ =
     new WorkflowConfigureWidget(start_configure_type, this);
+
   layout_->addWidget(workflow_configure_widget_);
+  this->adjustSize();
 
   dialog_button_box_ok_cancel_ =
     new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,

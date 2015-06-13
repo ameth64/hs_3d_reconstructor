@@ -2,12 +2,17 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QSettings>
+#include <QDebug>
+#include <QApplication>
+#include <QDesktopWidget>
 
 #include "gui/manager_pane.hpp"
 #include "gui/new_project_config_dialog.hpp"
 #include "gui/settings_dialog.hpp"
 
 #include "gui/main_window.hpp"
+
+#include "gui/start_up_dialog.hpp"
 
 namespace hs
 {
@@ -24,12 +29,18 @@ MainWindow::MainWindow()
   menu_file_ = new QMenu(tr("File"), menu_bar_);
   menu_bar_->addAction(menu_file_->menuAction());
 
+	menu_view_ = new QMenu(tr("View"), menu_bar_);
+	menu_bar_->addAction(menu_view_->menuAction());
+
   menu_tools_ = new QMenu(tr("Tools"), menu_bar_);
   menu_bar_->addAction(menu_tools_->menuAction());
 
   setMenuBar(menu_bar_);
 
   status_bar_ = new QStatusBar(this);
+
+  start_up_dialog_ = new StartUpDialog(this);
+
   setStatusBar(status_bar_);
 
   action_new_project_ = new QAction(tr("New Project"), this);
@@ -38,6 +49,13 @@ MainWindow::MainWindow()
   menu_file_->addAction(action_new_project_);
   menu_file_->addAction(action_open_project_);
   menu_file_->addAction(action_close_project_);
+
+	action_photos_pane_ = new QAction(tr("Photos Pane"),this);
+	action_blocks_pane_ = new QAction(tr("Blocks Pane"),this);
+	action_gcps_pane_ = new QAction(tr("GCPs Pane"),this);
+	menu_view_->addAction(action_photos_pane_);
+	menu_view_->addAction(action_blocks_pane_);
+	menu_view_->addAction(action_gcps_pane_);
 
   action_preferences_ = new QAction(tr("Preferences"), this);
   menu_tools_->addAction(action_preferences_);
@@ -49,14 +67,24 @@ MainWindow::MainWindow()
   QObject::connect(action_close_project_, &QAction::triggered,
     this, &MainWindow::OnActionCloseProjectTriggered);
 
+  QObject::connect(action_photos_pane_, &QAction::triggered,
+                   this, &MainWindow::OnActionPhotosPaneTriggered);
+
+  QObject::connect(action_blocks_pane_, &QAction::triggered,
+                   this, &MainWindow::OnActionBlocksPaneTriggered);
+
+  QObject::connect(action_gcps_pane_, &QAction::triggered,
+                   this, &MainWindow::OnActionGCPsPaneTriggered);
+
   QObject::connect(action_preferences_, &QAction::triggered,
                    this, &MainWindow::OnActionPreferencesTriggered);
 
   DefaultSetting();
 
-  QWidget* tmp_central_widget = new QWidget(this);
-  setCentralWidget(tmp_central_widget);
+  //QWidget* tmp_central_widget = new QWidget(this);
+  //setCentralWidget(tmp_central_widget);
 
+  QSize wh = size();
   photos_pane_ = new PhotosPane(this);
   blocks_pane_ = new BlocksPane(this);
   gcps_pane_ = new GCPsPane(this);
@@ -65,7 +93,7 @@ MainWindow::MainWindow()
   scene_window_->SetBackgroundColor(0.2f, 0.1f, 0.2f, 1.0f);
   QWidget* container = QWidget::createWindowContainer(scene_window_, this);
   setCentralWidget(container);
-  resize(800,600);
+  //resize(800,600);
   setDockNestingEnabled(true);
   setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
   setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
@@ -74,10 +102,10 @@ MainWindow::MainWindow()
   addDockWidget(Qt::LeftDockWidgetArea, blocks_pane_);
   tabifyDockWidget(blocks_pane_, photos_pane_);
   addDockWidget(Qt::BottomDockWidgetArea, gcps_pane_);
-  showMaximized();
+  //showMaximized();
   //加了下面两行则无论在windows还是osx平台上都最大化显示正常，不知道为什么……
-  hide();
-  show();
+  //hide();
+  //show();
 
   database_mediator_.RegisterObserver(photos_pane_);
   database_mediator_.RegisterObserver(blocks_pane_);
@@ -95,6 +123,20 @@ MainWindow::MainWindow()
                    &QAction::setDisabled);
   QObject::connect(scene_window_, &SceneWindow::FilterPhotosBySelectedPoints,
                    gcps_pane_, &GCPsPane::FilterPhotosByPoints);
+
+  QObject::connect(start_up_dialog_, &StartUpDialog::NewProjcet,
+    this, &MainWindow::OnActionNewProjectTriggered);
+  QObject::connect(start_up_dialog_, &StartUpDialog::OpenProject,
+    this, &MainWindow::OnActionOpenProjectTriggered);
+  QObject::connect(start_up_dialog_, &StartUpDialog::OpenProjectWithFile,
+    this, &MainWindow::OpenProject);
+
+  QDesktopWidget* desk = QApplication::desktop();
+  resize(desk->availableGeometry().size());
+  showMaximized();
+
+  start_up_dialog_->resize(800,200);
+  start_up_dialog_->exec();
 }
 
 MainWindow::~MainWindow()
@@ -126,7 +168,7 @@ void MainWindow::OnActionNewProjectTriggered()
     {
     case hs::recon::db::Database::ERROR_DATABASE_DIRECTORY_EXIST:
       {
-        msg_box.setText(tr("Project directory exist!"));
+        msg_box.setText(tr("Project    exist!"));
         msg_box.exec();
         break;
       }
@@ -142,6 +184,15 @@ void MainWindow::OnActionNewProjectTriggered()
         msg_box.exec();
         break;
       }
+    case hs::recon::db::Database::NO_ERROR:
+     {
+      QString db_file_path
+        = QString::fromStdString(std_new_project_directory) + tr("/")
+        + QFileInfo(QString::fromStdString(std_new_project_directory)).fileName()
+        + tr(".3db");
+      start_up_dialog_->SetCurrentFile(db_file_path);
+      start_up_dialog_->close();
+     }
     }
   }
 }
@@ -154,28 +205,7 @@ void MainWindow::OnActionOpenProjectTriggered()
   if (dialog.exec())
   {
     QString database_file = dialog.selectedFiles()[0];
-    std::string std_database_file = database_file.toLocal8Bit().data();
-    QMessageBox msg_box;
-    hs::recon::db::RequestOpenDatabase request;
-    hs::recon::db::ResponseOpenDatabase response;
-    request.database_file = std_database_file;
-    switch (database_mediator_.Request(
-        nullptr, hs::recon::db::DatabaseMediator::REQUEST_OPEN_DATABASE,
-        request, response, true))
-    {
-    case hs::recon::db::Database::ERROR_FAIL_TO_OPEN_SQLITE_DATABASE:
-      {
-        msg_box.setText(tr("Fail to open database!"));
-        msg_box.exec();
-        break;
-      }
-    case hs::recon::db::Database::ERROR_DATABASE_FILE_NOT_EXIST:
-      {
-        msg_box.setText(tr("Database file not exist!"));
-        msg_box.exec();
-        break;
-      }
-    }
+    OpenProject(database_file);
   }
 }
 
@@ -220,10 +250,60 @@ void MainWindow::DefaultSetting()
   }
 }
 
+void MainWindow::OnActionPhotosPaneTriggered()
+{
+	if(photos_pane_->isHidden())
+		photos_pane_->show();
+	photos_pane_->raise();
+}
+void MainWindow::OnActionBlocksPaneTriggered()
+{
+	if(blocks_pane_->isHidden())
+		blocks_pane_->show();
+	blocks_pane_->raise();
+}
+void MainWindow::OnActionGCPsPaneTriggered()
+{
+	if(gcps_pane_->isHidden())
+		gcps_pane_->show();
+	gcps_pane_->raise();
+}
+
 void MainWindow::OnActionPreferencesTriggered()
 {
   SettingsDialog dialog;
   dialog.exec();
+}
+
+void MainWindow::OpenProject(const QString& database_file)
+{
+  std::string std_database_file = database_file.toLocal8Bit().data();
+  QMessageBox msg_box;
+  hs::recon::db::RequestOpenDatabase request;
+  hs::recon::db::ResponseOpenDatabase response;
+  request.database_file = std_database_file;
+  switch (database_mediator_.Request(
+    nullptr, hs::recon::db::DatabaseMediator::REQUEST_OPEN_DATABASE,
+    request, response, true))
+  {
+  case hs::recon::db::Database::ERROR_FAIL_TO_OPEN_SQLITE_DATABASE:
+  {
+    msg_box.setText(tr("Fail to open database!"));
+    msg_box.exec();
+    break;
+  }
+  case hs::recon::db::Database::ERROR_DATABASE_FILE_NOT_EXIST:
+  {
+    msg_box.setText(tr("Database file not exist!"));
+    msg_box.exec();
+    break;
+  }
+  case hs::recon::db::Database::NO_ERROR:
+  {
+    start_up_dialog_->SetCurrentFile(database_file);
+    start_up_dialog_->close();
+  }
+  }
 }
 
 }

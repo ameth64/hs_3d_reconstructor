@@ -8,6 +8,5 @@ int main(int argc, char** argv)
   QCoreApplication::setOrganizationName("Huishi Technology");
   QCoreApplication::setApplicationName("Huishi 3D Reconstructor");
   hs::recon::gui::MainWindow main_window;
-  main_window.show();
   return application.exec();
 }

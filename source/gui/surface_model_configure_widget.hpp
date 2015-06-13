@@ -35,6 +35,8 @@ private:
 
   QGroupBox* group_box_;
   QComboBox* combo_box_;
+  QLabel* label_surface_model_quality_;
+  QHBoxLayout* layout_surface_model_quality_;
 };
 
 }

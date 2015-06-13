@@ -26,7 +26,7 @@ WorkflowConfigureWidget::WorkflowConfigureWidget(
   h_layout_button_->addWidget(button_next_);
   this->setLayout(h_layout_main_);
   tree_widget_ = new QTreeWidget;
-  tree_widget_->setHeaderHidden(true);
+  tree_widget_->setHeaderHidden(false);
   tree_widget_->setColumnCount(1);
   h_layout_main_->addWidget(tree_widget_);
   h_layout_main_->addLayout(v_layout_widget_);
@@ -107,30 +107,31 @@ WorkflowConfigureWidget::WorkflowConfigureWidget(
   }
 
   tree_widget_->expandAll();
+  tree_widget_->setMinimumWidth(280);
 
   feature_match_configure_widget_ =
     new FeatureMatchConfigureWidget(this);
-  feature_match_configure_widget_->setMinimumSize(300, 400);
+  feature_match_configure_widget_->setMinimumSize(400, 400);
   feature_match_configure_widget_->hide();
   h_layout_config_->addWidget(feature_match_configure_widget_);
   photo_orientation_configure_widget_ =
     new PhotoOrientationConfigureWidget(this);
-  photo_orientation_configure_widget_->setMinimumSize(300, 400);
+  photo_orientation_configure_widget_->setMinimumSize(400, 400);
   photo_orientation_configure_widget_->hide();
   h_layout_config_->addWidget(photo_orientation_configure_widget_);
   point_cloud_configure_widget_ =
     new PointCloudConfigureWidget(this);
-  point_cloud_configure_widget_->setMinimumSize(300, 400);
+  point_cloud_configure_widget_->setMinimumSize(400, 400);
   point_cloud_configure_widget_->hide();
   h_layout_config_->addWidget(point_cloud_configure_widget_);
   surface_model_configure_widget_ =
     new SurfaceModelConfigureWidget(this);
-  surface_model_configure_widget_->setMinimumSize(300, 400);
+  surface_model_configure_widget_->setMinimumSize(400, 400);
   surface_model_configure_widget_->hide();
   h_layout_config_->addWidget(surface_model_configure_widget_);
   texture_configure_widget_ =
     new TextureConfigureWidget(this);
-  texture_configure_widget_->setMinimumSize(300, 400);
+  texture_configure_widget_->setMinimumSize(400, 400);
   texture_configure_widget_->hide();
   h_layout_config_->addWidget(texture_configure_widget_);
 

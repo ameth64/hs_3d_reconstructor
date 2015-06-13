@@ -5,6 +5,10 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QPushButton>
 
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 
@@ -28,6 +32,9 @@ private:
   QVBoxLayout* layout_all_;
   QVBoxLayout* layout_inbox_;
   QGroupBox* group_box_;
+  QComboBox* combo_box_;
+  QLabel* label_point_cloud_quality_;
+  QHBoxLayout* layout_point_cloud_quality_;
 
 };
 

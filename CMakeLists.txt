@@ -57,6 +57,7 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/tiepoint_measure_widget.cpp"
   "source/gui/image_measure_opengl_window.cpp"
   "source/gui/settings_dialog.cpp"
+  "source/gui/start_up_dialog.cpp"
   "source/gui/photos_import_progress_dialog.cpp"
   "source/gui/default_longitude_latitude_convertor.cpp"
   )
@@ -91,6 +92,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS boost
       DEP_LIBS boost_filesystem
                boost_system
+               boost_chrono
                boost_thread
                boost_serialization
                boost_regex
@@ -129,7 +131,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS osi_clp
     DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
   3RDPARTY_DEPS cereal HEADONLY
-  3RDPARTY_DEPS lemon
+  3RDPARTY_DEPS lemon DEP_STATIC_LIBS lemon
   3RDPARTY_DEPS flann DEP_STATIC_LIBS flann
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
@@ -251,7 +253,7 @@ hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS osi_clp
     DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
   3RDPARTY_DEPS cereal HEADONLY
-  3RDPARTY_DEPS lemon
+  3RDPARTY_DEPS lemon DEP_STATIC_LIBS lemon
   HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
