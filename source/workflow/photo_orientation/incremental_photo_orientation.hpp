@@ -46,6 +46,8 @@ public:
   void set_intrinsic_path(const std::string& intrinsic_path);
   void set_extrinsic_path(const std::string& extrinsic_path);
   void set_point_cloud_path(const std::string& point_cloud_path);
+  void set_tracks_path(const std::string& tracks_path);
+  void set_track_point_map_path(const std::string& track_point_map_path);
   void set_similar_transform_path(const std::string& similar_transform_path);
   void set_workspace_path(const std::string& workspace_path);
   void set_number_of_threads(int number_of_threads);
@@ -61,6 +63,8 @@ public:
   const std::string& intrinsic_path() const;
   const std::string& extrinsic_path() const;
   const std::string& point_cloud_path() const;
+  const std::string& tracks_path() const;
+  const std::string& track_point_map_path() const;
   const std::string& similar_transform_path() const;
   const std::string& workspace_path() const;
   int number_of_threads() const;
@@ -77,6 +81,8 @@ private:
   std::string intrinsic_path_;
   std::string extrinsic_path_;
   std::string point_cloud_path_;
+  std::string tracks_path_;
+  std::string track_point_map_path_;
   std::string similar_transform_path_;
   std::string workspace_path_;
   PosEntryContainer pos_entries_;
@@ -129,6 +135,9 @@ private:
                      const hs::sfm::TrackContainer& tracks,
                      const hs::sfm::ObjectIndexMap& track_point_map,
                      const PointContainer& points);
+  int SaveTracks(WorkflowStepConfig* config,
+                 const hs::sfm::TrackContainer& tracks,
+                 const hs::sfm::ObjectIndexMap& track_point_map);
   int ExportPointCloudInputXML(WorkflowStepConfig* config,
                                IntrinsicParamsContainer& intrinsic_params_set,
                                ExtrinsicParamsContainer& extrinsic_params_set,

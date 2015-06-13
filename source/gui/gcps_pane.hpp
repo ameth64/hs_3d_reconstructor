@@ -33,6 +33,7 @@ public:
   {
     std::string path;
     std::string thumbnail_path;
+    uint intrinsic_id;
     IntrinsicParams intrinsic_params;
     ExtrinsicParams extrinsic_params;
     int image_width;
@@ -81,6 +82,7 @@ private slots:
   void OnActionShowMeasurementTriggered();
   void OnActionShowEstimateTriggered();
   void OnActionShowErrorTriggered();
+  void OnActionGCPConstrainedOptimizeTriggered();
   void OnPhotoMeasured(uint photo_id, const Point2F& image_pos);
   void OnGCPsSelected(const std::vector<uint>& gcp_ids);
   void OnGCPUpdated(uint gcp_id, const GCPsTableWidget::GCPEntry& gcp_updated);
@@ -117,6 +119,7 @@ private:
 
   PhotoEntryContainer photo_entries_;
   GCPMeasureContainer gcp_measures_;
+  std::map<uint, IntrinsicParams> intrinsic_params_set_;
 
   uint photo_orientation_id_;
   uint current_gcp_id_;

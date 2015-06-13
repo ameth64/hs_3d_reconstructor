@@ -35,8 +35,10 @@ int DefaultLongitudeLatitudeConvertor::GetDefaultCoordinateSystem(
       Projection::TYPE_LAT_LONG) return -1;
   Coordinate min, max;
   min << std::numeric_limits<Scalar>::max(),
+         std::numeric_limits<Scalar>::max(),
          std::numeric_limits<Scalar>::max();
   max << -std::numeric_limits<Scalar>::max(),
+         -std::numeric_limits<Scalar>::max(),
          -std::numeric_limits<Scalar>::max();
   auto itr_coord = coordinates_longitude_latitude.begin();
   auto itr_coord_end = coordinates_longitude_latitude.end();

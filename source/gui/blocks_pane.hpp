@@ -12,7 +12,7 @@
 
 #include "database/database_mediator.hpp"
 #include "workflow/common/workflow_step.hpp"
-#include "workflow/feature_match/opencv_feature_match.hpp"
+#include "workflow/feature_match/feature_match_config.hpp"
 #include "workflow/photo_orientation/incremental_photo_orientation.hpp"
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 #include "gui/manager_pane.hpp"
