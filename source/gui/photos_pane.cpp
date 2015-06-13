@@ -5,6 +5,8 @@
 #include "gui/photos_pane.hpp"
 #include "gui/main_window.hpp"
 
+#include "gui/progress_dialog.hpp"
+
 namespace hs
 {
 namespace recon
@@ -87,11 +89,11 @@ PhotosPane::PhotosPane(QWidget* parent)
     this,
     &PhotosPane::OnPhotogroupInfoUpdated);
 
-  progress_import_photos_ = new ProgressDialog;
-  progress_import_photos_->SetRange(0, 100);
-  timer_ = new QTimer(this);
-  QObject::connect(timer_, &QTimer::timeout,
-    this, &PhotosPane::SetProgress);
+  //progress_import_photos_ = new ProgressDialog;
+  //progress_import_photos_->SetRange(0, 100);
+  //timer_ = new QTimer(this);
+  //QObject::connect(timer_, &QTimer::timeout,
+  //  this, &PhotosPane::SetProgress);
 
 }
 
@@ -207,19 +209,26 @@ void PhotosPane::OnActionAddPhotogroupTriggered()
     PhotogroupInfo photogroup_info = dialog.GetPhotogroupInfo();
     PhotogroupPOSConfigureWidget::POSEntryContainer pos_entries =
       dialog.GetPOSEntries();
-    progress_import_photos_->SetRange(0, 100);
-    time_t begin_time;
-    time(&begin_time);
-    progress_import_photos_->SetStartTime(begin_time);
-    progress_manager_ = new hs::progress::ProgressManager;
-    std::thread thr(std::bind(&PhotosPane::ImportPhotos, this, photogroup_info, pos_entries));
-    timer_->start();
-    progress_import_photos_->exec();
-    thr.join();
-    if (timer_->isActive())
-    {
-      timer_->stop();
-    }
+
+    ProgressDialog progress_dialog;
+    progress_dialog.Start(&PhotosPane::ImportPhotos,
+                          this, photogroup_info, pos_entries,
+                          progress_dialog.GetProgressManagerPtr());
+    progress_dialog.exec();
+
+    //progress_import_photos_->SetRange(0, 100);
+    //time_t begin_time;
+    //time(&begin_time);
+    //progress_import_photos_->SetStartTime(begin_time);
+    //progress_manager_ = new hs::progress::ProgressManager;
+    //std::thread thr(std::bind(&PhotosPane::ImportPhotos, this, photogroup_info, pos_entries));
+    //timer_->start();
+    //progress_import_photos_->exec();
+    //thr.join();
+    //if (timer_->isActive())
+    //{
+    //  timer_->stop();
+    //}
     
     
     //hs::recon::db::RequestAddPhotogroup request;
@@ -559,17 +568,18 @@ void PhotosPane::OnPhotogroupInfoUpdated(uint id, const PhotogroupInfo& info)
     request, response, true);
 }
 
-void PhotosPane::SetProgress()
-{
-    if (progress_manager_->CheckKeepWorking())
-    {
-      int progress = int(progress_manager_->GetCompleteRatio() * 100);
-      progress_import_photos_->SetStatus(progress);
-    }
-}
+//void PhotosPane::SetProgress()
+//{
+//    if (progress_manager_->CheckKeepWorking())
+//    {
+//      int progress = int(progress_manager_->GetCompleteRatio() * 100);
+//      progress_import_photos_->SetStatus(progress);
+//    }
+//}
 
 void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
-  , const PhotogroupPOSConfigureWidget::POSEntryContainer &pos_entries)
+  , const PhotogroupPOSConfigureWidget::POSEntryContainer &pos_entries,
+  hs::progress::ProgressManager* progress_manager)
 {
   hs::recon::db::RequestAddPhotogroup request;
   hs::recon::db::ResponseAddPhotogroup response;
@@ -596,7 +606,8 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
   {
     hs::recon::db::RequestAddPhotos request_add_photos;
     hs::recon::db::ResponseAddPhotos response_add_photos;
-    progress_manager_ = &response_add_photos.progress_manager;
+    request_add_photos.progress_manager = progress_manager;
+    //progress_manager_ = &response_add_photos.progress_manager;
     //PhotogroupPOSConfigureWidget::POSEntryContainer pos_entries =
     //  dialog.GetPOSEntries();
     auto itr_entry = pos_entries.begin();
@@ -621,7 +632,7 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
       this, hs::recon::db::DatabaseMediator::REQUEST_ADD_PHOTOS,
       request_add_photos, response_add_photos, true);
 
-    progress_manager_ = new hs::progress::ProgressManager;
+    //progress_manager_ = new hs::progress::ProgressManager;
 
     if (response_add_photos.error_code == db::DatabaseMediator::NO_ERROR)
     {
@@ -659,7 +670,7 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
       }
     }
   }
-  QMetaObject::invokeMethod(progress_import_photos_, "close", Qt::QueuedConnection);
+  //QMetaObject::invokeMethod(progress_import_photos_, "close", Qt::QueuedConnection);
 }
 
 }

@@ -58,7 +58,7 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/image_measure_opengl_window.cpp"
   "source/gui/settings_dialog.cpp"
   "source/gui/start_up_dialog.cpp"
-  "source/gui/photos_import_progress_dialog.cpp"
+  "source/gui/progress_dialog.cpp"
   "source/gui/default_longitude_latitude_convertor.cpp"
   )
 
