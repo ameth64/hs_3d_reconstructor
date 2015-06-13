@@ -23,6 +23,7 @@
 #include "database/texture_resource.hpp"
 #include "database/photo_block_relation_resource.hpp"
 #include "database/photo_measure_resource.hpp"
+#include "hs_progress/progress_utility/progress_manager.hpp"
 
 namespace hs
 {
@@ -333,9 +334,9 @@ struct RequestAddPhotos
     Float roll;
     Float heading;
     std::string coordinate_system;
+    
   };
   typedef std::vector<PhotoEntry> PhotoEntryContainer;
-
   PhotoEntryContainer photos;
 };
 
@@ -347,6 +348,7 @@ struct ResponseAddPhotos
           AddedPhotoEntryContainer;
 
   AddedPhotoEntryContainer added_photos;
+  hs::progress::ProgressManager progress_manager;
 };
 
 template <>
@@ -394,6 +396,8 @@ struct DatabaseRequestHandler<RequestAddPhotos, ResponseAddPhotos>
     //将加入的照片数据填充至response变量中
     auto itr_added_record = added_records.begin();
     auto itr_added_record_end = added_records.end();
+    response.progress_manager.StartWorking();
+    int run_index = 0;
     for (; itr_added_record != itr_added_record_end; ++itr_added_record)
     {
       RequestAddPhotos::PhotoEntry photo_entry;
@@ -465,6 +469,9 @@ struct DatabaseRequestHandler<RequestAddPhotos, ResponseAddPhotos>
       photo_entry.thumbnail_path = thumbnail_path;
 
       response.added_photos[itr_added_record->first] = photo_entry;
+      run_index++;
+      response.progress_manager.SetCurrentSubProgressCompleteRatio(float(run_index) / float(added_records.size()));
+      
     }
     return response.error_code;
   }

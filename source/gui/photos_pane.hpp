@@ -3,12 +3,16 @@
 
 #include <QAction>
 #include <QIcon>
+#include <QTimer>
 
 #include "database/database_mediator.hpp"
 #include "gui/manager_pane.hpp"
 #include "gui/photos_tree_widget.hpp"
 #include "gui/photogroup_info_setting_widget.hpp"
 #include "gui/photo_display_widget.hpp"
+#include "gui/photos_import_progress_dialog.hpp"
+#include "gui/photos_import_configure_dialog.hpp"
+#include "hs_progress/progress_utility/progress_manager.hpp"
 
 namespace hs
 {
@@ -24,6 +28,9 @@ public:
   PhotosPane(QWidget* parent = 0);
 
   virtual void Response(int request_flag, void* response);
+
+signals:
+  void ProgressStatus(int i);
 
 private slots:
   void OnActionAddPhotogroupTriggered();
@@ -42,6 +49,12 @@ private slots:
   void OnSelectedPhotosRemoved(const std::vector<uint>& photo_ids);
 
   void OnPhotogroupInfoUpdated(uint id, const PhotogroupInfo& photogroup_info);
+  void SetProgress();
+
+private:
+  void ImportPhotos(const PhotogroupInfo &photogroup_info
+    , const PhotogroupPOSConfigureWidget::POSEntryContainer &pos_entries);
+
 
 private:
   PhotosTreeWidget* photos_tree_widget_;
@@ -57,6 +70,9 @@ private:
   //QAction* action_add_photos_;
   QAction* action_remove_photogroup_;
   QAction* action_remove_photos_;
+  ProgressDialog* progress_import_photos_;
+  hs::progress::ProgressManager* progress_manager_;
+  QTimer* timer_;
 };
 
 }
