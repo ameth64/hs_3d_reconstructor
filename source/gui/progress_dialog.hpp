@@ -4,6 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <type_traits>
+#include <chrono>
 
 #include <QDialog>
 #include <QProgressBar>
@@ -36,14 +37,12 @@ public:
   void Start(Args&& ... a)
   {
     progress_manager_.StartWorking();
-    //working_thread_ =
-    //  std::thread(FunctionWrapper<typename std::decay<Function>::type, Args...>,
-    //              std::forward<Function>(f), std::forward<Args>(a)...);
-
+    start_time = std::chrono::system_clock::now(); 
     working_thread_ = std::thread(std::forward<Args>(a)...);
     timer_->start(100);
     QObject::connect(timer_, &QTimer::timeout,
                      this, &ProgressDialog::OnTimeout);
+    this->exec();
   }
 
   void Stop()
@@ -69,6 +68,8 @@ private:
   QVBoxLayout* layout_main_;
   QHBoxLayout* layout_progress_bar_;
   QHBoxLayout* layout_others_;
+
+  std::chrono::system_clock::time_point start_time;
 
   QTimer* timer_;
 
