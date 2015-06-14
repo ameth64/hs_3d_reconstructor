@@ -13,6 +13,7 @@
 #include "gui/main_window.hpp"
 
 #include "gui/start_up_dialog.hpp"
+#include "gui/photo_import_check_dialog.hpp"
 
 namespace hs
 {
@@ -286,26 +287,45 @@ void MainWindow::OpenProject(const QString& database_file)
     nullptr, hs::recon::db::DatabaseMediator::REQUEST_OPEN_DATABASE,
     request, response, true))
   {
-  case hs::recon::db::Database::ERROR_FAIL_TO_OPEN_SQLITE_DATABASE:
-  {
-    msg_box.setText(tr("Fail to open database!"));
-    msg_box.exec();
-    break;
-  }
-  case hs::recon::db::Database::ERROR_DATABASE_FILE_NOT_EXIST:
-  {
-    msg_box.setText(tr("Database file not exist!"));
-    msg_box.exec();
-    break;
-  }
-  case hs::recon::db::Database::NO_ERROR:
-  {
-    start_up_dialog_->SetCurrentFile(database_file);
-    start_up_dialog_->close();
-  }
+    case hs::recon::db::Database::ERROR_FAIL_TO_OPEN_SQLITE_DATABASE:
+    {
+      msg_box.setText(tr("Fail to open database!"));
+      msg_box.exec();
+      break;
+    }
+    case hs::recon::db::Database::ERROR_DATABASE_FILE_NOT_EXIST:
+    {
+      msg_box.setText(tr("Database file not exist!"));
+      msg_box.exec();
+      break;
+    }
+    case hs::recon::db::Database::ERROR_PHOTO_PATH_NEEDED_MODIFY:
+    {
+
+      PhotoImportCheckDialog* photo_import_check_dialog = 
+        new PhotoImportCheckDialog(response.error_photo_id_paths);
+
+      if(photo_import_check_dialog->exec() == QDialog::Accepted)
+      {
+        hs::recon::db::RequestUpdatePhotoPaths request;
+        hs::recon::db::ResponseUpdatePhotoPaths response;
+        request.photo_id_paths = photo_import_check_dialog->PhotoIDPaths();
+        database_mediator_.Request(
+          nullptr, hs::recon::db::DatabaseMediator::REQUEST_UPDATE_PHOTO_PATH,
+          request, response, false);
+      }
+      start_up_dialog_->SetCurrentFile(database_file);
+      start_up_dialog_->close();
+      break;
+    }
+    case hs::recon::db::Database::NO_ERROR:
+    {
+      start_up_dialog_->SetCurrentFile(database_file);
+      start_up_dialog_->close();
+    }
   }
 }
 
-}
+}//namespace gui
 }
 }
