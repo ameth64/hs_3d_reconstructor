@@ -231,6 +231,7 @@ hslib_add_dep(${WORKFLOW_NAME}
              opencv_highgui
              opencv_flann
              opencv_nonfree
+  3RDPARTY_DEPS flann DEP_STATIC_LIBS flann
   3RDPARTY_DEPS ceres DEP_LIBS ceres
   3RDPARTY_DEPS exiv2
   3RDPARTY_DEPS tiff

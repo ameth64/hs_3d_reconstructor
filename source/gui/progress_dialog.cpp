@@ -48,8 +48,6 @@ ProgressDialog::ProgressDialog(QDialog *parent, Qt::WindowFlags f) :
   layout_main_->addLayout(layout_progress_bar_);
   layout_main_->addLayout(layout_others_);
   this->setLayout(layout_main_);
-  //    StartUpDialog* start_up_dlg=new StartUpDialog;
-  //    start_up_dlg->show();
   setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
   resize(400, 150);
 
@@ -63,8 +61,34 @@ hs::progress::ProgressManager* ProgressDialog::GetProgressManagerPtr()
 
 void ProgressDialog::OnTimeout()
 {
-  float compelete_ratio = progress_manager_.GetCompleteRatio();
-  progressbar_->setValue(std::min(int(compelete_ratio * 100), 100));
+  if (progress_manager_.GetCompleteRatio()!=1)
+  {
+
+    std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
+    int time_spent = int(std::chrono::system_clock::to_time_t(now_time)
+      - std::chrono::system_clock::to_time_t(start_time));
+    float compelete_ratio = progress_manager_.GetCompleteRatio();
+    progressbar_->setValue(std::min(int(compelete_ratio * 100), 100));
+    time_used_->setText(QString::number(time_spent));
+    if (compelete_ratio == 0)
+    { 
+      time_left_->setText(tr("computing..."));
+    }
+    else
+    {
+      int time_left = int((float(1) / compelete_ratio - 1)*float(time_spent));
+      time_left_->setText(QString::number(time_left));
+    }
+  }
+  else
+  {
+    if (timer_->isActive())
+    {
+      timer_->stop();
+    }
+    Stop();
+    this->close();
+  }
 }
 
 }
