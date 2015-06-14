@@ -362,7 +362,8 @@ void PhotosPane::OnPhotoSelected(uint photo_id)
     QString origin_image_path = QString::fromLocal8Bit(photo_path.c_str());
 
     std::string thumbnail_path =
-      response.record[db::PhotoResource::PHOTO_FIELD_THUMBNAIL_PATH].ToString();
+      ((MainWindow*)parent())->database_mediator().GetThumbnailPath(
+        request.id);
     hs::imgio::whole::ImageData thumbnail_image_data;
     hs::imgio::whole::ImageIO image_io;
     if (image_io.LoadImage(thumbnail_path, thumbnail_image_data) != 0)

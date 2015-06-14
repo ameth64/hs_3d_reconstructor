@@ -32,28 +32,28 @@ TEST(TestSurfaceModelResource, SimpleTest)
     Value(int(0)),
     Value(int(1)),
     Value(std::string("test_surface_model1")),
-    Value(std::string("surface_models/test_surface_model1"))
+    Value(int(SurfaceModelResource::FLAG_COMPLETED))
   };
   AddRequest add_request2 =
   {
     Value(int(0)),
     Value(int(2)),
     Value(std::string("test_surface_model2")),
-    Value(std::string("surface_models/test_surface_model2"))
+    Value(int(SurfaceModelResource::FLAG_COMPLETED))
   };
   AddRequest add_request3 =
   {
     Value(int(0)),
     Value(int(3)),
     Value(std::string("test_surface_model3")),
-    Value(std::string("surface_models/test_surface_model3"))
+    Value(int(SurfaceModelResource::FLAG_COMPLETED))
   };
   AddRequest add_request4 =
   {
     Value(int(0)),
     Value(int(4)),
     Value(std::string("test_surface_model4")),
-    Value(std::string("surface_models/test_surface_model4"))
+    Value(int(SurfaceModelResource::FLAG_COMPLETED))
   };
   AddRequestContainer add_requests;
   add_requests.push_back(add_request1);

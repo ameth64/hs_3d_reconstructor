@@ -32,28 +32,28 @@ TEST(TestTextureResource, SimpleTest)
     Value(int(0)),
     Value(int(1)),
     Value(std::string("test_texture1")),
-    Value(std::string("textures/test_texture1"))
+    Value(TextureResource::FLAG_COMPLETED)
   };
   AddRequest add_request2 =
   {
     Value(int(0)),
     Value(int(2)),
     Value(std::string("test_texture2")),
-    Value(std::string("textures/test_texture2"))
+    Value(TextureResource::FLAG_COMPLETED)
   };
   AddRequest add_request3 =
   {
     Value(int(0)),
     Value(int(3)),
     Value(std::string("test_texture3")),
-    Value(std::string("textures/test_texture3"))
+    Value(TextureResource::FLAG_COMPLETED)
   };
   AddRequest add_request4 =
   {
     Value(int(0)),
     Value(int(4)),
     Value(std::string("test_texture4")),
-    Value(std::string("textures/test_texture4"))
+    Value(TextureResource::FLAG_COMPLETED)
   };
   AddRequestContainer add_requests;
   add_requests.push_back(add_request1);

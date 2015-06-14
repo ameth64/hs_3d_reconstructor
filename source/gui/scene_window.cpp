@@ -269,8 +269,7 @@ void SceneWindow::UpdatePhotoOrientation()
     return;
   }
   std::string photo_orientation_path =
-    response_photo_orientation.record[
-      db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+    database_mediator_.GetPhotoOrientationPath(request_photo_orientation.id);
 
   std::map<uint, IntrinsicEntry> intrinsic_entries;
   std::ifstream intrinsic_file(

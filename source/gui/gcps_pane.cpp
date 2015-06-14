@@ -197,8 +197,8 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     return;
   }
   std::string photo_orientation_path =
-    response_photo_orientation.record[
-      db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+    ((MainWindow*)parent())->database_mediator().GetPhotoOrientationPath(
+      request_photo_orientation.id);
 
   std::ifstream similar_file(
     response_photo_orientation.similar_transform_path.c_str());
@@ -300,8 +300,8 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
       response_photo.record[
         db::PhotoResource::PHOTO_FIELD_PATH].ToString();
     photo_entry.thumbnail_path =
-      response_photo.record[
-        db::PhotoResource::PHOTO_FIELD_THUMBNAIL_PATH].ToString();
+      ((MainWindow*)parent())->database_mediator().GetThumbnailPath(
+        request_photo.id);
     size_t width, height;
     if (image_io.GetImageDimension(photo_entry.path, width, height) != 0)
     {
@@ -650,8 +650,8 @@ void GCPsPane::OnActionGCPConstrainedOptimizeTriggered()
 
   std::map<size_t, size_t> reordered_image_ids;
   std::string feature_match_path =
-    response_feature_match.record[
-      db::FeatureMatchResource::FEATURE_MATCH_FIELD_PATH].ToString();
+    ((MainWindow*)parent())->database_mediator().GetFeatureMatchPath(
+      feature_match_id);
   auto itr_photo = photo_entries_.begin();
   auto itr_photo_end = photo_entries_.end();
   hs::sfm::fileio::KeysetLoader<Scalar> keyset_loader;

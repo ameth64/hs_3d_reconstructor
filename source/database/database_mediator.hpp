@@ -48,6 +48,7 @@ public:
 class HS_EXPORT DatabaseMediator
 {
 public:
+  typedef Database::Identifier Identifier;
   enum ErrorCode
   {
     NO_ERROR = 0,
@@ -133,6 +134,13 @@ public:
   }
 
   int RegisterObserver(DatabaseObserver* observer);
+
+  std::string GetThumbnailPath(Identifier photo_id) const;
+  std::string GetFeatureMatchPath(Identifier feature_match_id) const;
+  std::string GetPhotoOrientationPath(Identifier photo_orientation_id) const;
+  std::string GetPointCloudPath(Identifier point_cloud_id) const;
+  std::string GetSurfaceModelPath(Identifier surface_model_id) const;
+  std::string GetTexturePath(Identifier texture_id) const;
 private:
   int Open(const std::string& database_file);
 
@@ -371,8 +379,6 @@ struct DatabaseRequestHandler<RequestAddPhotos, ResponseAddPhotos>
         itr_photo_entry->photogroup_id;
       add_request[PhotoResource::PHOTO_FIELD_PATH] =
         itr_photo_entry->path;
-      add_request[PhotoResource::PHOTO_FIELD_THUMBNAIL_PATH] =
-        std::string("");
       add_request[PhotoResource::PHOTO_FIELD_POS_X] =
         itr_photo_entry->pos_x;
       add_request[PhotoResource::PHOTO_FIELD_POS_Y] =
@@ -426,8 +432,7 @@ struct DatabaseRequestHandler<RequestAddPhotos, ResponseAddPhotos>
         database_mediator.database_.ThumbnailPath();
 
       std::string thumbnail_path =
-        boost::str(boost::format("%1%/%2%.jpg") %
-                   thumbnail_directory % itr_added_record->first);
+        database_mediator.GetThumbnailPath(itr_added_record->first);
       hs::imgio::whole::ImageIO image_io;
       hs::imgio::whole::ImageData image_data;
       image_io.LoadImage(photo_entry.path, image_data);
@@ -448,20 +453,6 @@ struct DatabaseRequestHandler<RequestAddPhotos, ResponseAddPhotos>
         }
       }
       if (image_io.SaveImage(thumbnail_path, thumbnail_data) != 0)
-      {
-        continue;
-      }
-
-      PhotoResource::UpdateRequest update_request;
-      update_request[PhotoResource::PHOTO_FIELD_THUMBNAIL_PATH] =
-        thumbnail_path;
-      PhotoResource::UpdateRequestContainer update_requests;
-      update_requests[itr_added_record->first] = update_request;
-      PhotoResource::UpdatedRecordContainer updated_records;
-      int update_result =
-        database_mediator.photo_resource_->Update(update_requests,
-                                                  updated_records);
-      if (update_result != DatabaseMediator::NO_ERROR)
       {
         continue;
       }
@@ -839,8 +830,6 @@ struct DatabaseRequestHandler<RequestAddFeatureMatch, ResponseAddFeatureMatch>
       int(request.block_id);
     add_request[FeatureMatchResource::FEATURE_MATCH_FIELD_NAME] =
       std::string("");
-    add_request[FeatureMatchResource::FEATURE_MATCH_FIELD_PATH] =
-      std::string("");
     add_request[FeatureMatchResource::FEATURE_MATCH_FIELD_FLAG] =
       int(FeatureMatchResource::FLAG_NOT_COMPLETED);
     FeatureMatchResource::AddRequestContainer add_requests;
@@ -859,9 +848,7 @@ struct DatabaseRequestHandler<RequestAddFeatureMatch, ResponseAddFeatureMatch>
     std::string feature_match_name =
       boost::str(boost::format("feature_match_%1%") % feature_match_id);
     boost::filesystem::path feature_match_path =
-      boost::str(boost::format("%1%/%2%/") %
-                 database_mediator.database_.FeatureMatchPath() %
-                 feature_match_id);
+      database_mediator.GetFeatureMatchPath(feature_match_id);
     if (!boost::filesystem::create_directory(feature_match_path))
     {
       response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
@@ -871,8 +858,6 @@ struct DatabaseRequestHandler<RequestAddFeatureMatch, ResponseAddFeatureMatch>
     FeatureMatchResource::UpdateRequest update_request;
     update_request[FeatureMatchResource::FEATURE_MATCH_FIELD_NAME] =
       feature_match_name;
-    update_request[FeatureMatchResource::FEATURE_MATCH_FIELD_PATH] =
-      feature_match_path.string();
     FeatureMatchResource::UpdateRequestContainer update_requests;
     update_requests[feature_match_id] = update_request;
     FeatureMatchResource::UpdatedRecordContainer updated_records;
@@ -1004,8 +989,6 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
       int(request.feature_match_id);
     add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_NAME] =
       std::string("");
-    add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH] =
-      std::string("");
     add_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG] =
       int(PhotoOrientationResource::FLAG_NOT_COMPLETED);
     add_request[
@@ -1027,9 +1010,7 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
     std::string photo_orientation_name =
       boost::str(boost::format("photo_orientation_%1%") % photo_orientation_id);
     boost::filesystem::path photo_orientation_path =
-      boost::str(boost::format("%1%/%2%/") %
-                 database_mediator.database_.PhotoOrientationPath() %
-                 photo_orientation_id);
+      database_mediator.GetPhotoOrientationPath(photo_orientation_id);
     if (!boost::filesystem::create_directory(photo_orientation_path))
     {
       response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
@@ -1039,8 +1020,6 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
     PhotoOrientationResource::UpdateRequest update_request;
     update_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_NAME] =
       photo_orientation_name;
-    update_request[PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH] =
-      photo_orientation_path.string();
     PhotoOrientationResource::UpdateRequestContainer update_requests;
     update_requests[photo_orientation_id] = update_request;
     PhotoOrientationResource::UpdatedRecordContainer updated_records;
@@ -1108,8 +1087,7 @@ struct DatabaseRequestHandler<RequestGetPhotoOrientation,
                                                              response.record);
 
     std::string photo_orientation_path =
-      response.record[
-        PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+      database_mediator.GetPhotoOrientationPath(request.id);
 
     response.intrinsic_path =
       photo_orientation_path + "intrinsic.txt";
@@ -1159,8 +1137,6 @@ struct DatabaseRequestHandler<RequestAddPointCloud,
         int(request.photo_orientation_id);
       add_request[PointCloudResource::POINT_CLOUD_FIELD_NAME] =
         std::string("");
-      add_request[PointCloudResource::POINT_CLOUD_FIELD_PATH] =
-        std::string("");
       add_request[PointCloudResource::POINT_CLOUD_FIELD_FLAG] =
         int(PointCloudResource::FLAG_NOT_COMPLETED);
       PointCloudResource::AddRequestContainer add_requests;
@@ -1179,9 +1155,7 @@ struct DatabaseRequestHandler<RequestAddPointCloud,
       std::string point_cloud_name =
         boost::str(boost::format("point_cloud_%1%") % point_cloud_id);
       boost::filesystem::path point_cloud_path =
-        boost::str(boost::format("%1%/%2%/") %
-        database_mediator.database_.PointCloudPath() %
-        point_cloud_id);
+        database_mediator.GetPointCloudPath(point_cloud_id);
       if (!boost::filesystem::create_directory(point_cloud_path))
       {
         response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
@@ -1191,8 +1165,6 @@ struct DatabaseRequestHandler<RequestAddPointCloud,
       PointCloudResource::UpdateRequest update_request;
       update_request[PointCloudResource::POINT_CLOUD_FIELD_NAME] =
         point_cloud_name;
-      update_request[PointCloudResource::POINT_CLOUD_FIELD_PATH] =
-        point_cloud_path.string();
       PointCloudResource::UpdateRequestContainer update_requests;
       update_requests[point_cloud_id] = update_request;
       PointCloudResource::UpdatedRecordContainer updated_records;
@@ -1240,8 +1212,8 @@ struct DatabaseRequestHandler<RequestGetPointCloud,
       database_mediator.point_cloud_resource_->GetById(request.id,
       response.record);
 
-    std::string point_cloud_path = 
-      response.record[PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
+    std::string point_cloud_path =
+      database_mediator.GetPointCloudPath(request.id);
 
     response.dense_pointcloud_path = point_cloud_path + "dense_pointcloud.ply";
 
@@ -1256,9 +1228,8 @@ struct DatabaseRequestHandler<RequestGetPointCloud,
       database_mediator.photo_orientation_resource_->GetById(
         photo_orientation_id,photo_orientation_record);
 
-    response.photo_orientation_path = 
-      photo_orientation_record[
-        PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+    response.photo_orientation_path =
+      database_mediator.GetPhotoOrientationPath(photo_orientation_id);
 
    return response.error_code;
   }
@@ -1375,8 +1346,7 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationTransform,
     if (response.error_code == DatabaseMediator::NO_ERROR)
     {
       std::string photo_orientation_path =
-        record[
-          PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+        database_mediator.GetPhotoOrientationPath(request.id);
       std::string similar_transform_path =
         photo_orientation_path + "similar_transform.txt";
 
@@ -2045,8 +2015,6 @@ struct DatabaseRequestHandler<RequestAddSurfaceModel,
         int(request.point_cloud_id);
       add_request[SurfaceModelResource::SURFACE_MODEL_FIELD_NAME] =
         std::string("");
-      add_request[SurfaceModelResource::SURFACE_MODEL_FIELD_PATH] =
-        std::string("");
       add_request[SurfaceModelResource::SURFACE_MODEL_FIELD_FLAG] =
         SurfaceModelResource::FLAG_NOT_COMPLETED;
       SurfaceModelResource::AddRequestContainer add_requests;
@@ -2065,9 +2033,7 @@ struct DatabaseRequestHandler<RequestAddSurfaceModel,
       std::string surface_model_name =
         boost::str(boost::format("surface_model_%1%") % surface_model_id);
       boost::filesystem::path surface_model_path =
-        boost::str(boost::format("%1%/%2%/") %
-        database_mediator.database_.SurfaceModelPath() %
-        surface_model_id);
+        database_mediator.GetSurfaceModelPath(surface_model_id);
       if (!boost::filesystem::create_directory(surface_model_path))
       {
         response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
@@ -2077,8 +2043,6 @@ struct DatabaseRequestHandler<RequestAddSurfaceModel,
       SurfaceModelResource::UpdateRequest update_request;
       update_request[SurfaceModelResource::SURFACE_MODEL_FIELD_NAME] =
         surface_model_name;
-      update_request[SurfaceModelResource::SURFACE_MODEL_FIELD_PATH] =
-        surface_model_path.string();
       SurfaceModelResource::UpdateRequestContainer update_requests;
       update_requests[surface_model_id] = update_request;
       SurfaceModelResource::UpdatedRecordContainer updated_records;
@@ -2131,8 +2095,6 @@ struct DatabaseRequestHandler<RequestAddTexture,
         int(request.surface_model_id);
       add_request[TextureResource::TEXTURE_FIELD_NAME] =
         std::string("");
-      add_request[TextureResource::TEXTURE_FIELD_PATH] =
-        std::string("");
       add_request[TextureResource::TEXTURE_FIELD_FLAG] =
         TextureResource::FLAG_NOT_COMPLETED;
       TextureResource::AddRequestContainer add_requests;
@@ -2151,9 +2113,7 @@ struct DatabaseRequestHandler<RequestAddTexture,
       std::string texture_name =
         boost::str(boost::format("texture_%1%") % texture_id);
       boost::filesystem::path texture_path =
-        boost::str(boost::format("%1%/%2%/") %
-        database_mediator.database_.TexturePath() %
-        texture_id);
+        database_mediator.GetTexturePath(texture_id);
       if (!boost::filesystem::create_directory(texture_path))
       {
         response.error_code = DatabaseMediator::ERROR_FAIL_TO_CREATE_DIRECTORY;
@@ -2163,8 +2123,6 @@ struct DatabaseRequestHandler<RequestAddTexture,
       TextureResource::UpdateRequest update_request;
       update_request[TextureResource::TEXTURE_FIELD_NAME] =
         texture_name;
-      update_request[TextureResource::TEXTURE_FIELD_PATH] =
-        texture_path.string();
       TextureResource::UpdateRequestContainer update_requests;
       update_requests[texture_id] = update_request;
       TextureResource::UpdatedRecordContainer updated_records;
@@ -2212,8 +2170,7 @@ struct DatabaseRequestHandler<RequestGetSurfaceModel,
       response.record);
 
     std::string surface_model_path =
-      response.record[
-        PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+      database_mediator.GetSurfaceModelPath(request.id);
 
         response.mesh_path =
           surface_model_path + "mesh.ply";

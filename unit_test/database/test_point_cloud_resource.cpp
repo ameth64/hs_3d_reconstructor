@@ -32,28 +32,28 @@ TEST(TestPointCloudResource, SimpleTest)
     Value(int(0)),
     Value(int(1)),
     Value(std::string("test_point_cloud1")),
-    Value(std::string("point_clouds/test_point_cloud1"))
+    Value(int(PointCloudResource::FLAG_NOT_COMPLETED))
   };
   AddRequest add_request2 =
   {
     Value(int(0)),
     Value(int(2)),
     Value(std::string("test_point_cloud2")),
-    Value(std::string("point_clouds/test_point_cloud2"))
+    Value(int(PointCloudResource::FLAG_COMPLETED))
   };
   AddRequest add_request3 =
   {
     Value(int(0)),
     Value(int(3)),
     Value(std::string("test_point_cloud3")),
-    Value(std::string("point_clouds/test_point_cloud3"))
+    Value(int(PointCloudResource::FLAG_COMPLETED))
   };
   AddRequest add_request4 =
   {
     Value(int(0)),
     Value(int(4)),
     Value(std::string("test_point_cloud4")),
-    Value(std::string("point_clouds/test_point_cloud4"))
+    Value(int(PointCloudResource::FLAG_COMPLETED))
   };
   AddRequestContainer add_requests;
   add_requests.push_back(add_request1);

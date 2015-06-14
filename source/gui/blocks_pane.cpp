@@ -1391,8 +1391,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
         response_feature_match.record[
           db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
     std::string feature_match_path =
-      response_feature_match.record[
-        db::FeatureMatchResource::FEATURE_MATCH_FIELD_PATH].ToString();
+      ((MainWindow*)parent())->database_mediator().GetFeatureMatchPath(
+        request_feature_match.id);
     std::string matches_path =
       feature_match_path + "matches.txt";
 
@@ -1545,8 +1545,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
 
     //TODO:Need to modify to portable.
     std::string photo_orientation_path =
-      response_photo_orientation.record[
-        db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_PATH].ToString();
+      ((MainWindow*)parent())->database_mediator().GetPhotoOrientationPath(
+        request_photo_orientation.id);
 
     //获取特征匹配数据
     int field_id =
@@ -1568,8 +1568,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
           db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
     //TODO:Need to modify to portable.
     std::string feature_match_path =
-      response_feature_match.record[
-        db::FeatureMatchResource::FEATURE_MATCH_FIELD_PATH].ToString();
+      ((MainWindow*)parent())->database_mediator().GetFeatureMatchPath(
+        request_feature_match.id);
     std::string matches_path =
       feature_match_path + "matches.txt";
 
@@ -1787,9 +1787,10 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
       break;
     }
     std::string point_cloud_path =
-      response_point_cloud.record[
-        db::PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
-    std::string photo_orientation_path = response_point_cloud.photo_orientation_path;
+      ((MainWindow*)parent())->database_mediator().GetPointCloudPath(
+        request_point_cloud.id);
+    std::string photo_orientation_path =
+      response_point_cloud.photo_orientation_path;
 
     QSettings settings;
     QString number_of_threads_key = tr("number_of_threads");
@@ -1827,38 +1828,37 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
       break;
     }
     std::string surface_model_path =
+      ((MainWindow*)parent())->database_mediator().GetSurfaceModelPath(
+        request_surface_model.id);
+
+    //获取Point Cloud
+    hs::recon::db::RequestGetPointCloud request_point_cloud;
+    hs::recon::db::ResponseGetPointCloud response_point_cloud;
+    request_point_cloud.id = 
       response_surface_model.record[
-        db::SurfaceModelResource::SURFACE_MODEL_FIELD_PATH].ToString();
+        db::SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt();
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+      request_point_cloud, response_point_cloud, false);
+    if (response_point_cloud.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+    std::string point_cloud_path =
+      ((MainWindow*)parent())->database_mediator().GetPointCloudPath(
+        request_point_cloud.id);
+    QSettings settings;
+    QString number_of_threads_key = tr("number_of_threads");
+    uint number_of_threads = settings.value(number_of_threads_key,
+        QVariant(uint(1))).toUInt();
 
-   //获取Point Cloud
-   hs::recon::db::RequestGetPointCloud request_point_cloud;
-   hs::recon::db::ResponseGetPointCloud response_point_cloud;
-   request_point_cloud.id = 
-     response_surface_model.record[
-       db::SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt();
-   ((MainWindow*)parent())->database_mediator().Request(
-     this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
-     request_point_cloud, response_point_cloud, false);
-   if (response_point_cloud.error_code !=
-     hs::recon::db::Database::NO_ERROR)
-   {
-     break;
-   }
-   std::string point_cloud_path =
-     response_point_cloud.record[
-       db::PointCloudResource::POINT_CLOUD_FIELD_PATH].ToString();
-   
-   QSettings settings;
-   QString number_of_threads_key = tr("number_of_threads");
-   uint number_of_threads = settings.value(number_of_threads_key,
-       QVariant(uint(1))).toUInt();
-
-   mesh_surface_config->set_xml_path(workflow_intermediate_directory + "surface_model_input.xml");
-   mesh_surface_config->set_core_use(number_of_threads);
-   mesh_surface_config->set_output_dir(surface_model_path);
-   mesh_surface_config->set_point_cloud_path(point_cloud_path + "dense_pointcloud.ply");
-   break;
-  }         
+    mesh_surface_config->set_xml_path(workflow_intermediate_directory + "surface_model_input.xml");
+    mesh_surface_config->set_core_use(number_of_threads);
+    mesh_surface_config->set_output_dir(surface_model_path);
+    mesh_surface_config->set_point_cloud_path(point_cloud_path + "dense_pointcloud.ply");
+    break;
+  }
 
   return WorkflowStepPtr(new workflow::PoissonSurface);
 }
@@ -1892,8 +1892,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       break;
     }
     std::string texture_path =
-      response_texture.record[
-        db::TextureResource::TEXTURE_FIELD_PATH].ToString();
+      ((MainWindow*)parent())->database_mediator().GetTexturePath(
+        request_texture.id);
 
     //获取Surface Model
     hs::recon::db::RequestGetSurfaceModel request_surface_model;
