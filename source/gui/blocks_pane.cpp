@@ -1774,6 +1774,25 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
       std::static_pointer_cast<workflow::PointCloudConfig>(
       workflow_step_entry.config);
 
+    //获取photo
+    hs::recon::db::RequestGetAllPhotos  request_get_all_photos;
+    hs::recon::db::ResponseGetAllPhotos response_get_all_photos;
+    ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOS,
+    request_get_all_photos, response_get_all_photos, false);
+    if(response_get_all_photos.error_code != hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+    for(auto iter = response_get_all_photos.records.begin();
+          iter != response_get_all_photos.records.end();
+          ++iter)
+    {
+      point_cloud_config->photo_paths().insert(std::make_pair(
+        iter->second[db::PhotoResource::PHOTO_FIELD_ID].ToInt(), 
+        iter->second[db::PhotoResource::PHOTO_FIELD_PATH].ToString()));
+    }
+
     //获取点云数据
     hs::recon::db::RequestGetPointCloud request_point_cloud;
     hs::recon::db::ResponseGetPointCloud response_point_cloud;
@@ -1798,6 +1817,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
 
     point_cloud_config->set_workspace_path(point_cloud_path);
     point_cloud_config->set_photo_orientation_path(photo_orientation_path);
+    point_cloud_config->set_intermediate_path(workflow_intermediate_directory);
     point_cloud_config->set_s_number_of_threads(number_of_threads);
     break;
   }//while(1)
