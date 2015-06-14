@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <fstream>
 
 #if WIN32
 #include <Windows.h>
@@ -36,7 +37,11 @@ void PointCloudConfig::set_photo_orientation_path(
 {
   photo_orientation_path_ = photo_orientation_path;
 }
-void PointCloudConfig::set_s_number_of_threads(int s_number_of_threads)
+void PointCloudConfig::set_intermediate_path(
+  const std::string& intermediate_path)
+{
+  intermediate_path_ = intermediate_path;
+}void PointCloudConfig::set_s_number_of_threads(int s_number_of_threads)
 {
   s_number_of_threads_ = s_number_of_threads;
 }
@@ -93,6 +98,10 @@ const std::string PointCloudConfig::photo_orientation_path() const
 {
   return photo_orientation_path_;
 }
+const std::string PointCloudConfig::intermediate_path() const
+{
+  return intermediate_path_;
+}
 int PointCloudConfig::s_number_of_threads() const
 {
   return s_number_of_threads_;
@@ -142,49 +151,273 @@ int PointCloudConfig::m_visibility_threshold() const
   return m_visibility_threshold_;
 }
 
+std::map<int, std::string>& PointCloudConfig::photo_paths()
+{
+  return photo_paths_;
+}
+const std::map<int, std::string>& PointCloudConfig::photo_paths() const
+{
+  return photo_paths_;
+}
+
 PointCloud::PointCloud()
 {
   type_ = STEP_POINT_CLOUD;
+}
+
+int PointCloud::CreateConfigXml(
+  PointCloudConfig* config)
+{
+  const std::string intrinsic_file = 
+    config->photo_orientation_path() + "intrinsic.txt";
+  const std::string extrinsic_file = 
+    config->photo_orientation_path() + "extrinsic.txt";
+
+  //读取内参数文件
+  IntrinsicParamsMap intrinsic_params_map;
+  ReadIntrinsicFile(intrinsic_file, intrinsic_params_map);
+
+  //读取外参数文件
+  ExtrinsicParamsMap extrinsic_params_map;
+  PhotoID_GroupID photo_id_group_id;
+  ReadExtrinsicFile(extrinsic_file, extrinsic_params_map, photo_id_group_id);
+
+  boost::property_tree::ptree root;
+  root.put("module_list.module_item.module_name", "point_cloud");
+  root.put("module_list.module_item.module_version", "1.0");
+  //share_section
+  root.put("module_list.module_item.share_section.workspace", 
+    config->workspace_path());
+  root.put("module_list.module_item.share_section.parallel_number",
+    config->s_number_of_threads());
+  root.put("module_list.module_item.share_section.pyramid_level",
+    config->s_pyramid_level());
+  root.put("module_list.module_item.share_section.patch_density",
+    config->s_patch_density());
+  root.put("module_list.module_item.share_section.patch_range",
+    config->s_patch_range());
+  //share_section.photo_list
+
+  std::string str;
+  for (auto itr_photo_id = extrinsic_params_map.begin();
+    itr_photo_id != extrinsic_params_map.end(); ++itr_photo_id)
+  {
+    str.clear();
+    boost::property_tree::ptree photo_item;
+    photo_item.put("id", itr_photo_id->first);
+    auto itr_photo_paht = config->photo_paths().find(itr_photo_id->first);
+    if (itr_photo_paht != config->photo_paths().end())
+    {
+      photo_item.put("file", itr_photo_paht->second);
+    }
+    else
+    {
+      std::cout << "读取图片数据失败!\n";
+      return -1;
+    }
+    //intrinsic_matrix
+    IntrinsicParams intrinsic_param;
+    auto itr_intrinsic_id = photo_id_group_id.find(itr_photo_id->first);
+    if (itr_intrinsic_id != photo_id_group_id.end())
+    {
+      auto itr_intrinsic_params = intrinsic_params_map.find(
+        itr_intrinsic_id->second);
+      if (itr_intrinsic_params != intrinsic_params_map.end())
+      {
+        intrinsic_param = itr_intrinsic_params->second;
+      }
+      else
+      {
+        std::cout << "读取内参数失败!\n";
+        return -1;
+      }
+    }
+    else
+    {
+      std::cout << "读取 PhotoID <--> GroupID 数据失败!\n";
+      return -1;
+    }
+
+    str = std::to_string(intrinsic_param.focal_length()) + " " +
+      std::to_string(intrinsic_param.skew()) + " " +
+      std::to_string(intrinsic_param.principal_point_x());
+    photo_item.put("camera_parameters.intrinsic_matrix.row", str);
+    str = "0 " +
+      std::to_string(intrinsic_param.focal_length() *
+      intrinsic_param.pixel_ratio()) + " " +
+      std::to_string(intrinsic_param.principal_point_y());
+    photo_item.add("camera_parameters.intrinsic_matrix.row", str);
+    str = "0 0 1";
+    photo_item.add("camera_parameters.intrinsic_matrix.row", str);
+    //radial_distortion
+    str = std::to_string(intrinsic_param.k1()) + " " +
+      std::to_string(intrinsic_param.k2()) + " " +
+      std::to_string(intrinsic_param.k3());
+    photo_item.put("camera_parameters.distortion_params.radial_distortion", str);
+    //decentering_distortion
+    str = std::to_string(intrinsic_param.d1()) + " " +
+      std::to_string(intrinsic_param.d2());
+    photo_item.put("camera_parameters.distortion_params.decentering_distortion", str);
+
+   //rotation_matrix
+    Matrix33 rmat(itr_photo_id->second.rotation());
+    Position position = itr_photo_id->second.position();
+
+    str = std::to_string(rmat(0, 0)) + " " +
+      std::to_string(rmat(0, 1)) + " " +
+      std::to_string(rmat(0, 2));
+    photo_item.put("camera_parameters.rotation_matrix.row", str);
+    str = std::to_string(rmat(1, 0)) + " " +
+      std::to_string(rmat(1, 1)) + " " +
+      std::to_string(rmat(1, 2));
+    photo_item.add("camera_parameters.rotation_matrix.row", str);
+    str = std::to_string(rmat(2, 0)) + " " +
+      std::to_string(rmat(2, 1)) + " " +
+      std::to_string(rmat(2, 2));
+    photo_item.add("camera_parameters.rotation_matrix.row", str);
+    //optical_center
+    str = std::to_string(position[0]) + " " +
+      std::to_string(position[1]) + " " +
+      std::to_string(position[2]);
+    photo_item.put("camera_parameters.optical_center", str);
+
+     root.add_child("module_list.module_item.share_section.photo_list.photo_item", photo_item);
+   }
+  //cluster_section
+  root.put("module_list.module_item.cluster_section.accuracy_threshold",
+    config->c_accuracy_threshold());
+  root.put("module_list.module_item.cluster_section.coverage_threshold",
+    config->c_coverage_threshold());
+  root.put("module_list.module_item.cluster_section.cluster_size",
+    config->c_cluster_size());
+  std::string sparse_cloud_path = 
+    config->photo_orientation_path() + "sparse_point_cloud.txt";
+  root.put("module_list.module_item.cluster_section.sparse_cloud",
+    sparse_cloud_path);
+  //pmvs_section
+  root.put("module_list.module_item.pmvs_section.visibility_threshold",
+    config->p_visibility_threshold());
+  root.put("module_list.module_item.pmvs_section.consistency_threshold",
+    config->p_consistency_threshold());
+  root.put("module_list.module_item.pmvs_section.group_threshold",
+    config->p_group_threshold());
+  //merge_section
+  root.put("module_list.module_item.merge_section.quality_threshold",
+    config->m_quality_threshold());
+  root.put("module_list.module_item.merge_section.visibility_threshold",
+    config->m_visibility_threshold());
+
+  boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
+  //boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
+  write_xml(config->intermediate_path()+"point_cloud_input.xml", root, std::locale(), settings);
+  return 0;
+}
+
+//读取内参数文件
+int PointCloud::ReadIntrinsicFile(
+  const std::string& file_path,
+  IntrinsicParamsMap& ipm)
+{
+  std::ifstream ifs_intrinsic(file_path);
+  if (!ifs_intrinsic.is_open())
+    return -1;
+  int photogroup_id;
+  Scalar f, s, cx, cy, pr, k1, k2, k3, d1, d2;
+  if (ifs_intrinsic >> photogroup_id >> f >> s >> cx >> cy >> pr 
+                    >> k1 >> k2 >> k3 >> d1 >> d2)
+  {
+    IntrinsicParams ip;
+    ip.set_focal_length(f);
+    ip.set_skew(s);
+    ip.set_principal_point_x(cx);
+    ip.set_principal_point_y(cy);
+    ip.set_pixel_ratio(pr);
+    ip.set_k1(k1);
+    ip.set_k2(k2);
+    ip.set_k3(k3);
+    ip.set_d1(d1);
+    ip.set_d2(d2);
+    ipm.insert(std::make_pair(photogroup_id, ip));
+  }
+  else
+  {
+    std::cout << "读取intrinsic失败!\n";
+    return -1;
+  }
+  while (ifs_intrinsic >> photogroup_id >> f >> s >> cx >> cy >> pr
+                       >> k1 >> k2 >> k3 >> d1 >> d2)
+  {
+    IntrinsicParams ip;
+    ip.set_focal_length(f);
+    ip.set_skew(s);
+    ip.set_principal_point_x(cx);
+    ip.set_principal_point_y(cy);
+    ip.set_pixel_ratio(pr);
+    ip.set_k1(k1);
+    ip.set_k2(k2);
+    ip.set_k3(k3);
+    ip.set_d1(d1);
+    ip.set_d2(d2);
+    ipm.insert(std::make_pair(photogroup_id, ip));
+  }
+  return 0;
+}
+//读取外参数文件
+int PointCloud::ReadExtrinsicFile(
+  const std::string& file_path,
+  ExtrinsicParamsMap& epm,
+  PhotoID_GroupID& pg)
+{
+  std::ifstream ifs_extrinsic(file_path);
+  if (!ifs_extrinsic.is_open())
+    return -1;
+
+  int photo_id, group_id;
+  Scalar cx, cy, cz, rx, ry, rz;
+  ifs_extrinsic >> photo_id >> group_id >> cx >> cy >> cz >> rx >> ry >> rz;
+  //检查数据合法性,全为零时不可用
+  if (!(cx == 0.0 && cy == 0.0 && cz == 0.0 && rx == 0.0 && ry == 0.0 && rz == 0.0))
+  {
+    const Rotation r(Position(rx, ry, rz));
+    const Position p(cx, cy, cz);
+    ExtrinsicParams ep(r,p);
+    pg.insert(std::make_pair(photo_id, group_id));
+    epm.insert(std::make_pair(photo_id, ep));
+  }
+  while (ifs_extrinsic >> photo_id >> group_id >> cx >> cy >> cz >> rx >> ry >> rz)
+  {
+    //检查数据合法性,全为零时不可用
+    if (!(cx == 0.0 && cy == 0.0 && cz == 0.0 && rx == 0.0 && ry == 0.0 && rz == 0.0))
+    {
+      const Rotation r(Position(rx, ry, rz));
+      const Position p(cx, cy, cz);
+      ExtrinsicParams ep(r, p);
+      pg.insert(std::make_pair(photo_id, group_id));
+      epm.insert(std::make_pair(photo_id, ep));
+    }
+  }
+  //检查数据正确性
+  if (epm.size() != pg.size())
+  {
+    std::cout << "读取外参数失败!\n";
+    return -1;
+  }
+  return 0;
 }
 
 int PointCloud::RunImplement(WorkflowStepConfig* config)
 {
   PointCloudConfig* point_cloud_config =
     static_cast<PointCloudConfig*>(config);
-  std::string workspace_path = point_cloud_config->workspace_path();
-  std::string photo_orientation_xml = 
-    point_cloud_config->photo_orientation_path() + "point_cloud_input.xml";
-  std::string point_cloud_xml = workspace_path + "point_cloud_input.xml";
-  std::string point_cloud_xml_out = workspace_path + "point_cloud_output.xml";
+  if (CreateConfigXml(point_cloud_config) != 0)
+  {
+    return -1;
+  }
 
-  boost::property_tree::ptree root; 
-  boost::property_tree::xml_parser::xml_writer_settings<boost::property_tree::ptree::key_type> settings(' ', 2);
-  //boost::property_tree::xml_parser::xml_writer_settings<char> settings(' ', 2);
-  read_xml(photo_orientation_xml,root,boost::property_tree::xml_parser::trim_whitespace);
-  root.put("module_list.module_item.share_section.workspace",workspace_path);
-  root.put("module_list.module_item.share_section.pyramid_level",
-           point_cloud_config->s_pyramid_level());
-  root.put("module_list.module_item.share_section.patch_density",
-           point_cloud_config->s_patch_density());
-  root.put("module_list.module_item.share_section.patch_range",
-           point_cloud_config->s_patch_range());
-  root.put("module_list.module_item.cluster_section.accuracy_threshold",
-           point_cloud_config->c_accuracy_threshold());
-  root.put("module_list.module_item.cluster_section.coverage_threshold",
-           point_cloud_config->c_coverage_threshold());
-  root.put("module_list.module_item.cluster_section.cluster_size",
-           point_cloud_config->c_cluster_size());
-  root.put("module_list.module_item.pmvs_section.visibility_threshold",
-           point_cloud_config->p_visibility_threshold());
-  root.put("module_list.module_item.pmvs_section.consistency_threshold",
-           point_cloud_config->p_consistency_threshold());
-  root.put("module_list.module_item.pmvs_section.group_threshold",
-           point_cloud_config->p_group_threshold());
-  root.put("module_list.module_item.merge_section.quality_threshold",
-           point_cloud_config->m_quality_threshold());
-  root.put("module_list.module_item.merge_section.visibility_threshold",
-           point_cloud_config->m_visibility_threshold());
-  write_xml(point_cloud_xml, root, std::locale(), settings);
+  std::string point_cloud_xml =
+    point_cloud_config->intermediate_path() + "point_cloud_input.xml";
+  std::string point_cloud_xml_out = 
+    point_cloud_config->intermediate_path() + "point_cloud_output.xml";
 
   bm::CBaseAgent *agent = pc::CPCAgent::create();
   agent->init();
