@@ -70,7 +70,8 @@ int BlocksTreeWidget::AddPhotosToBlock(uint block_id,
   auto itr_photo_name_end = photo_names.end();
   for (; itr_photo_name != itr_photo_name_end; ++itr_photo_name)
   {
-    if (photo_item_map_.find(itr_photo_name->first) == photo_item_map_.end())
+    if (photo_item_map_.find(std::make_pair(block_id, itr_photo_name->first))
+        == photo_item_map_.end())
     {
       QTreeWidgetItem* photo_item =
         new QTreeWidgetItem(photos_item, QStringList()<<itr_photo_name->second
@@ -79,7 +80,8 @@ int BlocksTreeWidget::AddPhotosToBlock(uint block_id,
       photo_item->setData(0, Qt::UserRole, QVariant(itr_photo_name->first));
       photo_item->setIcon(0, photo_icon_);
       photos_item->addChild(photo_item);
-      photo_item_map_[itr_photo_name->first] = photo_item;
+      photo_item_map_[std::make_pair(block_id, itr_photo_name->first)] =
+        photo_item;
     }
   }
 
@@ -309,7 +311,7 @@ int BlocksTreeWidget::DeleteBlock(uint block_id)
       QTreeWidgetItem* photo_item = photos_item->child(0);
       uint photo_id = photo_item->data(0, Qt::UserRole).toUInt();
       delete photo_item;
-      photo_item_map_.erase(photo_id);
+      photo_item_map_.erase(std::make_pair(block_id, photo_id));
     }
     photos_item_map_.erase(block_id);
 
@@ -342,7 +344,8 @@ int BlocksTreeWidget::DeletePhotosFromBlock(uint block_id,
   auto itr_photo_id_end = photo_ids.end();
   for (; itr_photo_id != itr_photo_id_end; ++itr_photo_id)
   {
-    auto itr_item = photo_item_map_.find(*itr_photo_id);
+    auto itr_item = photo_item_map_.find(
+      std::make_pair(block_id, *itr_photo_id));
     if (itr_item != photo_item_map_.end())
     {
       QTreeWidgetItem* photo_item = itr_item->second;
@@ -557,9 +560,10 @@ QTreeWidgetItem* BlocksTreeWidget::PhotosItem(uint block_id)
     return nullptr;
   }
 }
-QTreeWidgetItem* BlocksTreeWidget::PhotoItem(uint photo_id)
+QTreeWidgetItem* BlocksTreeWidget::PhotoItem(uint block_id, uint photo_id)
 {
-  auto itr_photo_item = photo_item_map_.find(photo_id);
+  auto itr_photo_item = photo_item_map_.find(std::make_pair(block_id,
+                                                            photo_id));
   if (itr_photo_item != photo_item_map_.end())
   {
     return itr_photo_item->second;

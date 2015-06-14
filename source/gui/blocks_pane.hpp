@@ -66,6 +66,8 @@ private slots:
 
   void OnActionAddBlockTriggered();
   void OnActionAddWorkflowTriggered();
+  void OnActionCopyTriggered();
+  void OnActionRemoveTriggered();
 
   void OnBlockItemSelected(uint block_id);
   void OnPhotosInOneBlockSelected(uint block_id,
@@ -138,13 +140,13 @@ private:
   QBrush backup_background_;
 
   QIcon icon_add_block_;
-  QIcon icon_remove_block_;
-  QIcon icon_remove_photos_;
+  QIcon icon_copy_;
+  QIcon icon_remove_;
   QIcon icon_add_workflow_;
 
   QAction* action_add_block_;
-  QAction* action_remove_block_;
-  QAction* action_remove_photos_;
+  QAction* action_copy_;
+  QAction* action_remove_;
   QAction* action_add_workflow_;
 
   uint selected_block_id_;

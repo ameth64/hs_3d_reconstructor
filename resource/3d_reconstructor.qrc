@@ -1,5 +1,7 @@
 <RCC>
 <qresource>
+    <file>images/icon_copy.png</file>
+    <file>images/icon_remove.png</file>
     <file>images/icon_photo.png</file>
     <file>images/icon_photos.png</file>
     <file>images/icon_photo_add.png</file>

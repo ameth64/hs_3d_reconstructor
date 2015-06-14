@@ -47,7 +47,7 @@ std::string DatabaseMediator::GetThumbnailPath(
   Identifier photo_id) const
 {
   std::stringstream ss;
-  ss<<database_.ThumbnailPath()<<photo_id;
+  ss<<database_.ThumbnailPath()<<photo_id<<".jpg";
   std::string result;
   ss>>result;
   return result;
@@ -57,7 +57,7 @@ std::string DatabaseMediator::GetFeatureMatchPath(
   Identifier feature_match_id) const
 {
   std::stringstream ss;
-  ss<<database_.FeatureMatchPath()<<feature_match_id;
+  ss<<database_.FeatureMatchPath()<<feature_match_id<<"/";
   std::string result;
   ss>>result;
   return result;
@@ -67,7 +67,7 @@ std::string DatabaseMediator::GetPhotoOrientationPath(
   Identifier photo_orientation_id) const
 {
   std::stringstream ss;
-  ss<<database_.PhotoOrientationPath()<<photo_orientation_id;
+  ss<<database_.PhotoOrientationPath()<<photo_orientation_id<<"/";
   std::string result;
   ss>>result;
   return result;
@@ -77,7 +77,7 @@ std::string DatabaseMediator::GetPointCloudPath(
   Identifier point_cloud_id) const
 {
   std::stringstream ss;
-  ss<<database_.PointCloudPath()<<point_cloud_id;
+  ss<<database_.PointCloudPath()<<point_cloud_id<<"/";
   std::string result;
   ss>>result;
   return result;
@@ -87,7 +87,7 @@ std::string DatabaseMediator::GetSurfaceModelPath(
   Identifier surface_model_id) const
 {
   std::stringstream ss;
-  ss<<database_.SurfaceModelPath()<<surface_model_id;
+  ss<<database_.SurfaceModelPath()<<surface_model_id<<"/";
   std::string result;
   ss>>result;
   return result;
@@ -97,7 +97,7 @@ std::string DatabaseMediator::GetTexturePath(
   Identifier texture_id) const
 {
   std::stringstream ss;
-  ss<<database_.TexturePath()<<texture_id;
+  ss<<database_.TexturePath()<<texture_id<<"/";
   std::string result;
   ss>>result;
   return result;
@@ -205,6 +205,60 @@ int DatabaseMediator::RegisterResources()
     break;
   }
   return result;
+}
+
+bool CopyDirectory(boost::filesystem::path const & source,
+                   boost::filesystem::path const & destination)
+{
+  namespace fs = boost::filesystem;
+  try
+  {
+    // Check whether the function call is valid
+    if(!fs::exists(source) || !fs::is_directory(source))
+    {
+      return false;
+    }
+    if(fs::exists(destination))
+    {
+      return false;
+    }
+    // Create the destination directory
+    if(!fs::create_directory(destination))
+    {
+      return false;
+    }
+  }
+  catch(fs::filesystem_error const & e)
+  {
+    return false;
+  }
+  // Iterate through the source directory
+  for(fs::directory_iterator file(source); file != fs::directory_iterator();
+      ++file)
+  {
+    try
+    {
+      fs::path current(file->path());
+      if(fs::is_directory(current))
+      {
+        // Found directory: Recursion
+        if(!CopyDirectory(current, destination / current.filename()))
+        {
+          return false;
+        }
+      }
+      else
+      {
+        // Found file: Copy
+        fs::copy_file(current, destination / current.filename());
+      }
+    }
+    catch(fs::filesystem_error const & e)
+    {
+        std:: cerr << e.what() << '\n';
+    }
+  }
+  return true;
 }
 
 }

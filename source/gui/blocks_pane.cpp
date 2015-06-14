@@ -34,8 +34,8 @@ namespace gui
 BlocksPane::BlocksPane(QWidget* parent)
   : ManagerPane(tr("Blocks"), parent)
   , icon_add_block_(":/images/icon_block_add.png")
-  , icon_remove_block_(":/images/icon_block_remove.png")
-  , icon_remove_photos_(":/images/icon_photo_remove.png")
+  , icon_copy_(":/images/icon_copy.png")
+  , icon_remove_(":/images/icon_remove.png")
   , icon_add_workflow_(":/images/icon_workflow_add.png")
   , selected_block_id_(std::numeric_limits<uint>::max())
   , selected_feature_match_id_(std::numeric_limits<uint>::max())
@@ -58,20 +58,20 @@ BlocksPane::BlocksPane(QWidget* parent)
 
   action_add_block_ = new QAction(icon_add_block_,
                                   tr("Add Block"), this);
-  action_remove_block_ = new QAction(icon_remove_block_,
-                                     tr("Remove Block"), this);
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_ = new QAction(icon_remove_photos_,
-                                      tr("Remove Photos"), this);
-  action_remove_photos_->setEnabled(false);
+  action_copy_ = new QAction(icon_copy_,
+                             tr("Remove Block"), this);
+  action_copy_->setEnabled(false);
+  action_remove_ = new QAction(icon_remove_,
+                               tr("Remove Photos"), this);
+  action_remove_->setEnabled(false);
   action_add_workflow_ = new QAction(icon_add_workflow_,
                                      tr("Add Workflow"), this);
   action_add_workflow_->setEnabled(false);
 
   tool_bar_ = new QToolBar(this);
   tool_bar_->addAction(action_add_block_);
-  tool_bar_->addAction(action_remove_block_);
-  tool_bar_->addAction(action_remove_photos_);
+  tool_bar_->addAction(action_copy_);
+  tool_bar_->addAction(action_remove_);
   tool_bar_->addAction(action_add_workflow_);
 
   main_window_->addToolBar(tool_bar_);
@@ -80,6 +80,10 @@ BlocksPane::BlocksPane(QWidget* parent)
                    this, &BlocksPane::OnActionAddBlockTriggered);
   QObject::connect(action_add_workflow_, &QAction::triggered,
                    this, &BlocksPane::OnActionAddWorkflowTriggered);
+  QObject::connect(action_copy_, &QAction::triggered,
+                   this, &BlocksPane::OnActionCopyTriggered);
+  QObject::connect(action_remove_, &QAction::triggered,
+                   this, &BlocksPane::OnActionRemoveTriggered);
   QObject::connect(timer_, &QTimer::timeout, this, &BlocksPane::OnTimeout);
   QObject::connect(blocks_tree_widget_, &QTreeWidget::itemDoubleClicked,
                    this, &BlocksPane::OnItemDoubleClicked);
@@ -981,10 +985,155 @@ void BlocksPane::OnActionAddWorkflowTriggered()
   }
 }
 
+void BlocksPane::OnActionCopyTriggered()
+{
+  if (item_selected_mask_[BLOCK_SELECTED])
+  {
+    db::RequestCopyBlock request;
+    request.block_id = selected_block_id_;
+    db::ResponseCopyBlock response;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_COPY_BLOCK,
+      request, response, false);
+    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      QString copied_block_name =
+        QString::fromLocal8Bit(response.copied_block_name.c_str());
+      blocks_tree_widget_->AddBlock(uint(response.copied_block_id),
+                                    copied_block_name);
+      BlocksTreeWidget::StringMap photo_names;
+      for (const auto& photo_id : response.photo_ids)
+      {
+        hs::recon::db::RequestGetPhoto request_get_photo;
+        hs::recon::db::ResponseGetPhoto response_get_photo;
+        request_get_photo.id = db::Identifier(photo_id);
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, hs::recon::db::DatabaseMediator::REQUEST_GET_PHOTO,
+          request_get_photo, response_get_photo, false);
+        if (response_get_photo.error_code !=
+            hs::recon::db::DatabaseMediator::NO_ERROR)
+        {
+          QMessageBox msg_box;
+          msg_box.setText(tr("Photo not exists!"));
+          msg_box.exec();
+          return;
+        }
+        std::string photo_path =
+          response_get_photo.record[
+            hs::recon::db::PhotoResource::PHOTO_FIELD_PATH].ToString();
+        QFileInfo file_info(QString::fromLocal8Bit(photo_path.c_str()));
+        photo_names[uint(photo_id)] = file_info.fileName();
+      }
+      blocks_tree_widget_->AddPhotosToBlock(uint(response.copied_block_id),
+                                            photo_names);
+    }
+  }
+  else if (item_selected_mask_[FEATURE_MATCH_SELECTED])
+  {
+    db::RequestCopyFeatureMatch request;
+    db::ResponseCopyFeatureMatch response;
+    request.feature_match_id = selected_feature_match_id_;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
+      request, response, false);
+    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      QString copied_feature_name =
+        QString::fromLocal8Bit(
+          response.copied_feature_match_name.c_str());
+      uint block_id = uint(response.block_id);
+      uint feature_match_id = uint(response.copied_feature_match_id);
+      blocks_tree_widget_->AddFeatureMatch(
+        block_id, feature_match_id, copied_feature_name);
+    }
+  }
+  else if (item_selected_mask_[PHOTO_ORIENTATION_SELECTED])
+  {
+    db::RequestCopyPhotoOrientation request;
+    db::ResponseCopyPhotoOrientation response;
+    request.photo_orientation_id = selected_photo_orientation_id_;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
+      request, response, false);
+    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      QString copied_feature_name =
+        QString::fromLocal8Bit(
+          response.copied_photo_orientation_name.c_str());
+      uint feature_match_id = uint(response.feature_match_id);
+      uint photo_orientation_id = uint(response.copied_photo_orientation_id);
+      blocks_tree_widget_->AddPhotoOrientation(
+        feature_match_id, photo_orientation_id, copied_feature_name);
+    }
+  }
+  else if (item_selected_mask_[POINT_CLOUD_SELECTED])
+  {
+    db::RequestCopyPointCloud request;
+    db::ResponseCopyPointCloud response;
+    request.point_cloud_id = selected_point_cloud_id_;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_COPY_POINT_CLOUD,
+      request, response, false);
+    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      QString copied_feature_name =
+        QString::fromLocal8Bit(
+          response.copied_point_cloud_name.c_str());
+      uint photo_orientation_id = uint(response.photo_orientation_id);
+      uint point_cloud_id = uint(response.copied_point_cloud_id);
+      blocks_tree_widget_->AddPointCloud(
+        photo_orientation_id, point_cloud_id, copied_feature_name);
+    }
+  }
+  else if (item_selected_mask_[SURFACE_MODEL_SELECTED])
+  {
+    db::RequestCopySurfaceModel request;
+    db::ResponseCopySurfaceModel response;
+    request.surface_model_id = selected_surface_model_id_;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
+      request, response, false);
+    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      QString copied_feature_name =
+        QString::fromLocal8Bit(
+          response.copied_surface_model_name.c_str());
+      uint point_cloud_id = uint(response.point_cloud_id);
+      uint surface_model_id = uint(response.copied_surface_model_id);
+      blocks_tree_widget_->AddSurfaceModel(
+        point_cloud_id, surface_model_id, copied_feature_name);
+    }
+  }
+  else if (item_selected_mask_[TEXTURE_SELECTED])
+  {
+    db::RequestCopyTexture request;
+    db::ResponseCopyTexture response;
+    request.texture_id = selected_texture_id_;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
+      request, response, false);
+    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      QString copied_feature_name =
+        QString::fromLocal8Bit(
+          response.copied_texture_name.c_str());
+      uint surface_model_id = uint(response.surface_model_id);
+      uint texture_id = uint(response.copied_texture_id);
+      blocks_tree_widget_->AddTexture(
+        surface_model_id, texture_id, copied_feature_name);
+    }
+  }
+}
+
+void BlocksPane::OnActionRemoveTriggered()
+{
+
+}
+
 void BlocksPane::OnBlockItemSelected(uint block_id)
 {
-  action_remove_block_->setEnabled(true);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(true);
+  action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
   selected_block_id_ = block_id;
   item_selected_mask_.reset();
@@ -994,16 +1143,16 @@ void BlocksPane::OnBlockItemSelected(uint block_id)
 void BlocksPane::OnPhotosInOneBlockSelected(uint block_id,
                                             const std::vector<uint>& photo_ids)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(true);
+  action_copy_->setEnabled(false);
+  action_remove_->setEnabled(false);
   action_add_workflow_->setEnabled(false);
   selected_block_id_ = block_id;
 }
 
 void BlocksPane::OnPhotosItemSelected(uint block_id)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(false);
+  action_remove_->setEnabled(false);
   action_add_workflow_->setEnabled(false);
   selected_block_id_ = block_id;
   item_selected_mask_.reset();
@@ -1012,8 +1161,8 @@ void BlocksPane::OnPhotosItemSelected(uint block_id)
 
 void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(true);
+  action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
   selected_feature_match_id_ = feature_match_id;
   item_selected_mask_.reset();
@@ -1022,8 +1171,8 @@ void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
 
 void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(true);
+  action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
   selected_photo_orientation_id_ = photo_orientation_id;
   item_selected_mask_.reset();
@@ -1032,8 +1181,8 @@ void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
 
 void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(true);
+  action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
   selected_point_cloud_id_ = point_cloud_id;
   item_selected_mask_.reset();
@@ -1042,8 +1191,8 @@ void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
 
 void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(true);
+  action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
   selected_surface_model_id_ = surface_model_id;
   item_selected_mask_.reset();
@@ -1052,8 +1201,8 @@ void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
 
 void BlocksPane::OnTextureItemSelected(uint texture_id)
 {
-  action_remove_block_->setEnabled(false);
-  action_remove_photos_->setEnabled(false);
+  action_copy_->setEnabled(true);
+  action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
   selected_texture_id_ = texture_id;
   item_selected_mask_.reset();

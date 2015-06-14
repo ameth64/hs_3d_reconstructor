@@ -17,6 +17,7 @@ class BlocksTreeWidget : public QTreeWidget
   Q_OBJECT
 public:
   typedef std::map<uint, QTreeWidgetItem*> ItemMap;
+  typedef std::map<std::pair<uint, uint>, QTreeWidgetItem*> PhotoItemMap;
   typedef std::map<uint, QString> StringMap;
   enum ItemType
   {
@@ -61,7 +62,7 @@ public:
 
   QTreeWidgetItem* BlockItem(uint block_id);
   QTreeWidgetItem* PhotosItem(uint block_id);
-  QTreeWidgetItem* PhotoItem(uint photo_id);
+  QTreeWidgetItem* PhotoItem(uint block_id, uint photo_id);
   QTreeWidgetItem* FeatureMatchItem(uint feature_match_id);
   QTreeWidgetItem* PhotoOrientationItem(uint photo_orientation_id);
   QTreeWidgetItem* PointCloudItem(uint point_cloud_id);
@@ -113,7 +114,7 @@ private:
 
   ItemMap block_item_map_;
   ItemMap photos_item_map_;
-  ItemMap photo_item_map_;
+  PhotoItemMap photo_item_map_;
   ItemMap feature_match_item_map_;
   ItemMap photo_orientation_item_map_;
   ItemMap point_cloud_item_map_;

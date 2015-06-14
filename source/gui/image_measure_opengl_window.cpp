@@ -60,6 +60,7 @@ void ImageMeasureOpenGLWindow::set_pos_predicated(
   pos_predicated_ = PhotoPosToWindowPos(pos_predicated);
   PositionContainer positions(1, pos_predicated_);
   position_icon_2d_render_layer_predicated_->SetPositions(positions);
+  LocateToScenePoint(pos_predicated_[0], pos_predicated_[1], Float(0.2));
   RenderNow();
 }
 
@@ -69,6 +70,7 @@ void ImageMeasureOpenGLWindow::set_pos_measure(
   pos_measure_ = PhotoPosToWindowPos(pos_measure);
   PositionContainer positions(1, pos_measure_);
   position_icon_2d_render_layer_measure_->SetPositions(positions);
+  LocateToScenePoint(pos_measure_[0], pos_measure_[1], Float(0.2));
   RenderNow();
 }
 

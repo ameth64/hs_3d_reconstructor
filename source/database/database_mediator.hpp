@@ -4,6 +4,7 @@
 #include <set>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
@@ -53,7 +54,8 @@ public:
   {
     NO_ERROR = 0,
     ERROR_FAIL_TO_REGISTER_RESOURCE = Database::NUMBER_OF_ERROR_CODE,
-    ERROR_FAIL_TO_CREATE_DIRECTORY
+    ERROR_FAIL_TO_CREATE_DIRECTORY,
+    ERROR_FAIL_TO_COPY_DIRECTORY
   };
 
   enum RequestFlag
@@ -102,6 +104,12 @@ public:
     REQUEST_GET_ALL_TEXTURES,
     REQUEST_UPDATE_SURFACE_MODEL_FLAG,
     REQUEST_UPDATE_TEXTURE_FLAG,
+    REQUEST_COPY_BLOCK,
+    REQUEST_COPY_FEATURE_MATCH,
+    REQUEST_COPY_PHOTO_ORIENTATION,
+    REQUEST_COPY_POINT_CLOUD,
+    REQUEST_COPY_SURFACE_MODEL,
+    REQUEST_COPY_TEXTURE,
     NUMBER_OF_REQUEST_FLAGS
 
   };
@@ -2321,6 +2329,617 @@ struct DatabaseRequestHandler<RequestGetAllTextures,
   {
     response.error_code =
       database_mediator.texture_resource_->GetAll(response.records);
+    return response.error_code;
+  }
+};
+
+//Request Copy Block
+struct RequestCopyBlock
+{
+  REQUEST_HEADER
+  Identifier block_id;
+};
+
+struct ResponseCopyBlock
+{
+  RESPONSE_HEADER
+  Identifier copied_block_id;
+  std::string copied_block_name;
+  std::vector<Identifier> photo_ids;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestCopyBlock,
+                               ResponseCopyBlock>
+{
+  int operator() (const RequestCopyBlock& request,
+                  ResponseCopyBlock& response,
+                  DatabaseMediator& database_mediator)
+  {
+    while (1)
+    {
+      BlockResource::AddRequest block;
+      response.error_code =
+        database_mediator.block_resource_->GetById(
+        request.block_id, block);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_block_name =
+        block[BlockResource::BLOCK_FIELD_NAME].ToString();
+      response.copied_block_name += "_copied";
+      int repeat = 0;
+      std::string base_name = response.copied_block_name;
+      do
+      {
+        BlockResource::SelectedRecordContainer selected_records;
+        BlockResource::SelectMask select_mask;
+        select_mask.set();
+        database_mediator.block_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.block_resource_->fields_[
+                    BlockResource::BLOCK_FIELD_NAME],
+                  Value(response.copied_block_name)),
+          selected_records);
+        if (selected_records.empty())
+        {
+          break;
+        }
+
+        repeat++;
+        std::stringstream ss;
+        ss << base_name << "(" << repeat << ")";
+        ss >> response.copied_block_name;
+      } while (1);
+
+      block[BlockResource::BLOCK_FIELD_NAME] = response.copied_block_name;
+      BlockResource::AddRequestContainer add_requests(1, block);
+      BlockResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.block_resource_->Add(add_requests, added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_block_id = added_records.begin()->first;
+
+      //复制块与照片的关系
+
+      PhotoBlockRelationResource::SelectMask select_mask;
+      select_mask.set();
+      PhotoBlockRelationResource::SelectedRecordContainer selected_records;
+      database_mediator.photo_block_relation_resource_->Select(
+        select_mask,
+        EqualTo(database_mediator.photo_block_relation_resource_->fields_[
+                  PhotoBlockRelationResource::PBR_FIELD_BLOCK_ID],
+                Value(int(request.block_id))),
+        selected_records);
+      PhotoBlockRelationResource::AddRequestContainer pbr_add_requests;
+      for (const auto& record : selected_records)
+      {
+        PhotoBlockRelationResource::AddRequest pbr_add_request;
+        pbr_add_request[PhotoBlockRelationResource::PBR_FIELD_BLOCK_ID] =
+          int(response.copied_block_id);
+        auto itr_photo_id_value = record.second.find(
+          int(PhotoBlockRelationResource::PBR_FIELD_PHOTO_ID));
+        pbr_add_request[PhotoBlockRelationResource::PBR_FIELD_PHOTO_ID] =
+          itr_photo_id_value->second;
+        pbr_add_requests.push_back(pbr_add_request);
+        response.photo_ids.push_back(
+          Identifier(itr_photo_id_value->second.ToInt()));
+      }
+
+      PhotoBlockRelationResource::AddedRecordContainer pbr_added_records;
+      response.error_code =
+        database_mediator.photo_block_relation_resource_->Add(
+          pbr_add_requests, pbr_added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+
+      break;
+    }
+
+    return response.error_code;
+  }
+};
+
+bool CopyDirectory(boost::filesystem::path const & source,
+                   boost::filesystem::path const & destination);
+
+//Request Copy Feature Match
+struct RequestCopyFeatureMatch
+{
+  REQUEST_HEADER
+  Identifier feature_match_id;
+};
+
+struct ResponseCopyFeatureMatch
+{
+  RESPONSE_HEADER
+  Identifier copied_feature_match_id;
+  Identifier block_id;
+  std::string copied_feature_match_name;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestCopyFeatureMatch,
+                               ResponseCopyFeatureMatch>
+{
+  int operator() (const RequestCopyFeatureMatch& request,
+                  ResponseCopyFeatureMatch& response,
+                  DatabaseMediator& database_mediator)
+  {
+    while (1)
+    {
+      FeatureMatchResource::AddRequest feature_match;
+      response.error_code =
+        database_mediator.feature_match_resource_->GetById(
+          request.feature_match_id, feature_match);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.block_id =
+        Identifier(feature_match[
+          FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
+      response.copied_feature_match_name =
+        feature_match[
+          FeatureMatchResource::FEATURE_MATCH_FIELD_NAME].ToString();
+      response.copied_feature_match_name += "_copied";
+      int repeat = 0;
+      std::string base_name = response.copied_feature_match_name;
+      do
+      {
+        FeatureMatchResource::SelectedRecordContainer selected_records;
+        FeatureMatchResource::SelectMask select_mask;
+        select_mask.set();
+        database_mediator.feature_match_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.feature_match_resource_->fields_[
+                    FeatureMatchResource::FEATURE_MATCH_FIELD_NAME],
+                  Value(response.copied_feature_match_name)),
+          selected_records);
+        if (selected_records.empty())
+        {
+          break;
+        }
+        repeat++;
+        std::stringstream ss;
+        ss << base_name << "(" << repeat << ")";
+        ss >> response.copied_feature_match_name;
+      } while (1);
+
+      feature_match[
+        FeatureMatchResource::FEATURE_MATCH_FIELD_NAME] =
+          response.copied_feature_match_name;
+      FeatureMatchResource::AddRequestContainer add_requests(
+        1, feature_match);
+      FeatureMatchResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.feature_match_resource_->Add(
+          add_requests, added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_feature_match_id = added_records.begin()->first;
+
+      std::string feature_match_path =
+        database_mediator.GetFeatureMatchPath(
+          request.feature_match_id);
+      std::string feature_match_path_copied =
+        database_mediator.GetFeatureMatchPath(
+          response.copied_feature_match_id);
+
+      if (!CopyDirectory(
+            boost::filesystem::path(feature_match_path),
+            boost::filesystem::path(feature_match_path_copied)))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_COPY_DIRECTORY;
+        break;
+      }
+
+      break;
+    }
+    return response.error_code;
+  }
+};
+
+//Request Copy PhotoOrientation
+struct RequestCopyPhotoOrientation
+{
+  REQUEST_HEADER
+  Identifier photo_orientation_id;
+};
+
+struct ResponseCopyPhotoOrientation
+{
+  RESPONSE_HEADER
+  Identifier copied_photo_orientation_id;
+  Identifier feature_match_id;
+  std::string copied_photo_orientation_name;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestCopyPhotoOrientation,
+                               ResponseCopyPhotoOrientation>
+{
+  int operator() (const RequestCopyPhotoOrientation& request,
+                  ResponseCopyPhotoOrientation& response,
+                  DatabaseMediator& database_mediator)
+  {
+    while (1)
+    {
+      PhotoOrientationResource::AddRequest photo_orientation;
+      response.error_code =
+        database_mediator.photo_orientation_resource_->GetById(
+          request.photo_orientation_id, photo_orientation);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.feature_match_id =
+        Identifier(photo_orientation[
+          PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
+      response.copied_photo_orientation_name =
+        photo_orientation[
+          PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_NAME].ToString();
+      response.copied_photo_orientation_name += "_copied";
+      int repeat = 0;
+      std::string base_name = response.copied_photo_orientation_name;
+      do
+      {
+        PhotoOrientationResource::SelectedRecordContainer selected_records;
+        PhotoOrientationResource::SelectMask select_mask;
+        select_mask.set();
+        database_mediator.photo_orientation_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.photo_orientation_resource_->fields_[
+                    PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_NAME],
+                  Value(response.copied_photo_orientation_name)),
+          selected_records);
+        if (selected_records.empty())
+        {
+          break;
+        }
+        repeat++;
+        std::stringstream ss;
+        ss << base_name << "(" << repeat << ")";
+        ss >> response.copied_photo_orientation_name;
+      } while (1);
+
+      photo_orientation[
+        PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_NAME] =
+          response.copied_photo_orientation_name;
+      PhotoOrientationResource::AddRequestContainer add_requests(
+        1, photo_orientation);
+      PhotoOrientationResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.photo_orientation_resource_->Add(
+          add_requests, added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_photo_orientation_id = added_records.begin()->first;
+
+      std::string photo_orientation_path =
+        database_mediator.GetPhotoOrientationPath(
+          request.photo_orientation_id);
+      std::string photo_orientation_path_copied =
+        database_mediator.GetPhotoOrientationPath(
+          response.copied_photo_orientation_id);
+
+      if (!CopyDirectory(
+            boost::filesystem::path(photo_orientation_path),
+            boost::filesystem::path(photo_orientation_path_copied)))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_COPY_DIRECTORY;
+        break;
+      }
+
+      break;
+    }
+    return response.error_code;
+  }
+};
+
+//Request Copy Point Cloud
+struct RequestCopyPointCloud
+{
+  REQUEST_HEADER
+  Identifier point_cloud_id;
+};
+
+struct ResponseCopyPointCloud
+{
+  RESPONSE_HEADER
+  Identifier copied_point_cloud_id;
+  Identifier photo_orientation_id;
+  std::string copied_point_cloud_name;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestCopyPointCloud,
+                               ResponseCopyPointCloud>
+{
+  int operator() (const RequestCopyPointCloud& request,
+                  ResponseCopyPointCloud& response,
+                  DatabaseMediator& database_mediator)
+  {
+    while (1)
+    {
+      PointCloudResource::AddRequest point_cloud;
+      response.error_code =
+        database_mediator.point_cloud_resource_->GetById(
+          request.point_cloud_id, point_cloud);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.photo_orientation_id =
+        Identifier(point_cloud[
+          PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+      response.copied_point_cloud_name =
+        point_cloud[
+          PointCloudResource::POINT_CLOUD_FIELD_NAME].ToString();
+      response.copied_point_cloud_name += "_copied";
+      int repeat = 0;
+      std::string base_name = response.copied_point_cloud_name;
+      do
+      {
+        PointCloudResource::SelectedRecordContainer selected_records;
+        PointCloudResource::SelectMask select_mask;
+        select_mask.set();
+        database_mediator.point_cloud_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.point_cloud_resource_->fields_[
+                    PointCloudResource::POINT_CLOUD_FIELD_NAME],
+                  Value(response.copied_point_cloud_name)),
+          selected_records);
+        if (selected_records.empty())
+        {
+          break;
+        }
+        repeat++;
+        std::stringstream ss;
+        ss << base_name << "(" << repeat << ")";
+        ss >> response.copied_point_cloud_name;
+      } while (1);
+
+      point_cloud[
+        PointCloudResource::POINT_CLOUD_FIELD_NAME] =
+          response.copied_point_cloud_name;
+      PointCloudResource::AddRequestContainer add_requests(
+        1, point_cloud);
+      PointCloudResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.point_cloud_resource_->Add(
+          add_requests, added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_point_cloud_id = added_records.begin()->first;
+
+      std::string point_cloud_path =
+        database_mediator.GetPointCloudPath(
+          request.point_cloud_id);
+      std::string point_cloud_path_copied =
+        database_mediator.GetPointCloudPath(
+          response.copied_point_cloud_id);
+
+      if (!CopyDirectory(
+            boost::filesystem::path(point_cloud_path),
+            boost::filesystem::path(point_cloud_path_copied)))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_COPY_DIRECTORY;
+        break;
+      }
+
+      break;
+    }
+    return response.error_code;
+  }
+};
+
+//Request Copy Surface Model
+struct RequestCopySurfaceModel
+{
+  REQUEST_HEADER
+  Identifier surface_model_id;
+};
+
+struct ResponseCopySurfaceModel
+{
+  RESPONSE_HEADER
+  Identifier copied_surface_model_id;
+  Identifier point_cloud_id;
+  std::string copied_surface_model_name;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestCopySurfaceModel,
+                               ResponseCopySurfaceModel>
+{
+  int operator() (const RequestCopySurfaceModel& request,
+                  ResponseCopySurfaceModel& response,
+                  DatabaseMediator& database_mediator)
+  {
+    while (1)
+    {
+      SurfaceModelResource::AddRequest surface_model;
+      response.error_code =
+        database_mediator.surface_model_resource_->GetById(
+          request.surface_model_id, surface_model);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.point_cloud_id =
+        Identifier(surface_model[
+          SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt());
+      response.copied_surface_model_name =
+        surface_model[
+          SurfaceModelResource::SURFACE_MODEL_FIELD_NAME].ToString();
+      response.copied_surface_model_name += "_copied";
+      int repeat = 0;
+      std::string base_name = response.copied_surface_model_name;
+      do
+      {
+        SurfaceModelResource::SelectedRecordContainer selected_records;
+        SurfaceModelResource::SelectMask select_mask;
+        select_mask.set();
+        database_mediator.surface_model_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.surface_model_resource_->fields_[
+                    SurfaceModelResource::SURFACE_MODEL_FIELD_NAME],
+                  Value(response.copied_surface_model_name)),
+          selected_records);
+        if (selected_records.empty())
+        {
+          break;
+        }
+        repeat++;
+        std::stringstream ss;
+        ss << base_name << "(" << repeat << ")";
+        ss >> response.copied_surface_model_name;
+      } while (1);
+
+      surface_model[
+        SurfaceModelResource::SURFACE_MODEL_FIELD_NAME] =
+          response.copied_surface_model_name;
+      SurfaceModelResource::AddRequestContainer add_requests(
+        1, surface_model);
+      SurfaceModelResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.surface_model_resource_->Add(
+          add_requests, added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_surface_model_id = added_records.begin()->first;
+
+      std::string surface_model_path =
+        database_mediator.GetSurfaceModelPath(
+          request.surface_model_id);
+      std::string surface_model_path_copied =
+        database_mediator.GetSurfaceModelPath(
+          response.copied_surface_model_id);
+
+      if (!CopyDirectory(
+            boost::filesystem::path(surface_model_path),
+            boost::filesystem::path(surface_model_path_copied)))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_COPY_DIRECTORY;
+        break;
+      }
+
+      break;
+    }
+    return response.error_code;
+  }
+};
+
+//Request Copy Texture
+struct RequestCopyTexture
+{
+  REQUEST_HEADER
+  Identifier texture_id;
+};
+
+struct ResponseCopyTexture
+{
+  RESPONSE_HEADER
+  Identifier copied_texture_id;
+  Identifier surface_model_id;
+  std::string copied_texture_name;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestCopyTexture,
+                               ResponseCopyTexture>
+{
+  int operator() (const RequestCopyTexture& request,
+                  ResponseCopyTexture& response,
+                  DatabaseMediator& database_mediator)
+  {
+    while (1)
+    {
+      TextureResource::AddRequest texture;
+      response.error_code =
+        database_mediator.texture_resource_->GetById(
+          request.texture_id, texture);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.surface_model_id =
+        Identifier(texture[
+          TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID].ToInt());
+      response.copied_texture_name =
+        texture[
+          TextureResource::TEXTURE_FIELD_NAME].ToString();
+      response.copied_texture_name += "_copied";
+      int repeat = 0;
+      std::string base_name = response.copied_texture_name;
+      do
+      {
+        TextureResource::SelectedRecordContainer selected_records;
+        TextureResource::SelectMask select_mask;
+        select_mask.set();
+        database_mediator.texture_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.texture_resource_->fields_[
+                    TextureResource::TEXTURE_FIELD_NAME],
+                  Value(response.copied_texture_name)),
+          selected_records);
+        if (selected_records.empty())
+        {
+          break;
+        }
+        repeat++;
+        std::stringstream ss;
+        ss << base_name << "(" << repeat << ")";
+        ss >> response.copied_texture_name;
+      } while (1);
+
+      texture[
+        TextureResource::TEXTURE_FIELD_NAME] =
+          response.copied_texture_name;
+      TextureResource::AddRequestContainer add_requests(
+        1, texture);
+      TextureResource::AddedRecordContainer added_records;
+      response.error_code =
+        database_mediator.texture_resource_->Add(
+          add_requests, added_records);
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        break;
+      }
+      response.copied_texture_id = added_records.begin()->first;
+
+      std::string texture_path =
+        database_mediator.GetTexturePath(
+          request.texture_id);
+      std::string texture_path_copied =
+        database_mediator.GetTexturePath(
+          response.copied_texture_id);
+
+      if (!CopyDirectory(
+            boost::filesystem::path(texture_path),
+            boost::filesystem::path(texture_path_copied)))
+      {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_COPY_DIRECTORY;
+        break;
+      }
+
+      break;
+    }
     return response.error_code;
   }
 };
