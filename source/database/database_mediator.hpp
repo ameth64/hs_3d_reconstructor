@@ -81,6 +81,7 @@ public:
     REQUEST_GET_PHOTO_ORIENTATION,
     REQUEST_ADD_POINT_CLOUD,
     REQUEST_GET_POINT_CLOUD,
+    REQUEST_UPDATE_PHOTO_PATH,
     REQUEST_UPDATE_FEATURE_MATCH_FLAG,
     REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
     REQUEST_UPDATE_PHOTO_ORIENTATION_TRANSFORM,
@@ -214,6 +215,8 @@ struct RequestOpenDatabase
 struct ResponseOpenDatabase
 {
   RESPONSE_HEADER
+  PhotoResource::RecordContainer photo_records;
+  std::map<int,std::string> error_photo_id_paths;
 };
 
 template <>
@@ -225,6 +228,36 @@ struct DatabaseRequestHandler<RequestOpenDatabase, ResponseOpenDatabase>
   {
     response.error_code =
       database_mediator.Open(request.database_file);
+    if (response.error_code != Database::NO_ERROR)
+    {
+      return response.error_code;
+    }
+    //检查all photo是否存在
+    response.error_code = 
+      database_mediator.photo_resource_->GetAll(response.photo_records);
+    if(response.error_code != Database::NO_ERROR)
+    {
+      return response.error_code;
+    }
+    for(auto iter = response.photo_records.begin();
+             iter != response.photo_records.end();
+             ++iter)
+    {
+      std::string photo_path = iter->second[
+        db::PhotoResource::PHOTO_FIELD_PATH].ToString();
+      boost::filesystem::path path_file(photo_path);
+      if((!boost::filesystem::exists(path_file)) ||
+         (!boost::filesystem::is_regular_file(path_file)))
+      {
+        response.error_photo_id_paths[iter->first] = photo_path;
+      }
+    }
+    if(!response.error_photo_id_paths.empty())
+    {
+      //database_mediator.Close();
+      return Database::ERROR_PHOTO_PATH_NEEDED_MODIFY;
+    }
+
     return response.error_code;
   }
 };
@@ -329,6 +362,38 @@ struct DatabaseRequestHandler<RequestAddPhotogroup, ResponseAddPhotogroup>
       response.added_id = added_records.begin()->first;
     }
 
+    return response.error_code;
+  }
+};
+//Request Update Photos Path
+struct RequestUpdatePhotoPaths
+{
+  REQUEST_HEADER
+  std::map<int, std::string> photo_id_paths;
+};
+struct ResponseUpdatePhotoPaths
+{
+  RESPONSE_HEADER
+};
+template <>
+struct DatabaseRequestHandler < RequestUpdatePhotoPaths, ResponseUpdatePhotoPaths >
+{
+  int operator() (const RequestUpdatePhotoPaths& request,
+                  ResponseUpdatePhotoPaths& response,
+                  DatabaseMediator& database_mediator)
+  {
+    PhotoResource::UpdateRequestContainer update_requests;
+    PhotoResource::UpdateRequest update_request;
+    for (auto iter = request.photo_id_paths.begin();
+         iter != request.photo_id_paths.end(); ++iter)
+    {
+      update_request[PhotoResource::PHOTO_FIELD_PATH] = 
+        iter->second;
+      update_requests[iter->first] = update_request;
+    }
+    PhotoResource::UpdatedRecordContainer updated_records;
+    response.error_code =
+    database_mediator.photo_resource_->Update(update_requests,updated_records);
     return response.error_code;
   }
 };

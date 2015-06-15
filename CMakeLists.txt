@@ -60,6 +60,8 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/start_up_dialog.cpp"
   "source/gui/progress_dialog.cpp"
   "source/gui/default_longitude_latitude_convertor.cpp"
+  "source/gui/photo_import_check_widget.cpp"
+  "source/gui/photo_import_check_dialog.cpp"
   )
 
 if (MSVC)

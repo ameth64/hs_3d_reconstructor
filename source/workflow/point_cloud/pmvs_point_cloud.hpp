@@ -3,10 +3,12 @@
 
 #include <memory>
 #include <string>
+#include <map>
 
 #include "hs_3d_reconstructor/config/hs_config.hpp"
 
 #include "workflow/common/workflow_step.hpp"
+#include "hs_sfm/sfm_utility/camera_type.hpp"
 
 namespace hs
 {
@@ -22,6 +24,7 @@ public:
 
   void set_workspace_path(const std::string& workspace_path);
   void set_photo_orientation_path(const std::string& photo_orientation_path);
+  void set_intermediate_path(const std::string& intermediate_path);
   void set_s_number_of_threads(int s_number_of_threads);
   void set_s_pyramid_level(int s_pyramid_level);
   void set_s_patch_density(int s_patch_density);
@@ -37,6 +40,7 @@ public:
 
   const std::string photo_orientation_path() const;
   const std::string workspace_path() const;
+  const std::string intermediate_path() const;
   int s_number_of_threads() const;
   int s_pyramid_level() const;
   int s_patch_density() const;
@@ -50,9 +54,15 @@ public:
   int m_quality_threshold() const;
   int m_visibility_threshold() const;
 
+  std::map<int, std::string>& photo_paths();
+  const std::map<int, std::string>& photo_paths() const;
+
 private:
   std::string photo_orientation_path_; //Photo_orientation 工作路径
   std::string workspace_path_; //Point Cloud 工作路径
+  std::string intermediate_path_; //临时工作路径
+  //photo_paths_<photo_id, photo_path>
+  std::map<int, std::string> photo_paths_;
   //share_section
   int s_number_of_threads_; //线程数
   int s_pyramid_level_; //金字塔层数
@@ -78,11 +88,33 @@ class HS_EXPORT PointCloud : public WorkflowStep
 {
 public:
   typedef double Scalar;
+  typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
+  //IntrinsicParamsMap<photogroup_id, IntrinsicParams>
+  typedef std::map<int, IntrinsicParams> IntrinsicParamsMap;
+  typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
+  typedef ExtrinsicParams::Rotation Rotation;
+  typedef ExtrinsicParams::Position Position;
+  typedef ExtrinsicParams::Matrix33 Matrix33;
+  //ExtrinsicParamsMap<photo_id, ExtrinsicParams>
+  typedef std::map<int, ExtrinsicParams> ExtrinsicParamsMap;
+  typedef std::map<int, int> PhotoID_GroupID;
 
   PointCloud();
 
  protected:
   virtual int RunImplement(WorkflowStepConfig* config);
+
+private:
+  int PointCloud::CreateConfigXml(PointCloudConfig* config);
+  //读取内参数文件
+  int ReadIntrinsicFile(
+    const std::string& file_path,
+    IntrinsicParamsMap& ipm);
+  //读取外参数文件
+  int ReadExtrinsicFile(
+    const std::string& file_path,
+    ExtrinsicParamsMap& epm,
+    PhotoID_GroupID& pg);
 
 };
 

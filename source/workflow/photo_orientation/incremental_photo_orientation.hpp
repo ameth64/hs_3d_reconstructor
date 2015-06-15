@@ -138,10 +138,6 @@ private:
   int SaveTracks(WorkflowStepConfig* config,
                  const hs::sfm::TrackContainer& tracks,
                  const hs::sfm::ObjectIndexMap& track_point_map);
-  int ExportPointCloudInputXML(WorkflowStepConfig* config,
-                               IntrinsicParamsContainer& intrinsic_params_set,
-                               ExtrinsicParamsContainer& extrinsic_params_set,
-                               const hs::sfm::ObjectIndexMap& image_extrinsic_map);
 
 protected:
   virtual int RunImplement(WorkflowStepConfig* config);
