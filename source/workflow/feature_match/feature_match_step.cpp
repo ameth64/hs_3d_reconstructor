@@ -26,23 +26,20 @@ int FeatureMatchStep::GuideMatchesByPos(WorkflowStepConfig* config,
   std::map<size_t, FeatureMatchConfig::PosEntry> pos_entries =
     feature_match_config->pos_entries();
 
-  size_t number_of_images = feature_match_config->image_paths().size();
-  match_guide.resize(number_of_images);
-
   auto itr_pos = pos_entries.begin();
   auto itr_pos_end = pos_entries.end();
-  std::vector<size_t> index_map(number_of_images);
   cv::Mat index_data(int(pos_entries.size()), 3, CV_32FC1);
   double mean_x = 0.0;
   double mean_y = 0.0;
   double mean_z = 0.0;
   std::cout<<"Converting pos entries.\n";
+  std::map<size_t, size_t> pos_index_map;
   for (int i = 0; itr_pos != itr_pos_end; ++itr_pos, i++)
   {
     mean_x += itr_pos->second.x;
     mean_y += itr_pos->second.y;
     mean_z += itr_pos->second.z;
-    index_map[size_t(i)] = itr_pos->first;
+    pos_index_map[size_t(i)] = itr_pos->first;
   }
   mean_x /= double(pos_entries.size());
   mean_y /= double(pos_entries.size());
@@ -66,25 +63,34 @@ int FeatureMatchStep::GuideMatchesByPos(WorkflowStepConfig* config,
     index.build(index_data, cv::flann::KDTreeIndexParams(4));
   }
 
-  std::vector<size_t> images_no_pos;
+  const auto& image_paths = feature_match_config->image_paths();
+  size_t number_of_images = image_paths.size();
+
+  std::set<size_t> images_no_pos;
   std::cout<<"Finding images have no pos.\n";
-  for (size_t i = 0; i < number_of_images; i++)
+  for (const auto& image_path : image_paths)
   {
-    if (pos_entries.find(i) == pos_entries.end())
+    if (pos_entries.find(image_path.first) == pos_entries.end())
     {
-      images_no_pos.push_back(i);
+      images_no_pos.insert(image_path.first);
     }
   }
   std::cout<<images_no_pos.size()<<" images have no pos.\n";
 
   std::cout<<"Adding base matches!\n";
-  for (size_t i = 0; i < number_of_images; i++)
+  auto itr_image_path = image_paths.begin();
+  auto itr_image_path_end = image_paths.end();
+  for (; itr_image_path != itr_image_path_end; ++itr_image_path)
   {
-    if (number_of_images < KNN + 2 || pos_entries.find(i) == pos_entries.end())
+    size_t image_id = itr_image_path->first;
+    if (number_of_images < KNN + 2 ||
+        pos_entries.find(image_id) == pos_entries.end())
     {
-      for (size_t j = 0; j < i; j++)
+      auto itr_image_path_j = image_paths.begin();
+      for (; itr_image_path_j != itr_image_path; ++itr_image_path_j)
       {
-        match_guide[i].insert(j);
+        size_t image_id_j = itr_image_path_j->first;
+        match_guide[image_id].insert(image_id_j);
       }
     }
     else
@@ -94,9 +100,9 @@ int FeatureMatchStep::GuideMatchesByPos(WorkflowStepConfig* config,
       auto itr_image_no_pos_end = images_no_pos.end();
       for (; itr_image_no_pos != itr_image_no_pos_end; ++itr_image_no_pos)
       {
-        if (*itr_image_no_pos < i)
+        if (*itr_image_no_pos < image_id)
         {
-          match_guide[i].insert(*itr_image_no_pos);
+          match_guide[image_id].insert(*itr_image_no_pos);
         }
       }
     }
@@ -113,12 +119,13 @@ int FeatureMatchStep::GuideMatchesByPos(WorkflowStepConfig* config,
                     cv::flann::SearchParams(128));
     std::cout<<"Add knn neighbors.\n";
 
-    for (size_t i = 0; i < pos_entries.size(); i++)
+    auto itr_pos_entry = pos_entries.begin();
+    for (size_t i = 0; itr_pos_entry != pos_entries.end(); ++itr_pos_entry, ++i)
     {
-      size_t match = index_map[i];
+      size_t match = itr_pos_entry->first;
       for (size_t j = 0; j < KNN + 1; j++)
       {
-        size_t neighbor = index_map[indices.at<int>(int(i), int(j))];
+        size_t neighbor = pos_index_map[indices.at<int>(int(i), int(j))];
         if (neighbor != match)
         {
           match_guide[match].insert(neighbor);
@@ -128,19 +135,22 @@ int FeatureMatchStep::GuideMatchesByPos(WorkflowStepConfig* config,
 
     std::cout<<"Eliminate duplicate matches.\n";
     //ÌÞ³ýÖØ¸´µÄÆ¥Åä
-    for (size_t i = 0; i < number_of_images; i++)
+    for (auto& matches : match_guide)
     {
-      auto itr_match = match_guide[i].begin();
-      auto itr_match_end = match_guide[i].end();
+      size_t image_id_i = matches.first;
+      auto itr_match = matches.second.begin();
+      auto itr_match_end = matches.second.end();
       for (; itr_match != itr_match_end;)
       {
-        if (*itr_match > i)
+        size_t image_id_j = *itr_match;
+        if (image_id_j > image_id_i)
         {
-          if (match_guide[*itr_match].find(i) == match_guide[*itr_match].end())
+          if (match_guide[image_id_j].find(image_id_i) ==
+              match_guide[image_id_j].end())
           {
-            match_guide[*itr_match].insert(i);
+            match_guide[image_id_j].insert(image_id_i);
           }
-          itr_match = match_guide[i].erase(itr_match);
+          itr_match = match_guide[image_id_i].erase(itr_match);
         }
         else
         {
@@ -149,28 +159,6 @@ int FeatureMatchStep::GuideMatchesByPos(WorkflowStepConfig* config,
       }
     }
 
-#if 1
-    std::cout<<"Dumping match guide.\n";
-    MatchGuide match_guide_out = match_guide;
-    for (size_t i = 0; i < number_of_images; i++)
-    {
-      for (size_t j = i + 1; j < number_of_images; j++)
-      {
-        if (match_guide_out[j].find(i) != match_guide_out[j].end())
-        {
-          match_guide_out[i].insert(j);
-        }
-      }
-      std::cout<<"match_guide_out["<<i<<"]:\n";
-      auto itr_guide = match_guide_out[i].begin();
-      auto itr_guide_end = match_guide_out[i].end();
-      for (; itr_guide != itr_guide_end; ++itr_guide)
-      {
-        std::cout<<*itr_guide<<" ";
-      }
-      std::cout<<"\n";
-    }
-#endif
   }
 
   return 0;

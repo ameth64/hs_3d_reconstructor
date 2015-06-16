@@ -22,11 +22,10 @@ class HS_EXPORT FeatureMatchStep : public WorkflowStep
 {
 public:
   typedef hs::sfm::ImageKeys<double> Keyset;
-  typedef EIGEN_STD_VECTOR(Keyset) KeysetContainer;
+  typedef EIGEN_STD_MAP(size_t, Keyset) KeysetMap;
 
 protected:
-  typedef std::vector<std::set<size_t> > MatchGuide;
-  typedef std::vector<std::vector<size_t> > RandomAccessMatchGuide;
+  typedef std::map<size_t, std::set<size_t> > MatchGuide;
 
 public:
   FeatureMatchStep();

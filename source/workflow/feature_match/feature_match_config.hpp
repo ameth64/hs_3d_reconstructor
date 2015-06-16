@@ -31,26 +31,26 @@ public:
   FeatureMatchConfig();
 
 public:
-  void set_image_paths(const std::vector<std::string>& image_paths);
-  void set_key_paths(const std::vector<std::string>& key_paths);
-  void set_descripor_paths(const std::vector<std::string>& descriptor_paths);
+  void set_image_paths(const std::map<size_t, std::string>& image_paths);
+  void set_keysets_path(const std::string& keysets_path);
+  void set_descripor_paths(const std::map<size_t, std::string>& descriptor_paths);
   void set_matches_path(const std::string matches_path);
   void set_keys_limits(int keys_limits);
   void set_pos_entries(const std::map<size_t, PosEntry>& pos_entries);
   void set_number_of_threads(int number_of_threads);
 
-  const std::vector<std::string>& image_paths() const;
-  const std::vector<std::string>& key_paths() const;
-  const std::vector<std::string>& descriptor_paths() const;
+  const std::map<size_t, std::string>& image_paths() const;
+  const std::string& keysets_path() const;
+  const std::map<size_t, std::string>& descriptor_paths() const;
   const std::string& matches_path() const;
   int keys_limits() const;
   const std::map<size_t, PosEntry>& pos_entries() const;
   int number_of_threads() const;
 
 private:
-  std::vector<std::string> image_paths_;
-  std::vector<std::string> key_paths_;
-  std::vector<std::string> descriptor_paths_;
+  std::map<size_t, std::string> image_paths_;
+  std::string keysets_path_;
+  std::map<size_t, std::string> descriptor_paths_;
   std::string matches_path_;
   int keys_limits_;
   std::map<size_t, PosEntry> pos_entries_;

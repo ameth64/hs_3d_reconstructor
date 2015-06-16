@@ -15,8 +15,8 @@
 #include "hs_cartographics/cartographics_format/formatter_proj4.hpp"
 #include "hs_cartographics/cartographics_conversion/convertor.hpp"
 
-#include "workflow/feature_match//openmvg_feature_match.hpp"
-//#include "workflow/feature_match/opencv_feature_match.hpp"
+//#include "workflow/feature_match//openmvg_feature_match.hpp"
+#include "workflow/feature_match/opencv_feature_match.hpp"
 
 #include "gui/blocks_pane.hpp"
 #include "gui/block_photos_select_dialog.hpp"
@@ -366,6 +366,27 @@ void BlocksPane::Response(int request_flag, void* response)
         break;
       }
 
+      break;
+    }
+  case db::DatabaseMediator::REQUEST_COPY_PHOTO_ORIENTATION:
+    {
+      db::ResponseCopyPhotoOrientation* response_copy_photo_orientation =
+        static_cast<db::ResponseCopyPhotoOrientation*>(response);
+      QString copied_photo_orientation_name =
+        QString::fromLocal8Bit(
+          response_copy_photo_orientation->
+            copied_photo_orientation_name.c_str());
+      uint feature_match_id =
+        uint(response_copy_photo_orientation->feature_match_id);
+      uint photo_orientation_id =
+        uint(response_copy_photo_orientation->copied_photo_orientation_id);
+      blocks_tree_widget_->AddPhotoOrientation(
+        feature_match_id, photo_orientation_id, copied_photo_orientation_name);
+
+      QTreeWidgetItem* item =
+        blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
+      ActivatePhotoOrientationItem(item);
+      emit PhotoOrientationActivated(activated_photo_orientation_id_);
       break;
     }
   }
@@ -1333,6 +1354,7 @@ int BlocksPane::AddFeatureMatchStep(
     feature_match_step_entry.id = uint(feature_match_id);
     feature_match_step_entry.config = feature_match_config;
     workflow_config.step_queue.push(feature_match_step_entry);
+
     return 0;
   }
   else
@@ -1539,11 +1561,6 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
       Identifier(
         response_feature_match.record[
           db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
-    std::string feature_match_path =
-      ((MainWindow*)parent())->database_mediator().GetFeatureMatchPath(
-        request_feature_match.id);
-    std::string matches_path =
-      feature_match_path + "matches.txt";
 
     hs::recon::db::RequestGetPhotosInBlock request_get_photos_in_block;
     hs::recon::db::ResponseGetPhotosInBlock response_get_photos_in_block;
@@ -1559,24 +1576,22 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
     }
     auto itr_photo = response_get_photos_in_block.records.begin();
     auto itr_photo_end = response_get_photos_in_block.records.end();
-    std::vector<std::string> image_paths;
-    std::vector<std::string> key_paths;
-    std::vector<std::string> descriptor_paths;
+    std::map<size_t, std::string> image_paths;
+    std::map<size_t, std::string> descriptor_paths;
     std::map<size_t, PosEntry> pos_entries;
     double invalid_value = -1e-100;
     CoordinateSystem coordinate_system;
     for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, i++)
     {
-      image_paths.push_back(
-        itr_photo->second[db::PhotoResource::PHOTO_FIELD_PATH].ToString());
-      key_paths.push_back(
-        boost::str(boost::format("%1%%2%.key") %
-                   feature_match_path %
-                   itr_photo->first));
-      descriptor_paths.push_back(
+      size_t image_id = size_t(itr_photo->first);
+      image_paths.insert(std::make_pair(
+        image_id,
+        itr_photo->second[db::PhotoResource::PHOTO_FIELD_PATH].ToString()));
+      descriptor_paths.insert(std::make_pair(
+        image_id,
         boost::str(boost::format("%1%%2%.desc") %
                    workflow_intermediate_directory %
-                   itr_photo->first));
+                   itr_photo->first)));
       PosEntry pos_entry;
       pos_entry.x =
         itr_photo->second[db::PhotoResource::PHOTO_FIELD_POS_X].ToFloat();
@@ -1594,7 +1609,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
           pos_entry.y > invalid_value &&
           pos_entry.z > invalid_value)
       {
-        pos_entries[i] = pos_entry;
+        pos_entries.insert(std::make_pair(image_id, pos_entry));
       }
     }
 
@@ -1644,16 +1659,18 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
       std::static_pointer_cast<workflow::FeatureMatchConfig>(
         workflow_step_entry.config);
     feature_match_config->set_image_paths(image_paths);
-    feature_match_config->set_key_paths(key_paths);
+    feature_match_config->set_keysets_path(
+      response_feature_match.keysets_path);
     feature_match_config->set_descripor_paths(descriptor_paths);
     feature_match_config->set_pos_entries(pos_entries);
-    feature_match_config->set_matches_path(matches_path);
+    feature_match_config->set_matches_path(
+      response_feature_match.matches_path);
     feature_match_config->set_number_of_threads(int(number_of_threads));
 
     break;
   }
-  //return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
-  return WorkflowStepPtr(new workflow::OpenMVGFeatureMatch);
+  return WorkflowStepPtr(new workflow::OpenCVFeatureMatch);
+  //return WorkflowStepPtr(new workflow::OpenMVGFeatureMatch);
 }
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
@@ -1715,12 +1732,6 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       Identifier(
         response_feature_match.record[
           db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
-    //TODO:Need to modify to portable.
-    std::string feature_match_path =
-      ((MainWindow*)parent())->database_mediator().GetFeatureMatchPath(
-        request_feature_match.id);
-    std::string matches_path =
-      feature_match_path + "matches.txt";
 
     hs::recon::db::RequestGetPhotosInBlock request_get_photos_in_block;
     hs::recon::db::ResponseGetPhotosInBlock response_get_photos_in_block;
@@ -1738,7 +1749,6 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
     auto itr_photo_end = response_get_photos_in_block.records.end();
     size_t number_of_photos = response_get_photos_in_block.records.size();
     std::vector<std::string> image_paths;
-    std::vector<std::string> key_paths;
     std::vector<int> image_ids;
     hs::sfm::ObjectIndexMap image_intrinsic_map(number_of_photos);
     IntrinsicParamsContainer intrinsic_params_set;
@@ -1750,10 +1760,6 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
     {
       image_paths.push_back(
         itr_photo->second[db::PhotoResource::PHOTO_FIELD_PATH].ToString());
-      key_paths.push_back(
-        boost::str(boost::format("%1%%2%.key") %
-                   feature_match_path %
-                   itr_photo->first));
       image_ids.push_back(int(itr_photo->first));
 
       PosEntry pos_entry;
@@ -1885,9 +1891,11 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       std::static_pointer_cast<workflow::PhotoOrientationConfig>(
         workflow_step_entry.config);
     photo_orientation_config->set_image_intrinsic_map(image_intrinsic_map);
-    photo_orientation_config->set_matches_path(matches_path);
+    photo_orientation_config->set_matches_path(
+      response_feature_match.matches_path);
     photo_orientation_config->set_image_paths(image_paths);
-    photo_orientation_config->set_key_paths(key_paths);
+    photo_orientation_config->set_keysets_path(
+      response_feature_match.keysets_path);
     photo_orientation_config->set_image_ids(image_ids);
     photo_orientation_config->set_intrinsic_params_set(intrinsic_params_set);
     photo_orientation_config->set_intrinsic_ids(intrinsic_ids);
@@ -1957,8 +1965,20 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
     std::string point_cloud_path =
       ((MainWindow*)parent())->database_mediator().GetPointCloudPath(
         request_point_cloud.id);
-    std::string photo_orientation_path =
-      response_point_cloud.photo_orientation_path;
+
+    //获取照片定向数据
+    hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+    hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+    request_photo_orientation.id =
+      db::Identifier(response_point_cloud.record[
+        db::PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+      request_photo_orientation, response_photo_orientation, false);
+    if (response_photo_orientation.error_code != db::DatabaseMediator::NO_ERROR)
+    {
+      break;
+    }
 
     QSettings settings;
     QString number_of_threads_key = tr("number_of_threads");
@@ -1966,7 +1986,14 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
       QVariant(uint(1))).toUInt();
 
     point_cloud_config->set_workspace_path(point_cloud_path);
-    point_cloud_config->set_photo_orientation_path(photo_orientation_path);
+    point_cloud_config->set_photo_orientation_path(
+      response_photo_orientation.workspace_path);
+    point_cloud_config->set_intrinsic_path(
+      response_photo_orientation.intrinsic_path);
+    point_cloud_config->set_extrinsic_path(
+      response_photo_orientation.extrinsic_path);
+    point_cloud_config->set_sparse_point_cloud_path(
+      response_photo_orientation.point_cloud_path);
     point_cloud_config->set_intermediate_path(workflow_intermediate_directory);
     point_cloud_config->set_s_number_of_threads(number_of_threads);
     break;
@@ -2025,7 +2052,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
     mesh_surface_config->set_xml_path(workflow_intermediate_directory + "surface_model_input.xml");
     mesh_surface_config->set_core_use(number_of_threads);
     mesh_surface_config->set_output_dir(surface_model_path);
-    mesh_surface_config->set_point_cloud_path(point_cloud_path + "dense_pointcloud.ply");
+    mesh_surface_config->set_point_cloud_path(point_cloud_path + "dense_pointcloud.bin");
     break;
   }
 

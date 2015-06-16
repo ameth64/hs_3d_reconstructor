@@ -13,17 +13,17 @@ FeatureMatchConfig::FeatureMatchConfig()
 }
 
 void FeatureMatchConfig::set_image_paths(
-  const std::vector<std::string>& image_paths)
+  const std::map<size_t, std::string>& image_paths)
 {
   image_paths_ = image_paths;
 }
-void FeatureMatchConfig::set_key_paths(
-  const std::vector<std::string>& key_paths)
+void FeatureMatchConfig::set_keysets_path(
+  const std::string& keysets_path)
 {
-  key_paths_ = key_paths;
+  keysets_path_ = keysets_path;
 }
 void FeatureMatchConfig::set_descripor_paths(
-  const std::vector<std::string>& descriptor_paths)
+  const std::map<size_t, std::string>& descriptor_paths)
 {
   descriptor_paths_ = descriptor_paths;
 }
@@ -45,15 +45,15 @@ void FeatureMatchConfig::set_number_of_threads(int number_of_threads)
   number_of_threads_ = number_of_threads;
 }
 
-const std::vector<std::string>& FeatureMatchConfig::image_paths() const
+const std::map<size_t, std::string>& FeatureMatchConfig::image_paths() const
 {
   return image_paths_;
 }
-const std::vector<std::string>& FeatureMatchConfig::key_paths() const
+const std::string& FeatureMatchConfig::keysets_path() const
 {
-  return key_paths_;
+  return keysets_path_;
 }
-const std::vector<std::string>& FeatureMatchConfig::descriptor_paths() const
+const std::map<size_t, std::string>& FeatureMatchConfig::descriptor_paths() const
 {
   return descriptor_paths_;
 }

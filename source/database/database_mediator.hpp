@@ -9,6 +9,9 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 
+#include <cereal/archives/portable_binary.hpp>
+
+#include "hs_math/geometry/rotation.hpp"
 #include "hs_image_io/whole_io/image_io.hpp"
 
 #include "hs_3d_reconstructor/config/hs_config.hpp"
@@ -961,6 +964,9 @@ struct ResponseGetFeatureMatch
 {
   RESPONSE_HEADER
   FeatureMatchResource::Record record;
+  std::string feature_match_path;
+  std::string keysets_path;
+  std::string matches_path;
 };
 
 template <>
@@ -973,6 +979,10 @@ struct DatabaseRequestHandler<RequestGetFeatureMatch, ResponseGetFeatureMatch>
     response.error_code =
       database_mediator.feature_match_resource_->GetById(request.id,
                                                          response.record);
+    response.feature_match_path =
+      database_mediator.GetFeatureMatchPath(request.id);
+    response.keysets_path = response.feature_match_path + "keysets.bin";
+    response.matches_path = response.feature_match_path + "matches.bin";
     return response.error_code;
   }
 };
@@ -1102,22 +1112,6 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
 
     if (response.error_code == DatabaseMediator::NO_ERROR)
     {
-      std::string similar_path = photo_orientation_path.string() +
-                                 "/similar_transform.txt";
-      std::ofstream similar_file(similar_path);
-      if (similar_file)
-      {
-        similar_file<<"1\n";
-        similar_file<<"0\n";
-        similar_file<<"0\n";
-        similar_file<<"0\n";
-        similar_file<<"0\n";
-        similar_file<<"0\n";
-        similar_file<<"0";
-
-        similar_file.close();
-      }
-
       response.photo_orientation_id = photo_orientation_id;;
       response.feature_match_id = request.feature_match_id;
       response.name = photo_orientation_name;
@@ -1163,15 +1157,15 @@ struct DatabaseRequestHandler<RequestGetPhotoOrientation,
       database_mediator.GetPhotoOrientationPath(request.id);
 
     response.intrinsic_path =
-      photo_orientation_path + "intrinsic.txt";
+      photo_orientation_path + "intrinsic.bin";
     response.extrinsic_path =
-      photo_orientation_path + "extrinsic.txt";
+      photo_orientation_path + "extrinsic.bin";
     response.point_cloud_path =
-      photo_orientation_path + "sparse_point_cloud.txt";
+      photo_orientation_path + "sparse_point_cloud.bin";
     response.tracks_path =
       photo_orientation_path + "tracks.bin";
     response.similar_transform_path =
-      photo_orientation_path + "similar_transform.txt";
+      photo_orientation_path + "similar_transform.bin";
     response.workspace_path = photo_orientation_path;
     return response.error_code;
   }
@@ -1269,7 +1263,6 @@ struct ResponseGetPointCloud
   RESPONSE_HEADER
     typedef Database::Identifier Identifier;
   PointCloudResource::Record record;
-  std::string photo_orientation_path;
   std::string dense_pointcloud_path;
 };
 
@@ -1290,21 +1283,7 @@ struct DatabaseRequestHandler<RequestGetPointCloud,
 
     response.dense_pointcloud_path = point_cloud_path + "dense_pointcloud.ply";
 
-    //获取Photo Orientation id
-    int photo_orientation_id = 
-      response.record[
-        PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt();
-
-    PhotoOrientationResource::Record photo_orientation_record;
-    ResponseGetPhotoOrientation photo_orientation_response;
-    photo_orientation_response.error_code = 
-      database_mediator.photo_orientation_resource_->GetById(
-        photo_orientation_id,photo_orientation_record);
-
-    response.photo_orientation_path =
-      database_mediator.GetPhotoOrientationPath(photo_orientation_id);
-
-   return response.error_code;
+    return response.error_code;
   }
 };
 
@@ -1411,6 +1390,9 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationTransform,
                   ResponseUpdatePhotoOrientationTransform& response,
                   DatabaseMediator& database_mediator)
   {
+    typedef hs::math::geometry::Rotation3D<double> Rotation;
+    typedef EIGEN_VECTOR(double, 3) Vector3;
+
     PhotoOrientationResource::Record record;
     response.error_code =
       database_mediator.photo_orientation_resource_->GetById(request.id,
@@ -1421,33 +1403,30 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationTransform,
       std::string photo_orientation_path =
         database_mediator.GetPhotoOrientationPath(request.id);
       std::string similar_transform_path =
-        photo_orientation_path + "similar_transform.txt";
+        photo_orientation_path + "similar_transform.bin";
 
-      std::ofstream similar_file(similar_transform_path);
-      if (similar_file)
+      double similar_scale = request.scale;
+      Rotation similar_rotation;
+      similar_rotation[0] = double(request.rotation_x);
+      similar_rotation[1] = double(request.rotation_y);
+      similar_rotation[2] = double(request.rotation_z);
+      Vector3 similar_translate;
+      similar_translate << double(request.translate_x),
+                           double(request.translate_y),
+                           double(request.translate_z);
       {
-        similar_file.setf(std::ios::fixed);
-        similar_file<<std::setprecision(10);
-        similar_file<<request.scale<<"\n";
-        similar_file<<request.rotation_x<<"\n";
-        similar_file<<request.rotation_y<<"\n";
-        similar_file<<request.rotation_z<<"\n";
-        similar_file<<request.translate_x<<"\n";
-        similar_file<<request.translate_y<<"\n";
-        similar_file<<request.translate_z;
+        std::ofstream similar_file(similar_transform_path, std::ios::binary);
+        cereal::PortableBinaryOutputArchive archive(similar_file);
+        archive(similar_scale, similar_rotation, similar_translate);
+      }
 
-        response.scale = request.scale;
-        response.rotation_x = request.rotation_x;
-        response.rotation_y = request.rotation_y;
-        response.rotation_z = request.rotation_z;
-        response.translate_x = request.translate_x;
-        response.translate_y = request.translate_y;
-        response.translate_z = request.translate_z;
-      }
-      else
-      {
-        response.error_code = -1;
-      }
+      response.scale = request.scale;
+      response.rotation_x = request.rotation_x;
+      response.rotation_y = request.rotation_y;
+      response.rotation_z = request.rotation_z;
+      response.translate_x = request.translate_x;
+      response.translate_y = request.translate_y;
+      response.translate_z = request.translate_z;
     }
 
     return response.error_code;
@@ -2704,6 +2683,42 @@ struct DatabaseRequestHandler <RequestCopyPhotoOrientation,
       {
         response.error_code = DatabaseMediator::ERROR_FAIL_TO_COPY_DIRECTORY;
         break;
+      }
+
+      //拷贝所有照片测量
+      {
+        db::PhotoMeasureResource::SelectMask select_mask;
+        select_mask.set();
+        db::PhotoMeasureResource::SelectedRecordContainer selected_records;
+        database_mediator.photo_measure_resource_->Select(
+          select_mask,
+          EqualTo(database_mediator.photo_measure_resource_->fields_[
+                    db::PhotoMeasureResource::
+                      PHOTO_MEASURE_FIELD_PHOTO_ORIENTATION_ID],
+                   Value(int(request.photo_orientation_id))),
+          selected_records);
+
+        db::PhotoMeasureResource::AddRequestContainer add_requests;
+        db::PhotoMeasureResource::AddedRecordContainer added_records;
+        for (auto& record : selected_records)
+        {
+          db::PhotoMeasureResource::AddRequest add_request;
+          for (int field_id =
+                 db::PhotoMeasureResource::PHOTO_MEASURE_FIELD_ID + 1;
+               field_id <
+                 db::PhotoMeasureResource::NUMBER_OF_PHOTO_MEASURE_FIELDS;
+               field_id++)
+          {
+            add_request[field_id] = record.second[field_id];
+          }
+          add_request[
+            db::PhotoMeasureResource::
+              PHOTO_MEASURE_FIELD_PHOTO_ORIENTATION_ID] =
+            int(response.copied_photo_orientation_id);
+          add_requests.push_back(add_request);
+        }
+        database_mediator.photo_measure_resource_->Add(
+          add_requests, added_records);
       }
 
       break;

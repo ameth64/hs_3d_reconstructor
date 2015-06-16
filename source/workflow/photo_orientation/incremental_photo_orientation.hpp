@@ -38,7 +38,7 @@ public:
     const hs::sfm::ObjectIndexMap& image_intrinsic_map);
   void set_matches_path(const std::string& matches_path);
   void set_image_paths(const std::vector<std::string>& image_paths);
-  void set_key_paths(const std::vector<std::string>& key_paths);
+  void set_keysets_path(const std::string& keysets_path);
   void set_image_ids(const std::vector<int>& image_ids);
   void set_intrinsic_params_set(
     const IntrinsicParamsContainer& intrinsic_params_set);
@@ -56,7 +56,7 @@ public:
   const hs::sfm::ObjectIndexMap& image_intrinsic_map() const;
   const std::string& matches_path() const;
   const std::vector<std::string>& image_paths() const;
-  const std::vector<std::string>& key_paths() const;
+  const std::string& keysets_path() const;
   const std::vector<int>& image_ids() const;
   const IntrinsicParamsContainer& intrinsic_params_set() const;
   const std::vector<int>& intrinsic_ids() const;
@@ -74,7 +74,7 @@ private:
   hs::sfm::ObjectIndexMap image_intrinsic_map_;
   std::string matches_path_;
   std::vector<std::string> image_paths_;
-  std::vector<std::string> key_paths_;
+  std::string keysets_path_;
   std::vector<int> image_ids_;
   IntrinsicParamsContainer intrinsic_params_set_;
   std::vector<int> intrinsic_ids_;

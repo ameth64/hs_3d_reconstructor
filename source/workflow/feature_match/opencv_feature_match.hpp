@@ -18,24 +18,24 @@ class HS_EXPORT OpenCVFeatureMatch : public FeatureMatchStep
 {
 public:
   typedef FeatureMatchStep::Keyset Keyset;
-  typedef FeatureMatchStep::KeysetContainer KeysetContainer;
+  typedef FeatureMatchStep::KeysetMap KeysetMap;
 protected:
   typedef FeatureMatchStep::MatchGuide MatchGuide;
-  typedef FeatureMatchStep::RandomAccessMatchGuide RandomAccessMatchGuide;
 public:
   OpenCVFeatureMatch();
 
 private:
-  int DetectFeature(WorkflowStepConfig* config, KeysetContainer& keysets);
+  int DetectFeature(WorkflowStepConfig* config, KeysetMap& keysets);
   int MatchFeatures(WorkflowStepConfig* config,
+                    const KeysetMap& keysets,
                     const MatchGuide& match_guide,
                     hs::sfm::MatchContainer& matches);
   int FilterMatches(WorkflowStepConfig* config,
-                    const KeysetContainer& keysets,
+                    const KeysetMap& keysets,
                     const hs::sfm::MatchContainer& matches_initial,
                     hs::sfm::MatchContainer& matches_filtered);
 private:
-  static cv::Mat LoadDescriptors(const std::string& key_path,
+  static cv::Mat LoadDescriptors(size_t number_of_keys,
                                  const std::string& descriptor_path);
 
 protected:

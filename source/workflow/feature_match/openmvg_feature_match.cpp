@@ -1,8 +1,9 @@
 #include "openmvg_feature_match.hpp"
 
-#include "hs_sfm/sfm_file_io/matches_saver.hpp"
-#include "hs_sfm/sfm_file_io/keyset_saver.hpp"
 #include "hs_sfm/fundamental/linear_8_points_ransac_refiner.hpp"
+
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/portable_binary.hpp>
 
 #include <openMVG/image/image.hpp>
 #include <openMVG/features/features.hpp>
@@ -31,20 +32,17 @@ int OpenMVGFeatureMatch::DetectFeature(WorkflowStepConfig* config,
   FeatureMatchConfig* feature_match_config =
     static_cast<FeatureMatchConfig*>(config);
   size_t number_of_images = feature_match_config->image_paths().size();
-  if (feature_match_config->key_paths().size() != number_of_images ||
-      feature_match_config->descriptor_paths().size() != number_of_images)
+  if (feature_match_config->descriptor_paths().size() != number_of_images)
   {
     return -1;
   }
   auto itr_image_path = feature_match_config->image_paths().begin();
   auto itr_image_path_end = feature_match_config->image_paths().end();
-  auto itr_key_path = feature_match_config->key_paths().begin();
-  auto itr_key_path_end = feature_match_config->key_paths().end();
   auto itr_descriptor_path = feature_match_config->descriptor_paths().begin();
   auto itr_descriptor_path_end =
     feature_match_config->descriptor_paths().end();
   for (size_t i = 0; itr_image_path != itr_image_path_end;
-       ++itr_image_path, ++itr_key_path, ++itr_descriptor_path, i++)
+       ++itr_image_path, ++itr_descriptor_path, i++)
   {
     if (!progress_manager_.CheckKeepWorking())
     {
@@ -75,13 +73,19 @@ int OpenMVGFeatureMatch::DetectFeature(WorkflowStepConfig* config,
                    double(key[1]);
     }
 
-    hs::sfm::fileio::KeysetSaver<double> keyset_saver;
-    keyset_saver(*itr_key_path, keyset);
     keysets.push_back(keyset);
 
     progress_manager_.SetCurrentSubProgressCompleteRatio(
       float(i + 1) / float(number_of_images));
   }
+
+  {
+    std::ofstream keysets_file(feature_match_config->keysets_path(),
+                               std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(keysets_file);
+    archive(keysets);
+  }
+
   return 0;
 }
 
@@ -342,8 +346,12 @@ int OpenMVGFeatureMatch::RunImplement(WorkflowStepConfig* config)
   progress_manager_.AddSubProgress(0.01f);
   FeatureMatchConfig* feature_match_config =
     static_cast<FeatureMatchConfig*>(config);
-  hs::sfm::fileio::MatchesSaver saver;
-  result = saver(feature_match_config->matches_path(), matches_filtered);
+  {
+    std::ofstream matches_file(feature_match_config->matches_path(),
+                               std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(matches_file);
+    archive(matches_filtered);
+  }
   progress_manager_.FinishCurrentSubProgress();
 
   return result;

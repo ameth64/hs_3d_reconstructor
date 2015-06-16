@@ -7,13 +7,17 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/typeof/typeof.hpp> 
 
-#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/archives/portable_binary.hpp>
 
 #include "hs_sfm/sfm_file_io/keyset_loader.hpp"
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
 #include "hs_image_io/whole_io/image_data.hpp"
 #include "hs_image_io/whole_io/image_io.hpp"
+#include "hs_graphics/graphics_utility/pointcloud_data.hpp"
 
 #include "workflow/photo_orientation/incremental_photo_orientation.hpp"
 
@@ -44,10 +48,10 @@ void PhotoOrientationConfig::set_image_paths(
 {
   image_paths_ = image_paths;
 }
-void PhotoOrientationConfig::set_key_paths(
-  const std::vector<std::string>& key_paths)
+void PhotoOrientationConfig::set_keysets_path(
+  const std::string& keysets_path)
 {
-  key_paths_ = key_paths;
+  keysets_path_ = keysets_path;
 }
 void PhotoOrientationConfig::set_image_ids(
   const std::vector<int>& image_ids)
@@ -118,9 +122,9 @@ const std::vector<std::string>& PhotoOrientationConfig::image_paths() const
 {
   return image_paths_;
 }
-const std::vector<std::string>& PhotoOrientationConfig::key_paths() const
+const std::string& PhotoOrientationConfig::keysets_path() const
 {
-  return key_paths_;
+  return keysets_path_;
 }
 const std::vector<int>& PhotoOrientationConfig::image_ids() const
 {
@@ -177,23 +181,25 @@ IncrementalPhotoOrientation::IncrementalPhotoOrientation()
 int IncrementalPhotoOrientation::LoadKeysets(
   WorkflowStepConfig* config, KeysetContainer& keysets)
 {
+  typedef EIGEN_STD_MAP(size_t, Keyset) KeysetMap;
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
 
-  const std::vector<std::string>& key_paths =
-    photo_orientation_config->key_paths();
+  const std::string& keysets_path = photo_orientation_config->keysets_path();
 
   keysets.clear();
-  hs::sfm::fileio::KeysetLoader<Scalar> loader;
-  for (size_t i = 0; i < key_paths.size(); i++)
+  KeysetMap keyset_map;
   {
-    Keyset keyset;
-    if (loader(key_paths[i], keyset) != 0)
-    {
-      return -1;
-    }
-    keysets.push_back(keyset);
+    std::ifstream keysets_file(keysets_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(keysets_file);
+    archive(keyset_map);
   }
+
+  for (const auto& keyset : keyset_map)
+  {
+    keysets.push_back(keyset.second);
+  }
+
   return 0;
 }
 
@@ -205,9 +211,30 @@ int IncrementalPhotoOrientation::LoadMatches(
 
   const std::string& matches_path =
     photo_orientation_config->matches_path();
+  const auto& image_ids = photo_orientation_config->image_ids();
+  std::map<size_t, size_t> image_id_map;
+  for (size_t i = 0; i < image_ids.size(); i++)
+  {
+    image_id_map[size_t(image_ids[i])] = i;
+  }
 
-  hs::sfm::fileio::MatchesLoader loader;
-  return loader(matches_path, matches);
+  matches.clear();
+  hs::sfm::MatchContainer matches_feature_match;
+  {
+    std::ifstream matches_file(matches_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(matches_file);
+    archive(matches_feature_match);
+  }
+
+  for (const auto& image_pair : matches_feature_match)
+  {
+    size_t image_id_first = image_id_map[image_pair.first.first];
+    size_t image_id_second = image_id_map[image_pair.first.second];
+    matches[std::make_pair(image_id_first, image_id_second)] =
+      image_pair.second;
+  }
+
+  return 0;
 
 }
 
@@ -286,35 +313,20 @@ int IncrementalPhotoOrientation::SimilarTransformByPosEntries(
 
   Estimator estimator;
   Rotation similar_rotation;
-  Translate similar_translate;
-  Scalar similar_scale;
+  Translate similar_translate = Translate::Zero();
+  Scalar similar_scale = Scalar(1);
   int result = estimator(points_extrinsic, points_pos,
                          similar_rotation,
                          similar_translate,
                          similar_scale);
 
-  if (result == 0)
+  //if (result == 0)
   {
     std::string similar_path =
       photo_orientation_config->similar_transform_path();
-    std::ofstream similar_file(similar_path);
-    if (!similar_file)
-    {
-      result = -1;
-    }
-    else
-    {
-      similar_file.setf(std::ios::fixed);
-      similar_file<<std::setprecision(10);
-      similar_file<<similar_scale<<"\n";
-      similar_file<<similar_rotation[0]<<"\n";
-      similar_file<<similar_rotation[1]<<"\n";
-      similar_file<<similar_rotation[2]<<"\n";
-      similar_file<<similar_translate[0]<<"\n";
-      similar_file<<similar_translate[1]<<"\n";
-      similar_file<<similar_translate[2];
-      similar_file.close();
-    }
+    std::ofstream similar_file(similar_path, std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(similar_file);
+    archive(similar_scale, similar_rotation, similar_translate);
   }
 
   return result;
@@ -324,6 +336,7 @@ int IncrementalPhotoOrientation::SaveIntrinsics(
   WorkflowStepConfig* config,
   const IntrinsicParamsContainer& intrinsic_params_set)
 {
+  typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
 
@@ -332,29 +345,17 @@ int IncrementalPhotoOrientation::SaveIntrinsics(
   const std::vector<int>& intrinsic_ids =
     photo_orientation_config->intrinsic_ids();
 
-  std::ofstream intrinsic_file(intrinsic_path.c_str());
-  if (!intrinsic_file)
-  {
-    return -1;
-  }
-  intrinsic_file.setf(std::ios::fixed);
-  intrinsic_file<<std::setprecision(8);
-
+  IntrinsicParamsMap intrinsic_map;
   for (size_t i = 0; i < intrinsic_params_set.size(); i++)
   {
-    const IntrinsicParams& intrinsic_param = intrinsic_params_set[i];
-    int intrinsic_id = intrinsic_ids[i];
-    intrinsic_file << intrinsic_id << " "
-                   << intrinsic_param.focal_length() << " "
-                   << intrinsic_param.skew() << " "
-                   << intrinsic_param.principal_point_x() << " "
-                   << intrinsic_param.principal_point_y() << " "
-                   << intrinsic_param.pixel_ratio() << " "
-                   << intrinsic_param.k1() << " "
-                   << intrinsic_param.k2() << " "
-                   << intrinsic_param.k3() << " "
-                   << intrinsic_param.d1() << " "
-                   << intrinsic_param.d2() << "\n";
+    intrinsic_map.insert(std::make_pair(size_t(intrinsic_ids[i]),
+                                        intrinsic_params_set[i]));
+  }
+
+  {
+    std::ofstream intrinsic_file(intrinsic_path, std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(intrinsic_file);
+    archive(intrinsic_map);
   }
 
   return 0;
@@ -365,6 +366,9 @@ int IncrementalPhotoOrientation::SaveExtrinsics(
   const ExtrinsicParamsContainer& extrinsic_params_set,
   const hs::sfm::ObjectIndexMap& image_extrinsic_map)
 {
+  typedef std::pair<size_t, size_t> ExtrinsicIndex;
+  typedef EIGEN_STD_MAP(ExtrinsicIndex, ExtrinsicParams)
+          ExtrinsicParamsMap;
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
 
@@ -377,34 +381,25 @@ int IncrementalPhotoOrientation::SaveExtrinsics(
   const std::vector<int>& intrinsic_ids =
     photo_orientation_config->intrinsic_ids();
 
-  std::ofstream extrinsic_file(extrinsic_path.c_str());
-  if (!extrinsic_file)
-  {
-    return -1;
-  }
-  extrinsic_file.setf(std::ios::fixed);
-  extrinsic_file<<std::setprecision(8);
+  ExtrinsicParamsMap extrinsic_map;
 
   for (size_t i = 0; i < image_ids.size(); i++)
   {
     int image_id = image_ids[i];
-    int intrinsic_id = intrinsic_ids[image_intrinsic_map[i]];
     if (image_extrinsic_map.IsValid(i))
     {
-      int extrinsic_id = int(image_extrinsic_map[i]);
-      const ExtrinsicParams& extrinsic_params =
-        extrinsic_params_set[extrinsic_id];;
-      const ExtrinsicParams::Position& position = extrinsic_params.position();
-      const ExtrinsicParams::Rotation& rotation = extrinsic_params.rotation();
+      size_t extrinsic_id = image_extrinsic_map[i];
+      int intrinsic_id = intrinsic_ids[image_intrinsic_map[i]];
+      extrinsic_map.insert(std::make_pair(std::make_pair(size_t(image_id),
+                                                         size_t(intrinsic_id)),
+                                          extrinsic_params_set[extrinsic_id]));
+    }
+  }
 
-      extrinsic_file<<image_id<<" "<<intrinsic_id<<" "
-                    <<position[0]<<" "<<position[1]<<" "<<position[2]<<" "
-                    <<rotation[0]<<" "<<rotation[1]<<" "<<rotation[2]<<"\n";
-    }
-    else
-    {
-      extrinsic_file<<image_id<<" "<<intrinsic_id<<" 0 0 0 0 0 0\n";
-    }
+  {
+    std::ofstream extrinsic_file(extrinsic_path, std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(extrinsic_file);
+    archive(extrinsic_map);
   }
 
   return 0;
@@ -419,6 +414,7 @@ int IncrementalPhotoOrientation::SavePointCloud(
 {
   typedef hs::imgio::whole::ImageData::Byte Byte;
   typedef std::array<Byte, 3> Color;
+  typedef hs::graphics::PointCloudData<float> PointCloudData;
 
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
@@ -487,35 +483,31 @@ int IncrementalPhotoOrientation::SavePointCloud(
     }
   }
 
-  //Save ply file.
-  std::ofstream ply_file(point_cloud_path.c_str());
-  if (!ply_file)
-  {
-    return -1;
-  }
-  ply_file.setf(std::ios::fixed);
-  ply_file<<std::setprecision(8);
-
-  ply_file<<"ply\n";
-  ply_file<<"format ascii 1.0\n";
-  ply_file<<"element vertex "<<points.size()<<"\n";
-  ply_file<<"property float64 x\n";
-  ply_file<<"property float64 y\n";
-  ply_file<<"property float64 z\n";
-  ply_file<<"property float64 nx\n";
-  ply_file<<"property float64 ny\n";
-  ply_file<<"property float64 nz\n";
-  ply_file<<"property uint8 diffuse_red\n";
-  ply_file<<"property uint8 diffuse_green\n";
-  ply_file<<"property uint8 diffuse_blue\n";
-  ply_file<<"end_header\n";
+  PointCloudData point_cloud_data;
 
   for (size_t i = 0; i < points.size(); i++)
   {
-    //TODO:Norm calculation needed.
-    ply_file
-      <<points[i][0]<<" "<<points[i][1]<<" "<<points[i][2]<<" 1 0 0 "
-      <<int(colors[i][0])<<" "<<int(colors[i][1])<<" "<<int(colors[i][2])<<"\n";
+    PointCloudData::Vector3 point;
+    point << float(points[i][0]),
+             float(points[i][1]),
+             float(points[i][2]);
+    point_cloud_data.VertexData().push_back(point);
+    PointCloudData::Vector3 color;
+    color << float(colors[i][0]) / 255.0f,
+             float(colors[i][1]) / 255.0f,
+             float(colors[i][2]) / 255.0f;
+    point_cloud_data.ColorData().push_back(color);
+    PointCloudData::Vector3 norm;
+    norm << 1.0f,
+            0.0f,
+            0.0f;
+    point_cloud_data.NormalData().push_back(norm);
+  }
+
+  {
+    std::ofstream point_cloud_file(point_cloud_path, std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(point_cloud_file);
+    archive(point_cloud_data);
   }
 
   return 0;
@@ -544,11 +536,10 @@ int IncrementalPhotoOrientation::SaveTracks(
   }
 
   {
-    std::ofstream tracks_file(tracks_path);
-    cereal::JSONOutputArchive archive(tracks_file);
+    std::ofstream tracks_file(tracks_path, std::ios::binary);
+    cereal::PortableBinaryOutputArchive archive(tracks_file);
     archive(tracks_wrap, track_point_map);
   }
-
 
   return 0;
 }

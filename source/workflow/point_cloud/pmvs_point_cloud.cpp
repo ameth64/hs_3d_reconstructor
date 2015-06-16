@@ -9,6 +9,10 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/typeof/typeof.hpp> 
 
+#include <cereal/types/map.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/archives/portable_binary.hpp>
+
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 
 #include "hs_flowmodule/point_cloud/define/pc_define.hpp"
@@ -36,6 +40,21 @@ void PointCloudConfig::set_photo_orientation_path(
   const std::string& photo_orientation_path)
 {
   photo_orientation_path_ = photo_orientation_path;
+}
+void PointCloudConfig::set_intrinsic_path(
+  const std::string& intrinsic_path)
+{
+  intrinsic_path_ = intrinsic_path;
+}
+void PointCloudConfig::set_extrinsic_path(
+  const std::string& extrinsic_path)
+{
+  extrinsic_path_ = extrinsic_path;
+}
+void PointCloudConfig::set_sparse_point_cloud_path(
+  const std::string& sparse_point_cloud_path)
+{
+  sparse_point_cloud_path_ = sparse_point_cloud_path;
 }
 void PointCloudConfig::set_intermediate_path(
   const std::string& intermediate_path)
@@ -90,15 +109,27 @@ void PointCloudConfig::set_m_visibility_threshold(int m_visibility_threshold)
   m_visibility_threshold_ = m_visibility_threshold;
 }
 
-const std::string PointCloudConfig::workspace_path() const
-{
-  return workspace_path_;
-}
-const std::string PointCloudConfig::photo_orientation_path() const
+const std::string& PointCloudConfig::photo_orientation_path() const
 {
   return photo_orientation_path_;
 }
-const std::string PointCloudConfig::intermediate_path() const
+const std::string& PointCloudConfig::workspace_path() const
+{
+  return workspace_path_;
+}
+const std::string& PointCloudConfig::intrinsic_path() const
+{
+  return intrinsic_path_;
+}
+const std::string& PointCloudConfig::extrinsic_path() const
+{
+  return extrinsic_path_;
+}
+const std::string& PointCloudConfig::sparse_point_cloud_path() const
+{
+  return sparse_point_cloud_path_;
+}
+const std::string& PointCloudConfig::intermediate_path() const
 {
   return intermediate_path_;
 }
@@ -168,19 +199,16 @@ PointCloud::PointCloud()
 int PointCloud::CreateConfigXml(
   PointCloudConfig* config)
 {
-  const std::string intrinsic_file = 
-    config->photo_orientation_path() + "intrinsic.txt";
-  const std::string extrinsic_file = 
-    config->photo_orientation_path() + "extrinsic.txt";
+  const std::string intrinsic_path = config->intrinsic_path();
+  const std::string extrinsic_path = config->extrinsic_path();
 
   //读取内参数文件
   IntrinsicParamsMap intrinsic_params_map;
-  ReadIntrinsicFile(intrinsic_file, intrinsic_params_map);
+  ReadIntrinsicFile(intrinsic_path, intrinsic_params_map);
 
   //读取外参数文件
   ExtrinsicParamsMap extrinsic_params_map;
-  PhotoID_GroupID photo_id_group_id;
-  ReadExtrinsicFile(extrinsic_file, extrinsic_params_map, photo_id_group_id);
+  ReadExtrinsicFile(extrinsic_path, extrinsic_params_map);
 
   boost::property_tree::ptree root;
   root.put("module_list.module_item.module_name", "point_cloud");
@@ -204,8 +232,9 @@ int PointCloud::CreateConfigXml(
   {
     str.clear();
     boost::property_tree::ptree photo_item;
-    photo_item.put("id", itr_photo_id->first);
-    auto itr_photo_paht = config->photo_paths().find(itr_photo_id->first);
+    photo_item.put("id", itr_photo_id->first.first);
+    auto itr_photo_paht = config->photo_paths().find(
+      int(itr_photo_id->first.first));
     if (itr_photo_paht != config->photo_paths().end())
     {
       photo_item.put("file", itr_photo_paht->second);
@@ -217,24 +246,15 @@ int PointCloud::CreateConfigXml(
     }
     //intrinsic_matrix
     IntrinsicParams intrinsic_param;
-    auto itr_intrinsic_id = photo_id_group_id.find(itr_photo_id->first);
-    if (itr_intrinsic_id != photo_id_group_id.end())
+    auto itr_intrinsic_params =
+      intrinsic_params_map.find(itr_photo_id->first.second);
+    if (itr_intrinsic_params != intrinsic_params_map.end())
     {
-      auto itr_intrinsic_params = intrinsic_params_map.find(
-        itr_intrinsic_id->second);
-      if (itr_intrinsic_params != intrinsic_params_map.end())
-      {
-        intrinsic_param = itr_intrinsic_params->second;
-      }
-      else
-      {
-        std::cout << "读取内参数失败!\n";
-        return -1;
-      }
+      intrinsic_param = itr_intrinsic_params->second;
     }
     else
     {
-      std::cout << "读取 PhotoID <--> GroupID 数据失败!\n";
+      std::cout << "读取内参数失败!\n";
       return -1;
     }
 
@@ -290,8 +310,8 @@ int PointCloud::CreateConfigXml(
     config->c_coverage_threshold());
   root.put("module_list.module_item.cluster_section.cluster_size",
     config->c_cluster_size());
-  std::string sparse_cloud_path = 
-    config->photo_orientation_path() + "sparse_point_cloud.txt";
+  std::string sparse_cloud_path =
+    config->sparse_point_cloud_path();
   root.put("module_list.module_item.cluster_section.sparse_cloud",
     sparse_cloud_path);
   //pmvs_section
@@ -315,93 +335,22 @@ int PointCloud::CreateConfigXml(
 
 //读取内参数文件
 int PointCloud::ReadIntrinsicFile(
-  const std::string& file_path,
-  IntrinsicParamsMap& ipm)
+  const std::string& file_path, IntrinsicParamsMap& ipm)
 {
-  std::ifstream ifs_intrinsic(file_path);
-  if (!ifs_intrinsic.is_open())
-    return -1;
-  int photogroup_id;
-  Scalar f, s, cx, cy, pr, k1, k2, k3, d1, d2;
-  if (ifs_intrinsic >> photogroup_id >> f >> s >> cx >> cy >> pr 
-                    >> k1 >> k2 >> k3 >> d1 >> d2)
-  {
-    IntrinsicParams ip;
-    ip.set_focal_length(f);
-    ip.set_skew(s);
-    ip.set_principal_point_x(cx);
-    ip.set_principal_point_y(cy);
-    ip.set_pixel_ratio(pr);
-    ip.set_k1(k1);
-    ip.set_k2(k2);
-    ip.set_k3(k3);
-    ip.set_d1(d1);
-    ip.set_d2(d2);
-    ipm.insert(std::make_pair(photogroup_id, ip));
-  }
-  else
-  {
-    std::cout << "读取intrinsic失败!\n";
-    return -1;
-  }
-  while (ifs_intrinsic >> photogroup_id >> f >> s >> cx >> cy >> pr
-                       >> k1 >> k2 >> k3 >> d1 >> d2)
-  {
-    IntrinsicParams ip;
-    ip.set_focal_length(f);
-    ip.set_skew(s);
-    ip.set_principal_point_x(cx);
-    ip.set_principal_point_y(cy);
-    ip.set_pixel_ratio(pr);
-    ip.set_k1(k1);
-    ip.set_k2(k2);
-    ip.set_k3(k3);
-    ip.set_d1(d1);
-    ip.set_d2(d2);
-    ipm.insert(std::make_pair(photogroup_id, ip));
-  }
+  std::ifstream intrinsic_file(file_path, std::ios::binary);
+  if (!intrinsic_file) return -1;
+  cereal::PortableBinaryInputArchive archive(intrinsic_file);
+  archive(ipm);
   return 0;
 }
 //读取外参数文件
 int PointCloud::ReadExtrinsicFile(
-  const std::string& file_path,
-  ExtrinsicParamsMap& epm,
-  PhotoID_GroupID& pg)
+  const std::string& file_path, ExtrinsicParamsMap& epm)
 {
-  std::ifstream ifs_extrinsic(file_path);
-  if (!ifs_extrinsic.is_open())
-    return -1;
-
-  int photo_id, group_id;
-  Scalar cx, cy, cz, rx, ry, rz;
-  ifs_extrinsic >> photo_id >> group_id >> cx >> cy >> cz >> rx >> ry >> rz;
-  //检查数据合法性,全为零时不可用
-  if (!(cx == 0.0 && cy == 0.0 && cz == 0.0 && rx == 0.0 && ry == 0.0 && rz == 0.0))
-  {
-    const Rotation r(Position(rx, ry, rz));
-    const Position p(cx, cy, cz);
-    ExtrinsicParams ep(r,p);
-    pg.insert(std::make_pair(photo_id, group_id));
-    epm.insert(std::make_pair(photo_id, ep));
-  }
-  while (ifs_extrinsic >> photo_id >> group_id >> cx >> cy >> cz >> rx >> ry >> rz)
-  {
-    //检查数据合法性,全为零时不可用
-    if (!(cx == 0.0 && cy == 0.0 && cz == 0.0 && rx == 0.0 && ry == 0.0 && rz == 0.0))
-    {
-      const Rotation r(Position(rx, ry, rz));
-      const Position p(cx, cy, cz);
-      ExtrinsicParams ep(r, p);
-      pg.insert(std::make_pair(photo_id, group_id));
-      epm.insert(std::make_pair(photo_id, ep));
-    }
-  }
-  //检查数据正确性
-  if (epm.size() != pg.size())
-  {
-    std::cout << "读取外参数失败!\n";
-    return -1;
-  }
+  std::ifstream extrinsic_file(file_path, std::ios::binary);
+  if (!extrinsic_file) return -1;
+  cereal::PortableBinaryInputArchive archive(extrinsic_file);
+  archive(epm);
   return 0;
 }
 

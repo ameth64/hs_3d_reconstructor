@@ -209,7 +209,7 @@ set(WORKFLOW_SOURCES
   "source/workflow/common/workflow_step.cpp"
   "source/workflow/feature_match/feature_match_config.cpp"
   "source/workflow/feature_match/feature_match_step.cpp"
-  "source/workflow/feature_match/openmvg_feature_match.cpp"
+  #"source/workflow/feature_match/openmvg_feature_match.cpp"
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"

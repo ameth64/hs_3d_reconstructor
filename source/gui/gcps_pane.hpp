@@ -28,12 +28,13 @@ public:
   typedef double Scalar;
   typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
   typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
+  typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
 
   struct PhotoEntry
   {
     std::string path;
     std::string thumbnail_path;
-    uint intrinsic_id;
+    size_t intrinsic_id;
     IntrinsicParams intrinsic_params;
     ExtrinsicParams extrinsic_params;
     int image_width;
@@ -93,6 +94,7 @@ private:
     const std::map<uint, PhotoMeasure>& photo_measures,
     Point3D& point) const;
   int ComputeSimilarTransform();
+  void GCPConstrainedOptimize();
 
 signals:
   void GCPRelateLocationState(bool is_calculated);
@@ -119,7 +121,7 @@ private:
 
   PhotoEntryContainer photo_entries_;
   GCPMeasureContainer gcp_measures_;
-  std::map<uint, IntrinsicParams> intrinsic_params_set_;
+  IntrinsicParamsMap intrinsic_params_set_;
 
   uint photo_orientation_id_;
   uint current_gcp_id_;

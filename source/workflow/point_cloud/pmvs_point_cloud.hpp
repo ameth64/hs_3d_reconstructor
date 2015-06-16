@@ -24,6 +24,9 @@ public:
 
   void set_workspace_path(const std::string& workspace_path);
   void set_photo_orientation_path(const std::string& photo_orientation_path);
+  void set_intrinsic_path(const std::string& intrinsic_path);
+  void set_extrinsic_path(const std::string& extrinsic_path);
+  void set_sparse_point_cloud_path(const std::string& sparse_point_cloud_path);
   void set_intermediate_path(const std::string& intermediate_path);
   void set_s_number_of_threads(int s_number_of_threads);
   void set_s_pyramid_level(int s_pyramid_level);
@@ -38,9 +41,12 @@ public:
   void set_m_quality_threshold(int m_quality_threshold);
   void set_m_visibility_threshold(int m_visibility_threshold);
 
-  const std::string photo_orientation_path() const;
-  const std::string workspace_path() const;
-  const std::string intermediate_path() const;
+  const std::string& photo_orientation_path() const;
+  const std::string& intrinsic_path() const;
+  const std::string& extrinsic_path() const;
+  const std::string& sparse_point_cloud_path() const;
+  const std::string& workspace_path() const;
+  const std::string& intermediate_path() const;
   int s_number_of_threads() const;
   int s_pyramid_level() const;
   int s_patch_density() const;
@@ -58,7 +64,10 @@ public:
   const std::map<int, std::string>& photo_paths() const;
 
 private:
-  std::string photo_orientation_path_; //Photo_orientation 工作路径
+  std::string photo_orientation_path_;
+  std::string intrinsic_path_;
+  std::string extrinsic_path_;
+  std::string sparse_point_cloud_path_;
   std::string workspace_path_; //Point Cloud 工作路径
   std::string intermediate_path_; //临时工作路径
   //photo_paths_<photo_id, photo_path>
@@ -90,14 +99,14 @@ public:
   typedef double Scalar;
   typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
   //IntrinsicParamsMap<photogroup_id, IntrinsicParams>
-  typedef std::map<int, IntrinsicParams> IntrinsicParamsMap;
+  typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
   typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
   typedef ExtrinsicParams::Rotation Rotation;
   typedef ExtrinsicParams::Position Position;
   typedef ExtrinsicParams::Matrix33 Matrix33;
   //ExtrinsicParamsMap<photo_id, ExtrinsicParams>
-  typedef std::map<int, ExtrinsicParams> ExtrinsicParamsMap;
-  typedef std::map<int, int> PhotoID_GroupID;
+  typedef std::pair<size_t, size_t> ExtrinsicIndex;
+  typedef std::map<ExtrinsicIndex, ExtrinsicParams> ExtrinsicParamsMap;
 
   PointCloud();
 
@@ -107,14 +116,9 @@ public:
 private:
   int PointCloud::CreateConfigXml(PointCloudConfig* config);
   //读取内参数文件
-  int ReadIntrinsicFile(
-    const std::string& file_path,
-    IntrinsicParamsMap& ipm);
+  int ReadIntrinsicFile(const std::string& file_path, IntrinsicParamsMap& ipm);
   //读取外参数文件
-  int ReadExtrinsicFile(
-    const std::string& file_path,
-    ExtrinsicParamsMap& epm,
-    PhotoID_GroupID& pg);
+  int ReadExtrinsicFile(const std::string& file_path, ExtrinsicParamsMap& epm);
 
 };
 

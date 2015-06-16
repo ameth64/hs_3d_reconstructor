@@ -3,22 +3,23 @@
 #if 1
 #include <iostream>
 #include <iomanip>
-#include <QMessageBox>
 #endif
 
 #include <QToolBar>
 #include <QFileDialog>
 #include <QSettings>
+#include <QMessageBox>
 
-#include <cereal/archives/json.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/portable_binary.hpp>
 
 #include "hs_image_io/whole_io/image_io.hpp"
 #include "hs_sfm/sfm_utility/projective_functions.hpp"
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
 #include "hs_sfm/triangulate/multiple_view_maximum_likelihood_estimator.hpp"
 #include "hs_sfm/sfm_pipeline/bundle_adjustment_gcp_constrained_optimizor.hpp"
-#include "hs_sfm/sfm_file_io/keyset_loader.hpp"
-#include "hs_graphics/graphics_utility/read_file.hpp"
 
 #include "gui/property_field_asignment_dialog.hpp"
 #include "gui/main_window.hpp"
@@ -179,6 +180,8 @@ void GCPsPane::Response(int request_flag, void* response)
 
 void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
 {
+  typedef std::pair<size_t, size_t> ExtrinsicIndex;
+  typedef EIGEN_STD_MAP(ExtrinsicIndex, ExtrinsicParams) ExtrinsicParamsMap;
   if (photo_orientation_id == photo_orientation_id_)
   {
     return;
@@ -200,91 +203,42 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     ((MainWindow*)parent())->database_mediator().GetPhotoOrientationPath(
       request_photo_orientation.id);
 
-  std::ifstream similar_file(
-    response_photo_orientation.similar_transform_path.c_str());
-  if (!similar_file) return;
-  similar_file>>similar_scale_;
-  similar_file>>similar_rotation_[0];
-  similar_file>>similar_rotation_[1];
-  similar_file>>similar_rotation_[2];
-  similar_file>>similar_translate_[0];
-  similar_file>>similar_translate_[1];
-  similar_file>>similar_translate_[2];
-  similar_file.close();
-
-  intrinsic_params_set_.clear();
-  std::ifstream intrinsic_file(
-    response_photo_orientation.intrinsic_path.c_str());
-  if (!intrinsic_file) return;
-  while (!intrinsic_file.eof())
   {
-    std::string line;
-    std::getline(intrinsic_file, line);
-    if (line.empty())
-    {
-      break;
-    }
-    std::stringstream ss(line);
-    uint id;
-    Scalar focal_length;
-    Scalar skew;
-    Scalar principal_x;
-    Scalar principal_y;
-    Scalar pixel_ratio;
-    Scalar k1;
-    Scalar k2;
-    Scalar k3;
-    Scalar d1;
-    Scalar d2;
-    ss>>id>>focal_length>>skew>>principal_x>>principal_y>>pixel_ratio
-      >>k1>>k2>>k3>>d1>>d2;
-    IntrinsicParams intrinsic_params(focal_length,
-                                     skew,
-                                     principal_x,
-                                     principal_y,
-                                     pixel_ratio,
-                                     k1, k2, k3, d1, d2);
-
-    intrinsic_params_set_[id] = intrinsic_params;
+    std::ifstream similar_file(
+      response_photo_orientation.similar_transform_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(similar_file);
+    archive(similar_scale_, similar_rotation_, similar_translate_);
   }
 
+  intrinsic_params_set_.clear();
+  {
+    std::ifstream intrinsic_file(
+      response_photo_orientation.intrinsic_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(intrinsic_file);
+    archive(intrinsic_params_set_);
+  }
+
+  ExtrinsicParamsMap extrinsic_params_map;
+  {
+    std::ifstream extrinsic_file(
+      response_photo_orientation.extrinsic_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(extrinsic_file);
+    archive(extrinsic_params_map);
+  }
   std::ifstream extrinsic_file(
     response_photo_orientation.extrinsic_path.c_str());
   if (!extrinsic_file) return;
   hs::imgio::whole::ImageIO image_io;
-  while (!extrinsic_file.eof())
+  for (const auto& extrinsic_params : extrinsic_params_map)
   {
-    std::string line;
-    std::getline(extrinsic_file, line);
-    if (line.empty())
-    {
-      break;
-    }
-    std::stringstream ss(line);
-
     PhotoEntry photo_entry;
-    uint photo_id;
-    uint intrinsic_id;
-    ss>>photo_id>>intrinsic_id
-      >>photo_entry.extrinsic_params.position()[0]
-      >>photo_entry.extrinsic_params.position()[1]
-      >>photo_entry.extrinsic_params.position()[2]
-      >>photo_entry.extrinsic_params.rotation()[0]
-      >>photo_entry.extrinsic_params.rotation()[1]
-      >>photo_entry.extrinsic_params.rotation()[2];
-    if (photo_entry.extrinsic_params.position()[0] == 0 &&
-        photo_entry.extrinsic_params.position()[1] == 0 &&
-        photo_entry.extrinsic_params.position()[2] == 0 &&
-        photo_entry.extrinsic_params.rotation()[0] == 0 &&
-        photo_entry.extrinsic_params.rotation()[1] == 0 &&
-        photo_entry.extrinsic_params.rotation()[2] == 0)
-    {
-      continue;
-    }
+    size_t photo_id = extrinsic_params.first.first;
+    size_t intrinsic_id = extrinsic_params.first.second;
     auto itr_intrinsic_params = intrinsic_params_set_.find(intrinsic_id);
     if (itr_intrinsic_params == intrinsic_params_set_.end()) return;
     photo_entry.intrinsic_params = itr_intrinsic_params->second;
     photo_entry.intrinsic_id = intrinsic_id;
+    photo_entry.extrinsic_params = extrinsic_params.second;
 
     db::RequestGetPhoto request_photo;
     db::ResponseGetPhoto response_photo;
@@ -310,7 +264,7 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     photo_entry.image_width = int(width);
     photo_entry.image_height = int(height);
 
-    photo_entries_[photo_id] = photo_entry;
+    photo_entries_[uint(photo_id)] = photo_entry;
   }
 
   //获取像控点相关数据
@@ -334,6 +288,9 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
         -std::numeric_limits<Scalar>::max();
       itr_gcp_measure->second.estimate_pos[2] =
         -std::numeric_limits<Scalar>::max();
+      gcps_table_widget_->SetGCPType(itr_gcp_measure->first,
+                                     GCPsTableWidget::GCPEntry::NOT_USED);
+      gcps_table_widget_->SetGCPTypeEditable(itr_gcp_measure->first, false);
     }
     auto itr_gcp_response = response_photo_measure.gcp_measures.begin();
     auto itr_gcp_response_end = response_photo_measure.gcp_measures.end();
@@ -587,311 +544,47 @@ void GCPsPane::OnActionShowErrorTriggered()
 
 void GCPsPane::OnActionGCPConstrainedOptimizeTriggered()
 {
-  typedef hs::sfm::pipeline::BundleAdjustmentGCPConstrainedOptimizor < Scalar >
-          Optimizor;
-  typedef Optimizor::ExtrinsicParams ExtrinsicParams;
-  typedef Optimizor::IntrinsicParams IntrinsicParams;
-  typedef Optimizor::IntrinsicParamsContainer IntrinsicParamsContainer;
-  typedef Optimizor::ExtrinsicParamsContainer ExtrinsicParamsContainer;
-  typedef Optimizor::ImageKeyset ImageKeyset;
-  typedef ImageKeyset::Key Key;
-  typedef Optimizor::ImageKeysetContainer ImageKeysetContainer;
-  typedef Optimizor::Point Point;
-  typedef Optimizor::PointContainer PointContainer;
-  typedef Optimizor::TrackPointMap TrackPointMap;
-  typedef Optimizor::ImageIntrinsicMap ImageIntrinsicMap;
-  typedef Optimizor::ImageExtrinsicMap ImageExtrinsicMap;
-  typedef hs::sfm::Track Track;
-  typedef hs::sfm::TrackContainer TrackContainer;
-  typedef hs::sfm::ViewInfoIndexer ViewInfoIndexer;
-  typedef hs::graphics::PointCloudData<Scalar> PointCloudData;
-  typedef hs::recon::db::Identifier Identifier;
-
-  //Get photo orientation
-  hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
-  hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
-  request_photo_orientation.id =
-    db::Database::Identifier(photo_orientation_id_);
+  //判断当前照片定向是否包含点云
+  db::RequestGetAllPointClouds request_all_point_clouds;
+  db::ResponseGetAllPointClouds response_all_point_clouds;
   ((MainWindow*)parent())->database_mediator().Request(
-    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
-    request_photo_orientation, response_photo_orientation, false);
-  if (response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+    this, db::DatabaseMediator::REQUEST_GET_ALL_POINT_CLOUDS,
+    request_all_point_clouds, response_all_point_clouds, false);
+  bool has_point_cloud = false;
+  for (const auto& point_cloud : response_all_point_clouds.records)
   {
-    return;
-  }
-
-  //Get feature match
-  int field_id =
-    db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID;
-  Identifier feature_match_id =
-    Identifier(
-      response_photo_orientation.record[field_id].ToInt());
-  hs::recon::db::RequestGetFeatureMatch request_feature_match;
-  hs::recon::db::ResponseGetFeatureMatch response_feature_match;
-  request_feature_match.id = feature_match_id;
-  ((MainWindow*)parent())->database_mediator().Request(
-    this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
-    request_feature_match, response_feature_match, false);
-  if (response_feature_match.error_code != hs::recon::db::Database::NO_ERROR)
-  {
-    return;
-  }
-
-  //Get image_keysets image_intrinsic_map image_extrinsic_map
-  //intrinsic_params_set extrinsic_params_set
-
-  //TODO:Need to modify to portable.
-  ImageKeysetContainer image_keysets;
-  ImageIntrinsicMap image_intrinsic_map;
-  ImageExtrinsicMap image_extrinsic_map;
-  IntrinsicParamsContainer intrinsic_params_set;
-  ExtrinsicParamsContainer extrinsic_params_set;
-
-  std::map<size_t, size_t> reordered_image_ids;
-  std::string feature_match_path =
-    ((MainWindow*)parent())->database_mediator().GetFeatureMatchPath(
-      feature_match_id);
-  auto itr_photo = photo_entries_.begin();
-  auto itr_photo_end = photo_entries_.end();
-  hs::sfm::fileio::KeysetLoader<Scalar> keyset_loader;
-  for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, ++i)
-  {
-    std::string key_path =
-      boost::str(boost::format("%1%%2%.key") %
-                 feature_match_path %
-                 itr_photo->first);
-    ImageKeyset image_keyset;
-    if (keyset_loader(key_path, image_keyset) != 0)
+    db::Identifier photo_orientation_id =
+      db::Identifier(point_cloud.second[
+        db::PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+    if (photo_orientation_id == photo_orientation_id_)
     {
-      return;
-    }
-    image_keysets.push_back(image_keyset);
-
-    uint intrinsic_id = itr_photo->second.intrinsic_id;
-    auto itr_intrinsic = intrinsic_params_set_.find(intrinsic_id);
-    if (itr_intrinsic == intrinsic_params_set_.end())
-    {
-      return;
-    }
-
-    image_extrinsic_map.AddObject(i);
-    ExtrinsicParams extrinsic_params_abs = itr_photo->second.extrinsic_params;
-    extrinsic_params_abs.rotation() =
-      extrinsic_params_abs.rotation() * similar_rotation_.Inverse();
-    extrinsic_params_abs.position() =
-      similar_scale_ * (similar_rotation_ * extrinsic_params_abs.position()) +
-      similar_translate_;
-    extrinsic_params_set.push_back(extrinsic_params_abs);
-    image_intrinsic_map.AddObject(
-      size_t(std::distance(intrinsic_params_set_.begin(), itr_intrinsic)));
-    reordered_image_ids[size_t(itr_photo->first)] = i;
-  }
-  auto itr_intrinsic = intrinsic_params_set_.begin();
-  auto itr_intrinsic_end = intrinsic_params_set_.end();
-  for (; itr_intrinsic != itr_intrinsic_end; ++itr_intrinsic)
-  {
-    intrinsic_params_set.push_back(itr_intrinsic->second);
-  }
-
-  //Get tracks track_point_map view_info_indexer
-  TrackContainer tracks;
-  TrackPointMap track_point_map;
-  ViewInfoIndexer view_info_indexer;
-  {
-    std::string tracks_path = response_photo_orientation.tracks_path;
-    std::ifstream tracks_file(tracks_path);
-    cereal::JSONInputArchive archive(tracks_file);
-    archive(tracks, track_point_map);
-  }
-  for (size_t i = 0; i < tracks.size(); i++)
-  {
-    for (size_t j = 0; j < tracks[i].size(); j++)
-    {
-      size_t image_id = tracks[i][j].first;
-      tracks[i][j].first = reordered_image_ids[image_id];
-    }
-  }
-  view_info_indexer.SetViewInfoByTracks(tracks);
-
-  //Get points
-  PointCloudData pcd;
-  hs::graphics::ReadFile<Scalar>::ReadPointPlyFile(
-    response_photo_orientation.point_cloud_path, pcd);
-  PointContainer points(pcd.VertexData().size());
-  for (size_t i = 0; i < pcd.VertexData().size(); i++)
-  {
-    points[i][0] = pcd.VertexData()[i][0];
-    points[i][1] = pcd.VertexData()[i][1];
-    points[i][2] = pcd.VertexData()[i][2];
-
-    points[i] =
-      similar_scale_ * (similar_rotation_ * points[i]) +
-      similar_translate_;
-  }
-
-  //Get image_keysets_gcp tracks_gcp gcps_measure
-  ImageKeysetContainer image_keysets_gcp(image_keysets.size());
-  TrackContainer tracks_gcp;
-  PointContainer gcps_measure;
-  auto itr_gcp_measure = gcp_measures_.begin();
-  auto itr_gcp_measure_end = gcp_measures_.end();
-  for (; itr_gcp_measure != itr_gcp_measure_end; itr_gcp_measure++)
-  {
-    if (itr_gcp_measure->second.type ==
-        GCPsTableWidget::GCPEntry::CALCULATE_POINT &&
-        itr_gcp_measure->second.photo_measures.size() >= 2)
-    {
-      Track track_gcp;
-      auto itr_photo_measure = itr_gcp_measure->second.photo_measures.begin();
-      auto itr_photo_measure_end = itr_gcp_measure->second.photo_measures.end();
-      for (; itr_photo_measure != itr_photo_measure_end; ++itr_photo_measure)
-      {
-        auto itr_photo_entry =
-          photo_entries_.find(itr_photo_measure->second.photo_id);
-        if (itr_photo_entry == photo_entries_.end())
-        {
-          return;
-        }
-
-        size_t image_id = reordered_image_ids[size_t(itr_photo_entry->first)];
-        size_t key_id = image_keysets_gcp[image_id].size();
-        Key key;
-        key << itr_photo_measure->second.x,
-               itr_photo_measure->second.y;
-        track_gcp.push_back(std::make_pair(image_id, key_id));
-        image_keysets_gcp[image_id].AddKey(key);
-      }
-      tracks_gcp.push_back(track_gcp);
-      Point gcp_measure;
-      gcp_measure << itr_gcp_measure->second.measure_pos[0],
-                     itr_gcp_measure->second.measure_pos[1],
-                     itr_gcp_measure->second.measure_pos[2];
-      gcps_measure.push_back(gcp_measure);
+      has_point_cloud = true;
+      break;
     }
   }
 
-  for (size_t i = 0; i < tracks.size(); i++)
+  if (has_point_cloud)
   {
-    if (track_point_map.IsValid(i))
+    QMessageBox msg_box;
+    msg_box.setText(tr("Current photo orientation contains some point clouds."
+                       "Would you like to copy this "
+                       "photo orientation to optimize?"));
+    msg_box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    int result = msg_box.exec();
+    if (result == QMessageBox::Yes)
     {
-      size_t point_id = track_point_map[i];
-      for (size_t j = 0; j < tracks[i].size(); j++)
-      {
-        size_t extrinsic_id = tracks[i][j].first;
-        size_t key_id = tracks[i][j].second;
-        size_t intrinsic_id = image_intrinsic_map[extrinsic_id];
-        Key predicated = hs::sfm::ProjectiveFunctions<Scalar>::
-                           WorldPointProjectToImageKey(
-                             intrinsic_params_set[intrinsic_id],
-                             extrinsic_params_set[extrinsic_id],
-                             points[point_id]);
-        Key key = image_keysets[extrinsic_id][key_id];
-
-        Scalar dx = std::abs(key[0] - predicated[0]);
-        Scalar dy = std::abs(key[1] - predicated[1]);
-        Scalar error = dx * dx + dy * dy;
-      }
+      //Copy photo orientation
+      db::RequestCopyPhotoOrientation request_copy;
+      db::ResponseCopyPhotoOrientation response_copy;
+      request_copy.photo_orientation_id = photo_orientation_id_;
+      ((MainWindow*)parent())->database_mediator().Request(
+        this, db::DatabaseMediator::REQUEST_COPY_PHOTO_ORIENTATION,
+        request_copy, response_copy, true);
     }
   }
-
-  PointContainer gcps_estimate;
-  TrackPointMap estimate_measure_map;
-  QSettings settings;
-  QString number_of_threads_key = tr("number_of_threads");
-  uint number_of_threads = settings.value(number_of_threads_key,
-                                          QVariant(uint(1))).toUInt();
-  Optimizor optimizor(size_t(number_of_threads), 0.005, 0.005,
-                      0.1, 5);
-  if (optimizor(image_keysets,
-                image_intrinsic_map,
-                tracks,
-                image_extrinsic_map,
-                track_point_map,
-                view_info_indexer,
-                image_keysets_gcp,
-                tracks_gcp,
-                gcps_measure,
-                intrinsic_params_set,
-                extrinsic_params_set,
-                points,
-                gcps_estimate,
-                estimate_measure_map) != 0)
+  else
   {
-    return;
-  }
-
-  TrackPointMap measure_estimate_map(gcps_measure.size());
-  for (size_t i = 0; i < estimate_measure_map.Size(); i++)
-  {
-    if (estimate_measure_map.IsValid(i))
-    {
-      measure_estimate_map[estimate_measure_map[i]] = i;
-    }
-  }
-
-  itr_intrinsic = intrinsic_params_set_.begin();
-  itr_intrinsic_end = intrinsic_params_set_.end();
-  for (size_t i = 0; itr_intrinsic != intrinsic_params_set_.begin();
-       ++i, ++itr_intrinsic)
-  {
-    itr_intrinsic->second = intrinsic_params_set[i];
-  }
-
-  itr_photo = photo_entries_.begin();
-  itr_photo_end = photo_entries_.end();
-  for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, ++i)
-  {
-    itr_photo->second.extrinsic_params = extrinsic_params_set[i];
-    itr_photo->second.intrinsic_params =
-      intrinsic_params_set_[itr_photo->second.intrinsic_id];
-  }
-
-  similar_rotation_ = Rotation();
-  similar_scale_ = Scalar(1);
-  similar_translate_ = Point3D::Zero();
-
-  itr_gcp_measure = gcp_measures_.begin();
-  itr_gcp_measure_end = gcp_measures_.end();
-  for (size_t i = 0; itr_gcp_measure != itr_gcp_measure_end; ++itr_gcp_measure)
-  {
-    if (itr_gcp_measure->second.type ==
-        GCPsTableWidget::GCPEntry::CALCULATE_POINT &&
-        itr_gcp_measure->second.photo_measures.size() >= 2)
-    {
-      if (measure_estimate_map.IsValid(i))
-      {
-        const Point& gcp_estmate = gcps_estimate[measure_estimate_map[i]];
-        itr_gcp_measure->second.estimate_pos[0] = gcp_estmate[0];
-        itr_gcp_measure->second.estimate_pos[1] = gcp_estmate[1];
-        itr_gcp_measure->second.estimate_pos[2] = gcp_estmate[2];
-
-        gcps_table_widget_->UpdateGCPEstimatePos(
-          itr_gcp_measure->first,
-          itr_gcp_measure->second.estimate_pos[0],
-          itr_gcp_measure->second.estimate_pos[1],
-          itr_gcp_measure->second.estimate_pos[2]);
-      }
-      i++;
-    }
-    else if (itr_gcp_measure->second.type ==
-             GCPsTableWidget::GCPEntry::CHECK_POINT &&
-             itr_gcp_measure->second.photo_measures.size() >= 2)
-    {
-      Point3D check_point_estimate;
-      if (TriangulatePoint(itr_gcp_measure->second.photo_measures,
-                           check_point_estimate) == 0)
-      {
-        itr_gcp_measure->second.estimate_pos[0] = check_point_estimate[0];
-        itr_gcp_measure->second.estimate_pos[1] = check_point_estimate[1];
-        itr_gcp_measure->second.estimate_pos[2] = check_point_estimate[2];
-        gcps_table_widget_->UpdateGCPEstimatePos(
-          itr_gcp_measure->first,
-          itr_gcp_measure->second.estimate_pos[0],
-          itr_gcp_measure->second.estimate_pos[1],
-          itr_gcp_measure->second.estimate_pos[2]);
-      }
-    }
+    GCPConstrainedOptimize();
   }
 }
 
@@ -1313,6 +1006,340 @@ int GCPsPane::ComputeSimilarTransform()
   }
 
   return result;
+}
+
+void GCPsPane::GCPConstrainedOptimize()
+{
+  typedef hs::sfm::pipeline::BundleAdjustmentGCPConstrainedOptimizor < Scalar >
+          Optimizor;
+  typedef Optimizor::ExtrinsicParams ExtrinsicParams;
+  typedef Optimizor::IntrinsicParams IntrinsicParams;
+  typedef Optimizor::IntrinsicParamsContainer IntrinsicParamsContainer;
+  typedef Optimizor::ExtrinsicParamsContainer ExtrinsicParamsContainer;
+  typedef Optimizor::ImageKeyset ImageKeyset;
+  typedef ImageKeyset::Key Key;
+  typedef Optimizor::ImageKeysetContainer ImageKeysetContainer;
+  typedef Optimizor::Point Point;
+  typedef Optimizor::PointContainer PointContainer;
+  typedef Optimizor::TrackPointMap TrackPointMap;
+  typedef Optimizor::ImageIntrinsicMap ImageIntrinsicMap;
+  typedef Optimizor::ImageExtrinsicMap ImageExtrinsicMap;
+  typedef hs::sfm::Track Track;
+  typedef hs::sfm::TrackContainer TrackContainer;
+  typedef hs::sfm::ViewInfoIndexer ViewInfoIndexer;
+  typedef hs::graphics::PointCloudData<float> PointCloudData;
+  typedef hs::recon::db::Identifier Identifier;
+  typedef EIGEN_STD_MAP(size_t, ImageKeyset) ImageKeysetMap;
+
+  //Get photo orientation
+  hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+  hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+  request_photo_orientation.id =
+    db::Database::Identifier(photo_orientation_id_);
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+    request_photo_orientation, response_photo_orientation, false);
+  if (response_photo_orientation.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+
+  //Get feature match
+  int field_id =
+    db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID;
+  Identifier feature_match_id =
+    Identifier(
+      response_photo_orientation.record[field_id].ToInt());
+  hs::recon::db::RequestGetFeatureMatch request_feature_match;
+  hs::recon::db::ResponseGetFeatureMatch response_feature_match;
+  request_feature_match.id = feature_match_id;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
+    request_feature_match, response_feature_match, false);
+  if (response_feature_match.error_code != hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+
+  //Get image_keysets image_intrinsic_map image_extrinsic_map
+  //intrinsic_params_set extrinsic_params_set
+
+  ImageKeysetContainer image_keysets;
+  ImageIntrinsicMap image_intrinsic_map;
+  ImageExtrinsicMap image_extrinsic_map;
+  IntrinsicParamsContainer intrinsic_params_set;
+  ExtrinsicParamsContainer extrinsic_params_set;
+
+  std::map<size_t, size_t> reordered_image_ids;
+  std::string keysets_path = response_feature_match.keysets_path;
+  ImageKeysetMap keyset_map;
+  {
+    std::ifstream keysets_file(keysets_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(keysets_file);
+    archive(keyset_map);
+  }
+  auto itr_photo = photo_entries_.begin();
+  auto itr_photo_end = photo_entries_.end();
+  for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, ++i)
+  {
+    auto itr_image_keyset = keyset_map.find(size_t(itr_photo->first));
+    if (itr_image_keyset == keyset_map.end()) return;
+    image_keysets.push_back(itr_image_keyset->second);
+
+    size_t intrinsic_id = itr_photo->second.intrinsic_id;
+    auto itr_intrinsic = intrinsic_params_set_.find(intrinsic_id);
+    if (itr_intrinsic == intrinsic_params_set_.end())
+    {
+      return;
+    }
+
+    image_extrinsic_map.AddObject(i);
+    ExtrinsicParams extrinsic_params_abs = itr_photo->second.extrinsic_params;
+    extrinsic_params_abs.rotation() =
+      extrinsic_params_abs.rotation() * similar_rotation_.Inverse();
+    extrinsic_params_abs.position() =
+      similar_scale_ * (similar_rotation_ * extrinsic_params_abs.position()) +
+      similar_translate_;
+    extrinsic_params_set.push_back(extrinsic_params_abs);
+    image_intrinsic_map.AddObject(
+      size_t(std::distance(intrinsic_params_set_.begin(), itr_intrinsic)));
+    reordered_image_ids[size_t(itr_photo->first)] = i;
+  }
+  auto itr_intrinsic = intrinsic_params_set_.begin();
+  auto itr_intrinsic_end = intrinsic_params_set_.end();
+  for (; itr_intrinsic != itr_intrinsic_end; ++itr_intrinsic)
+  {
+    intrinsic_params_set.push_back(itr_intrinsic->second);
+  }
+
+  //Get tracks track_point_map view_info_indexer
+  TrackContainer tracks;
+  TrackPointMap track_point_map;
+  ViewInfoIndexer view_info_indexer;
+  {
+    std::string tracks_path = response_photo_orientation.tracks_path;
+    std::ifstream tracks_file(tracks_path, std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(tracks_file);
+    archive(tracks, track_point_map);
+  }
+  for (size_t i = 0; i < tracks.size(); i++)
+  {
+    for (size_t j = 0; j < tracks[i].size(); j++)
+    {
+      size_t image_id = tracks[i][j].first;
+      tracks[i][j].first = reordered_image_ids[image_id];
+    }
+  }
+  view_info_indexer.SetViewInfoByTracks(tracks);
+
+  //Get points
+  PointCloudData pcd;
+  {
+    std::ifstream point_cloud_file(response_photo_orientation.point_cloud_path,
+                                   std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(point_cloud_file);
+    archive(pcd);
+  }
+
+  PointContainer points(pcd.VertexData().size());
+  for (size_t i = 0; i < pcd.VertexData().size(); i++)
+  {
+    points[i][0] = pcd.VertexData()[i][0];
+    points[i][1] = pcd.VertexData()[i][1];
+    points[i][2] = pcd.VertexData()[i][2];
+
+    points[i] =
+      similar_scale_ * (similar_rotation_ * points[i]) +
+      similar_translate_;
+  }
+
+  //Get image_keysets_gcp tracks_gcp gcps_measure
+  ImageKeysetContainer image_keysets_gcp(image_keysets.size());
+  TrackContainer tracks_gcp;
+  PointContainer gcps_measure;
+  auto itr_gcp_measure = gcp_measures_.begin();
+  auto itr_gcp_measure_end = gcp_measures_.end();
+  for (; itr_gcp_measure != itr_gcp_measure_end; itr_gcp_measure++)
+  {
+    if (itr_gcp_measure->second.type ==
+        GCPsTableWidget::GCPEntry::CALCULATE_POINT &&
+        itr_gcp_measure->second.photo_measures.size() >= 2)
+    {
+      Track track_gcp;
+      auto itr_photo_measure = itr_gcp_measure->second.photo_measures.begin();
+      auto itr_photo_measure_end = itr_gcp_measure->second.photo_measures.end();
+      for (; itr_photo_measure != itr_photo_measure_end; ++itr_photo_measure)
+      {
+        auto itr_photo_entry =
+          photo_entries_.find(itr_photo_measure->second.photo_id);
+        if (itr_photo_entry == photo_entries_.end())
+        {
+          return;
+        }
+
+        size_t image_id = reordered_image_ids[size_t(itr_photo_entry->first)];
+        size_t key_id = image_keysets_gcp[image_id].size();
+        Key key;
+        key << itr_photo_measure->second.x,
+               itr_photo_measure->second.y;
+        track_gcp.push_back(std::make_pair(image_id, key_id));
+        image_keysets_gcp[image_id].AddKey(key);
+      }
+      tracks_gcp.push_back(track_gcp);
+      Point gcp_measure;
+      gcp_measure << itr_gcp_measure->second.measure_pos[0],
+                     itr_gcp_measure->second.measure_pos[1],
+                     itr_gcp_measure->second.measure_pos[2];
+      gcps_measure.push_back(gcp_measure);
+    }
+  }
+
+  for (size_t i = 0; i < tracks.size(); i++)
+  {
+    if (track_point_map.IsValid(i))
+    {
+      size_t point_id = track_point_map[i];
+      for (size_t j = 0; j < tracks[i].size(); j++)
+      {
+        size_t extrinsic_id = tracks[i][j].first;
+        size_t key_id = tracks[i][j].second;
+        size_t intrinsic_id = image_intrinsic_map[extrinsic_id];
+        Key predicated = hs::sfm::ProjectiveFunctions<Scalar>::
+                           WorldPointProjectToImageKey(
+                             intrinsic_params_set[intrinsic_id],
+                             extrinsic_params_set[extrinsic_id],
+                             points[point_id]);
+        Key key = image_keysets[extrinsic_id][key_id];
+
+        Scalar dx = std::abs(key[0] - predicated[0]);
+        Scalar dy = std::abs(key[1] - predicated[1]);
+        Scalar error = dx * dx + dy * dy;
+      }
+    }
+  }
+
+  PointContainer gcps_estimate;
+  TrackPointMap estimate_measure_map;
+#if 1
+  QSettings settings;
+  QString number_of_threads_key = tr("number_of_threads");
+  uint number_of_threads = settings.value(number_of_threads_key,
+                                          QVariant(uint(1))).toUInt();
+  Optimizor optimizor(size_t(number_of_threads), 0.005, 0.005,
+                      5, 0.1);
+  if (optimizor(image_keysets,
+                image_intrinsic_map,
+                tracks,
+                image_extrinsic_map,
+                track_point_map,
+                view_info_indexer,
+                image_keysets_gcp,
+                tracks_gcp,
+                gcps_measure,
+                intrinsic_params_set,
+                extrinsic_params_set,
+                points,
+                gcps_estimate,
+                estimate_measure_map) != 0)
+  {
+    return;
+  }
+#else
+  itr_gcp_measure = gcp_measures_.begin();
+  itr_gcp_measure_end = gcp_measures_.end();
+  for (size_t i = 0; itr_gcp_measure != itr_gcp_measure_end; ++itr_gcp_measure)
+  {
+    if (itr_gcp_measure->second.type ==
+        GCPsTableWidget::GCPEntry::CALCULATE_POINT &&
+        itr_gcp_measure->second.photo_measures.size() >= 2)
+    {
+      Point3D gcp_estimate;
+      if (TriangulatePoint(itr_gcp_measure->second.photo_measures,
+                           gcp_estimate) == 0)
+      {
+        gcp_estimate = similar_scale_ * (similar_rotation_ * gcp_estimate) +
+                       similar_translate_;
+        estimate_measure_map.AddObject(i);
+        gcps_estimate.push_back(gcp_estimate);
+        i++;
+      }
+    }
+  }
+#endif
+
+  TrackPointMap measure_estimate_map(gcps_measure.size());
+  for (size_t i = 0; i < estimate_measure_map.Size(); i++)
+  {
+    if (estimate_measure_map.IsValid(i))
+    {
+      measure_estimate_map[estimate_measure_map[i]] = i;
+    }
+  }
+
+  itr_intrinsic = intrinsic_params_set_.begin();
+  itr_intrinsic_end = intrinsic_params_set_.end();
+  for (size_t i = 0; itr_intrinsic != intrinsic_params_set_.begin();
+       ++i, ++itr_intrinsic)
+  {
+    itr_intrinsic->second = intrinsic_params_set[i];
+  }
+
+  itr_photo = photo_entries_.begin();
+  itr_photo_end = photo_entries_.end();
+  for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, ++i)
+  {
+    itr_photo->second.extrinsic_params = extrinsic_params_set[i];
+    itr_photo->second.intrinsic_params =
+      intrinsic_params_set_[itr_photo->second.intrinsic_id];
+  }
+
+  similar_rotation_ = Rotation();
+  similar_scale_ = Scalar(1);
+  similar_translate_ = Point3D::Zero();
+
+  itr_gcp_measure = gcp_measures_.begin();
+  itr_gcp_measure_end = gcp_measures_.end();
+  for (size_t i = 0; itr_gcp_measure != itr_gcp_measure_end; ++itr_gcp_measure)
+  {
+    if (itr_gcp_measure->second.type ==
+        GCPsTableWidget::GCPEntry::CALCULATE_POINT &&
+        itr_gcp_measure->second.photo_measures.size() >= 2)
+    {
+      if (measure_estimate_map.IsValid(i))
+      {
+        const Point& gcp_estmate = gcps_estimate[measure_estimate_map[i]];
+        itr_gcp_measure->second.estimate_pos[0] = gcp_estmate[0];
+        itr_gcp_measure->second.estimate_pos[1] = gcp_estmate[1];
+        itr_gcp_measure->second.estimate_pos[2] = gcp_estmate[2];
+
+        gcps_table_widget_->UpdateGCPEstimatePos(
+          itr_gcp_measure->first,
+          itr_gcp_measure->second.estimate_pos[0],
+          itr_gcp_measure->second.estimate_pos[1],
+          itr_gcp_measure->second.estimate_pos[2]);
+      }
+      i++;
+    }
+    else if (itr_gcp_measure->second.type ==
+             GCPsTableWidget::GCPEntry::CHECK_POINT &&
+             itr_gcp_measure->second.photo_measures.size() >= 2)
+    {
+      Point3D check_point_estimate;
+      if (TriangulatePoint(itr_gcp_measure->second.photo_measures,
+                           check_point_estimate) == 0)
+      {
+        itr_gcp_measure->second.estimate_pos[0] = check_point_estimate[0];
+        itr_gcp_measure->second.estimate_pos[1] = check_point_estimate[1];
+        itr_gcp_measure->second.estimate_pos[2] = check_point_estimate[2];
+        gcps_table_widget_->UpdateGCPEstimatePos(
+          itr_gcp_measure->first,
+          itr_gcp_measure->second.estimate_pos[0],
+          itr_gcp_measure->second.estimate_pos[1],
+          itr_gcp_measure->second.estimate_pos[2]);
+      }
+    }
+  }
 }
 
 }

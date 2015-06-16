@@ -8,7 +8,12 @@
 #include <QMessageBox>
 #endif
 
+#include <cereal/types/map.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/archives/portable_binary.hpp>
+
 #include "hs_graphics/graphics_utility/read_file.hpp"
+#include "hs_sfm/sfm_utility/camera_type.hpp"
 
 #include "gui/scene_window.hpp"
 
@@ -256,6 +261,13 @@ struct DistanceCompare
 
 void SceneWindow::UpdatePhotoOrientation()
 {
+  typedef hs::sfm::CameraIntrinsicParams<double> SFMIntrinsicParams;
+  typedef EIGEN_STD_MAP(size_t, SFMIntrinsicParams) SFMIntrinsicParamsMap;
+  typedef hs::sfm::CameraExtrinsicParams<double> SFMExtrinsicParams;
+  typedef std::pair<size_t, size_t> SFMExtrinsicIndex;
+  typedef EIGEN_STD_MAP(SFMExtrinsicIndex, SFMExtrinsicParams)
+          SFMExtrinsicParamsMap;
+
   hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
   hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
   request_photo_orientation.id =
@@ -271,26 +283,20 @@ void SceneWindow::UpdatePhotoOrientation()
   std::string photo_orientation_path =
     database_mediator_.GetPhotoOrientationPath(request_photo_orientation.id);
 
-  std::map<uint, IntrinsicEntry> intrinsic_entries;
-  std::ifstream intrinsic_file(
-    response_photo_orientation.intrinsic_path.c_str());
-  if (!intrinsic_file) return;
-  while (!intrinsic_file.eof())
+  SFMIntrinsicParamsMap intrinsic_map;
   {
-    std::string line;
-    std::getline(intrinsic_file, line);
-    if (line.empty())
-    {
-      break;
-    }
-    std::stringstream ss(line);
-    uint id;
-    IntrinsicEntry intrinsic_entry;
-    ss>>id>>intrinsic_entry.focal_length;
+    std::ifstream intrinsic_file(response_photo_orientation.intrinsic_path,
+                                 std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(intrinsic_file);
+    archive(intrinsic_map);
+  }
 
+  std::map<uint, IntrinsicEntry> intrinsic_entries;
+  for (const auto& intrinsic_params : intrinsic_map)
+  {
     db::RequestGetPhotogroup request_group;
     db::ResponseGetPhotogroup response_group;
-    request_group.id = db::Database::Identifier(id);
+    request_group.id = db::Database::Identifier(intrinsic_params.first);
     database_mediator_.Request(
       this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
       request_group, response_group, false);
@@ -298,6 +304,9 @@ void SceneWindow::UpdatePhotoOrientation()
     {
       return;
     }
+    IntrinsicEntry intrinsic_entry;
+    intrinsic_entry.focal_length =
+      Float(intrinsic_params.second.focal_length());
     intrinsic_entry.width =
       response_group.record[
         db::PhotogroupResource::PHOTOGROUP_FIELD_WIDTH].ToInt();
@@ -305,67 +314,81 @@ void SceneWindow::UpdatePhotoOrientation()
       response_group.record[
         db::PhotogroupResource::PHOTOGROUP_FIELD_HEIGHT].ToInt();
 
-    intrinsic_entries[id] = intrinsic_entry;
+    intrinsic_entries[uint(intrinsic_params.first)] = intrinsic_entry;
   }
 
-  std::ifstream extrinsic_file(
-    response_photo_orientation.extrinsic_path.c_str());
-  if (!extrinsic_file) return;
-  OrientationEntryContainer orientation_entries;
-  while (!extrinsic_file.eof())
+  SFMExtrinsicParamsMap extrinsic_params_map;
   {
-    std::string line;
-    std::getline(extrinsic_file, line);
-    if (line.empty())
-    {
-      break;
-    }
-    std::stringstream ss(line);
+    std::ifstream extrinsic_file(response_photo_orientation.extrinsic_path,
+                                 std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(extrinsic_file);
+    archive(extrinsic_params_map);
+  }
 
+  OrientationEntryContainer orientation_entries;
+  for (auto extrinsic_params : extrinsic_params_map)
+  {
     OrientationEntry orientation_entry;
-    uint photo_id;
-    uint intrinsic_id;
-    ss>>photo_id>>intrinsic_id
-      >>orientation_entry.extrinsic_params.position()[0]
-      >>orientation_entry.extrinsic_params.position()[1]
-      >>orientation_entry.extrinsic_params.position()[2]
-      >>orientation_entry.extrinsic_params.rotation()[0]
-      >>orientation_entry.extrinsic_params.rotation()[1]
-      >>orientation_entry.extrinsic_params.rotation()[2];
-    auto itr_intrinsic_entry = intrinsic_entries.find(intrinsic_id);
+    auto itr_intrinsic_entry =
+      intrinsic_entries.find(uint(extrinsic_params.first.second));
     if (itr_intrinsic_entry == intrinsic_entries.end()) return;
     orientation_entry.focal_length = itr_intrinsic_entry->second.focal_length;
     orientation_entry.width = itr_intrinsic_entry->second.width;
     orientation_entry.height = itr_intrinsic_entry->second.height;
-
-    if (orientation_entry.extrinsic_params.position()[0] != Float(0) ||
-        orientation_entry.extrinsic_params.position()[1] != Float(0) ||
-        orientation_entry.extrinsic_params.position()[2] != Float(0) ||
-        orientation_entry.extrinsic_params.rotation()[0] != Float(0) ||
-        orientation_entry.extrinsic_params.rotation()[1] != Float(0) ||
-        orientation_entry.extrinsic_params.rotation()[2] != Float(0))
-    {
-      orientation_entries.push_back(orientation_entry);
-    }
+    orientation_entry.extrinsic_params.position()[0] =
+      Float(extrinsic_params.second.position()[0]);
+    orientation_entry.extrinsic_params.position()[1] =
+      Float(extrinsic_params.second.position()[1]);
+    orientation_entry.extrinsic_params.position()[2] =
+      Float(extrinsic_params.second.position()[2]);
+    orientation_entry.extrinsic_params.rotation()[0] =
+      Float(extrinsic_params.second.rotation()[0]);
+    orientation_entry.extrinsic_params.rotation()[1] =
+      Float(extrinsic_params.second.rotation()[1]);
+    orientation_entry.extrinsic_params.rotation()[2] =
+      Float(extrinsic_params.second.rotation()[2]);
+    orientation_entries.push_back(orientation_entry);
   }
 
   //读取稀疏点云
   PointCloudData pcd;
-  hs::graphics::ReadFile<Float>::ReadPointPlyFile(
-    response_photo_orientation.point_cloud_path, pcd);
+  {
+    std::ifstream point_cloud_file(response_photo_orientation.point_cloud_path,
+                                   std::ios::binary);
+    cereal::PortableBinaryInputArchive archive(point_cloud_file);
+    archive(pcd);
+  }
 
-  //计算中位数点
-  std::vector<Vector3> vertex_data_order = pcd.VertexData();
-  Vector3 median_point;
-  std::sort(vertex_data_order.begin(), vertex_data_order.end(), XCompare());
-  median_point[0] = vertex_data_order[vertex_data_order.size() / 2][0];
-  std::sort(vertex_data_order.begin(), vertex_data_order.end(), YCompare());
-  median_point[1] = vertex_data_order[vertex_data_order.size() / 2][1];
-  std::sort(vertex_data_order.begin(), vertex_data_order.end(), ZCompare());
-  median_point[2] = vertex_data_order[vertex_data_order.size() / 2][2];
-  std::sort(vertex_data_order.begin(), vertex_data_order.end(),
-            DistanceCompare(median_point));
-  size_t end = size_t(std::ceil(double(median_point.size()) * 0.9));
+  ////计算中位数点
+  //std::vector<Vector3> vertex_data_order = pcd.VertexData();
+  //Vector3 median_point;
+  //std::sort(vertex_data_order.begin(), vertex_data_order.end(), XCompare());
+  //median_point[0] = vertex_data_order[vertex_data_order.size() / 2][0];
+  //std::sort(vertex_data_order.begin(), vertex_data_order.end(), YCompare());
+  //median_point[1] = vertex_data_order[vertex_data_order.size() / 2][1];
+  //std::sort(vertex_data_order.begin(), vertex_data_order.end(), ZCompare());
+  //median_point[2] = vertex_data_order[vertex_data_order.size() / 2][2];
+  //std::sort(vertex_data_order.begin(), vertex_data_order.end(),
+  //          DistanceCompare(median_point));
+  //size_t end = size_t(std::ceil(double(median_point.size()) * 0.9));
+  //Vector3 min, max;
+  //min << std::numeric_limits<Float>::max(),
+  //       std::numeric_limits<Float>::max(),
+  //       std::numeric_limits<Float>::max();
+  //max << -std::numeric_limits<Float>::max(),
+  //       -std::numeric_limits<Float>::max(),
+  //       -std::numeric_limits<Float>::max();
+  //for (size_t i = 0; i < end; i++)
+  //{
+  //  min[0] = std::min(min[0], vertex_data_order[i][0]);
+  //  min[1] = std::min(min[1], vertex_data_order[i][1]);
+  //  min[2] = std::min(min[2], vertex_data_order[i][2]);
+  //  max[0] = std::max(max[0], vertex_data_order[i][0]);
+  //  max[1] = std::max(max[1], vertex_data_order[i][1]);
+  //  max[2] = std::max(max[2], vertex_data_order[i][2]);
+  //}
+  //pcd.SetBoundingBox(min, max);
+
   Vector3 min, max;
   min << std::numeric_limits<Float>::max(),
          std::numeric_limits<Float>::max(),
@@ -373,14 +396,14 @@ void SceneWindow::UpdatePhotoOrientation()
   max << -std::numeric_limits<Float>::max(),
          -std::numeric_limits<Float>::max(),
          -std::numeric_limits<Float>::max();
-  for (size_t i = 0; i < end; i++)
+  for (const auto& point : pcd.VertexData())
   {
-    min[0] = std::min(min[0], vertex_data_order[i][0]);
-    min[1] = std::min(min[1], vertex_data_order[i][1]);
-    min[2] = std::min(min[2], vertex_data_order[i][2]);
-    max[0] = std::max(max[0], vertex_data_order[i][0]);
-    max[1] = std::max(max[1], vertex_data_order[i][1]);
-    max[2] = std::max(max[2], vertex_data_order[i][2]);
+    min[0] = std::min(min[0], point[0]);
+    min[1] = std::min(min[1], point[1]);
+    min[2] = std::min(min[2], point[2]);
+    max[0] = std::max(max[0], point[0]);
+    max[1] = std::max(max[1], point[1]);
+    max[2] = std::max(max[2], point[2]);
   }
   pcd.SetBoundingBox(min, max);
 
