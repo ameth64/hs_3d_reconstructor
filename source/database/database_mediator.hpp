@@ -2490,7 +2490,7 @@ struct DatabaseRequestHandler <RequestCopyBlock,
   }
 };
 
-bool CopyDirectory(boost::filesystem::path const & source,
+bool HS_EXPORT CopyDirectory(boost::filesystem::path const & source,
                    boost::filesystem::path const & destination);
 
 //Request Copy Feature Match
