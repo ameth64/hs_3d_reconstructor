@@ -353,10 +353,21 @@ void SceneWindow::UpdatePhotoOrientation()
   //读取稀疏点云
   PointCloudData pcd;
   {
+    hs::graphics::PointCloudData<double> pcd_double;
     std::ifstream point_cloud_file(response_photo_orientation.point_cloud_path,
                                    std::ios::binary);
     cereal::PortableBinaryInputArchive archive(point_cloud_file);
-    archive(pcd);
+    archive(pcd_double);
+
+    pcd.VertexData().resize(pcd_double.PointCloudSize());
+    pcd.NormalData().resize(pcd_double.PointCloudSize());
+    pcd.ColorData().resize(pcd_double.PointCloudSize());
+    for (size_t i = 0; i < pcd_double.PointCloudSize(); i++)
+    {
+      pcd.VertexData()[i] = pcd_double.VertexData()[i].cast<float>();
+      pcd.NormalData()[i] = pcd_double.NormalData()[i].cast<float>();
+      pcd.ColorData()[i] = pcd_double.ColorData()[i].cast<float>();
+    }
   }
 
   ////计算中位数点

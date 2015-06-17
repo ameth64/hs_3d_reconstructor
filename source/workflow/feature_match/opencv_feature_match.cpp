@@ -287,6 +287,60 @@ int OpenCVFeatureMatch::FilterMatches(
   return 0;
 }
 
+#if 0
+int OpenCVFeatureMatch::FilterMatchesOpenMVG(
+  WorkflowStepConfig* config,
+  const KeysetMap& keysets,
+  const hs::sfm::MatchContainer& matches_initial,
+  hs::sfm::MatchContainer& matches_filtered)
+{
+  size_t number_of_image_pairs = 0;
+  for (const auto& image_pair : matches_initial)
+  {
+    number_of_image_pairs++;
+  }
+
+  auto itr_key_pairs = matches_initial.begin();
+  auto itr_key_pairs_end = matches_initial.end();
+  double distance_threshold = 32.0;
+  size_t number_of_finished_image_pairs = 0;
+  for (; itr_key_pairs != itr_key_pairs_end; ++itr_key_pairs)
+  {
+    if (!progress_manager_.CheckKeepWorking())
+    {
+      break;
+    }
+    std::cout<<"Filtering image pair "<<itr_key_pairs->first.first<<" "
+                                      <<itr_key_pairs->first.second<<"\n";
+    auto itr_key_pair = itr_key_pairs->second.begin();
+    auto itr_key_pair_end = itr_key_pairs->second.end();
+    auto itr_keyset_first = keysets.find(itr_key_pairs->first.first);
+    auto itr_keyset_second = keysets.find(itr_key_pairs->first.second);
+    for (; itr_key_pair != itr_key_pair_end; ++itr_key_pair)
+    {
+    }
+    std::cout<<"inlier_indices.size():"<<inlier_indices.size()<<"\n";
+    if (inlier_indices.size() > 100)
+    {
+      hs::sfm::KeyPairContainer key_pairs_refined;
+      for (size_t i = 0; i < inlier_indices.size(); i++)
+      {
+        key_pairs_refined.push_back(
+          itr_key_pairs->second[inlier_indices[i]]);
+      }
+      matches_filtered[itr_key_pairs->first] = key_pairs_refined;
+    }
+
+    number_of_finished_image_pairs++;
+    progress_manager_.SetCurrentSubProgressCompleteRatio(
+      float(number_of_finished_image_pairs) /
+      float(number_of_image_pairs));
+  }
+
+  return 0;
+}
+#endif
+
 cv::Mat OpenCVFeatureMatch::LoadDescriptors(size_t number_of_keys,
                                             const std::string& descriptor_path)
 {

@@ -137,7 +137,8 @@ private:
                      const PointContainer& points);
   int SaveTracks(WorkflowStepConfig* config,
                  const hs::sfm::TrackContainer& tracks,
-                 const hs::sfm::ObjectIndexMap& track_point_map);
+                 const hs::sfm::ObjectIndexMap& track_point_map,
+                 const hs::sfm::ViewInfoIndexer& view_info_indexer);
 
 protected:
   virtual int RunImplement(WorkflowStepConfig* config);

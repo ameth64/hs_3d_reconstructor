@@ -15,6 +15,7 @@
 #include "hs_sfm/sfm_file_io/keyset_loader.hpp"
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
+#include "hs_sfm/sfm_pipeline/reprojective_error_calculator.hpp"
 #include "hs_image_io/whole_io/image_data.hpp"
 #include "hs_image_io/whole_io/image_io.hpp"
 #include "hs_graphics/graphics_utility/pointcloud_data.hpp"
@@ -259,17 +260,19 @@ int IncrementalPhotoOrientation::RunSFM(
     photo_orientation_config->intrinsic_params_set();
 
   SFM sfm(100, 8, 2, size_t(photo_orientation_config->number_of_threads()));
-  return sfm(image_intrinsic_map,
-             matches,
-             keysets,
-             intrinsic_params_set,
-             extrinsic_params_set,
-             image_extrinsic_map,
-             points,
-             tracks,
-             track_point_map,
-             view_info_indexer,
-             &progress_manager_);
+  int result =  sfm(image_intrinsic_map,
+                    matches,
+                    keysets,
+                    intrinsic_params_set,
+                    extrinsic_params_set,
+                    image_extrinsic_map,
+                    points,
+                    tracks,
+                    track_point_map,
+                    view_info_indexer,
+                    &progress_manager_);
+
+  return result;
 }
 
 int IncrementalPhotoOrientation::SimilarTransformByPosEntries(
@@ -414,7 +417,7 @@ int IncrementalPhotoOrientation::SavePointCloud(
 {
   typedef hs::imgio::whole::ImageData::Byte Byte;
   typedef std::array<Byte, 3> Color;
-  typedef hs::graphics::PointCloudData<float> PointCloudData;
+  typedef hs::graphics::PointCloudData<Scalar> PointCloudData;
 
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
@@ -488,19 +491,19 @@ int IncrementalPhotoOrientation::SavePointCloud(
   for (size_t i = 0; i < points.size(); i++)
   {
     PointCloudData::Vector3 point;
-    point << float(points[i][0]),
-             float(points[i][1]),
-             float(points[i][2]);
+    point << (points[i][0]),
+             (points[i][1]),
+             (points[i][2]);
     point_cloud_data.VertexData().push_back(point);
     PointCloudData::Vector3 color;
-    color << float(colors[i][0]) / 255.0f,
-             float(colors[i][1]) / 255.0f,
-             float(colors[i][2]) / 255.0f;
+    color << Scalar(colors[i][0]) / 255.0,
+             Scalar(colors[i][1]) / 255.0,
+             Scalar(colors[i][2]) / 255.0;
     point_cloud_data.ColorData().push_back(color);
     PointCloudData::Vector3 norm;
-    norm << 1.0f,
-            0.0f,
-            0.0f;
+    norm << 1.0,
+            0.0,
+            0.0;
     point_cloud_data.NormalData().push_back(norm);
   }
 
@@ -516,7 +519,8 @@ int IncrementalPhotoOrientation::SavePointCloud(
 int IncrementalPhotoOrientation::SaveTracks(
   WorkflowStepConfig* config,
   const hs::sfm::TrackContainer& tracks,
-  const hs::sfm::ObjectIndexMap& track_point_map)
+  const hs::sfm::ObjectIndexMap& track_point_map,
+  const hs::sfm::ViewInfoIndexer& view_info_indexer)
 {
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
@@ -526,13 +530,24 @@ int IncrementalPhotoOrientation::SaveTracks(
   const std::string& tracks_path =
     photo_orientation_config->tracks_path();
 
-  hs::sfm::TrackContainer tracks_wrap = tracks;
-  for (size_t i = 0; i < tracks_wrap.size(); i++)
+  hs::sfm::TrackContainer tracks_wrap;
+  for (size_t i = 0; i < tracks.size(); i++)
   {
-    for (size_t j = 0; j < tracks_wrap[i].size(); j++)
+    hs::sfm::Track track;
+    for (size_t j = 0; j < tracks[i].size(); j++)
     {
-      tracks_wrap[i][j].first = size_t(image_ids[tracks_wrap[i][j].first]);
+      size_t image_id = tracks[i][j].first;
+      size_t key_id = tracks[i][j].second;
+      const hs::sfm::ViewInfo* view_info =
+        view_info_indexer.GetViewInfoByTrackImage(i, image_id);
+      if (view_info != nullptr &&
+        !view_info->is_blunder)
+      {
+        track.push_back(std::make_pair(size_t(image_ids[image_id]),
+                                       key_id));
+      }
     }
+    tracks_wrap.push_back(track);
   }
 
   {
@@ -612,7 +627,7 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
       break;
     }
 
-    result = SaveTracks(config, tracks, track_point_map);
+    result = SaveTracks(config, tracks, track_point_map, view_info_indexer);
     if (result != 0)
     {
       std::cout<<"SaveTracks Error!\n";

@@ -1,9 +1,5 @@
 ﻿#include <limits>
 #include <fstream>
-#if 1
-#include <iostream>
-#include <iomanip>
-#endif
 
 #include <QToolBar>
 #include <QFileDialog>
@@ -1027,7 +1023,7 @@ void GCPsPane::GCPConstrainedOptimize()
   typedef hs::sfm::Track Track;
   typedef hs::sfm::TrackContainer TrackContainer;
   typedef hs::sfm::ViewInfoIndexer ViewInfoIndexer;
-  typedef hs::graphics::PointCloudData<float> PointCloudData;
+  typedef hs::graphics::PointCloudData<Scalar> PointCloudData;
   typedef hs::recon::db::Identifier Identifier;
   typedef EIGEN_STD_MAP(size_t, ImageKeyset) ImageKeysetMap;
 
@@ -1061,6 +1057,16 @@ void GCPsPane::GCPConstrainedOptimize()
   {
     return;
   }
+
+  //Compute offset
+  Point offset = Point::Zero();
+  for (const auto& gcp_measure : gcp_measures_)
+  {
+    offset[0] += gcp_measure.second.measure_pos[0];
+    offset[1] += gcp_measure.second.measure_pos[1];
+    offset[2] += gcp_measure.second.measure_pos[2];
+  }
+  offset /= Scalar(gcp_measures_.size());
 
   //Get image_keysets image_intrinsic_map image_extrinsic_map
   //intrinsic_params_set extrinsic_params_set
@@ -1100,7 +1106,7 @@ void GCPsPane::GCPConstrainedOptimize()
       extrinsic_params_abs.rotation() * similar_rotation_.Inverse();
     extrinsic_params_abs.position() =
       similar_scale_ * (similar_rotation_ * extrinsic_params_abs.position()) +
-      similar_translate_;
+      (similar_translate_ - offset);
     extrinsic_params_set.push_back(extrinsic_params_abs);
     image_intrinsic_map.AddObject(
       size_t(std::distance(intrinsic_params_set_.begin(), itr_intrinsic)));
@@ -1151,7 +1157,7 @@ void GCPsPane::GCPConstrainedOptimize()
 
     points[i] =
       similar_scale_ * (similar_rotation_ * points[i]) +
-      similar_translate_;
+      (similar_translate_ - offset);
   }
 
   //Get image_keysets_gcp tracks_gcp gcps_measure
@@ -1191,43 +1197,18 @@ void GCPsPane::GCPConstrainedOptimize()
       gcp_measure << itr_gcp_measure->second.measure_pos[0],
                      itr_gcp_measure->second.measure_pos[1],
                      itr_gcp_measure->second.measure_pos[2];
+      gcp_measure -= offset;
       gcps_measure.push_back(gcp_measure);
-    }
-  }
-
-  for (size_t i = 0; i < tracks.size(); i++)
-  {
-    if (track_point_map.IsValid(i))
-    {
-      size_t point_id = track_point_map[i];
-      for (size_t j = 0; j < tracks[i].size(); j++)
-      {
-        size_t extrinsic_id = tracks[i][j].first;
-        size_t key_id = tracks[i][j].second;
-        size_t intrinsic_id = image_intrinsic_map[extrinsic_id];
-        Key predicated = hs::sfm::ProjectiveFunctions<Scalar>::
-                           WorldPointProjectToImageKey(
-                             intrinsic_params_set[intrinsic_id],
-                             extrinsic_params_set[extrinsic_id],
-                             points[point_id]);
-        Key key = image_keysets[extrinsic_id][key_id];
-
-        Scalar dx = std::abs(key[0] - predicated[0]);
-        Scalar dy = std::abs(key[1] - predicated[1]);
-        Scalar error = dx * dx + dy * dy;
-      }
     }
   }
 
   PointContainer gcps_estimate;
   TrackPointMap estimate_measure_map;
-#if 1
   QSettings settings;
   QString number_of_threads_key = tr("number_of_threads");
   uint number_of_threads = settings.value(number_of_threads_key,
                                           QVariant(uint(1))).toUInt();
-  Optimizor optimizor(size_t(number_of_threads), 0.005, 0.005,
-                      5, 0.1);
+  Optimizor optimizor(size_t(number_of_threads), 0.005, 0.005, 0.1, 4.0);
   if (optimizor(image_keysets,
                 image_intrinsic_map,
                 tracks,
@@ -1245,28 +1226,6 @@ void GCPsPane::GCPConstrainedOptimize()
   {
     return;
   }
-#else
-  itr_gcp_measure = gcp_measures_.begin();
-  itr_gcp_measure_end = gcp_measures_.end();
-  for (size_t i = 0; itr_gcp_measure != itr_gcp_measure_end; ++itr_gcp_measure)
-  {
-    if (itr_gcp_measure->second.type ==
-        GCPsTableWidget::GCPEntry::CALCULATE_POINT &&
-        itr_gcp_measure->second.photo_measures.size() >= 2)
-    {
-      Point3D gcp_estimate;
-      if (TriangulatePoint(itr_gcp_measure->second.photo_measures,
-                           gcp_estimate) == 0)
-      {
-        gcp_estimate = similar_scale_ * (similar_rotation_ * gcp_estimate) +
-                       similar_translate_;
-        estimate_measure_map.AddObject(i);
-        gcps_estimate.push_back(gcp_estimate);
-        i++;
-      }
-    }
-  }
-#endif
 
   TrackPointMap measure_estimate_map(gcps_measure.size());
   for (size_t i = 0; i < estimate_measure_map.Size(); i++)
@@ -1279,8 +1238,7 @@ void GCPsPane::GCPConstrainedOptimize()
 
   itr_intrinsic = intrinsic_params_set_.begin();
   itr_intrinsic_end = intrinsic_params_set_.end();
-  for (size_t i = 0; itr_intrinsic != intrinsic_params_set_.begin();
-       ++i, ++itr_intrinsic)
+  for (size_t i = 0; itr_intrinsic != itr_intrinsic_end; ++i, ++itr_intrinsic)
   {
     itr_intrinsic->second = intrinsic_params_set[i];
   }
@@ -1309,9 +1267,9 @@ void GCPsPane::GCPConstrainedOptimize()
       if (measure_estimate_map.IsValid(i))
       {
         const Point& gcp_estmate = gcps_estimate[measure_estimate_map[i]];
-        itr_gcp_measure->second.estimate_pos[0] = gcp_estmate[0];
-        itr_gcp_measure->second.estimate_pos[1] = gcp_estmate[1];
-        itr_gcp_measure->second.estimate_pos[2] = gcp_estmate[2];
+        itr_gcp_measure->second.estimate_pos[0] = gcp_estmate[0] + offset[0];
+        itr_gcp_measure->second.estimate_pos[1] = gcp_estmate[1] + offset[1];
+        itr_gcp_measure->second.estimate_pos[2] = gcp_estmate[2] + offset[2];
 
         gcps_table_widget_->UpdateGCPEstimatePos(
           itr_gcp_measure->first,
@@ -1329,9 +1287,12 @@ void GCPsPane::GCPConstrainedOptimize()
       if (TriangulatePoint(itr_gcp_measure->second.photo_measures,
                            check_point_estimate) == 0)
       {
-        itr_gcp_measure->second.estimate_pos[0] = check_point_estimate[0];
-        itr_gcp_measure->second.estimate_pos[1] = check_point_estimate[1];
-        itr_gcp_measure->second.estimate_pos[2] = check_point_estimate[2];
+        itr_gcp_measure->second.estimate_pos[0] =
+          check_point_estimate[0] + offset[0];
+        itr_gcp_measure->second.estimate_pos[1] =
+          check_point_estimate[1] + offset[1];
+        itr_gcp_measure->second.estimate_pos[2] =
+          check_point_estimate[2] + offset[2];
         gcps_table_widget_->UpdateGCPEstimatePos(
           itr_gcp_measure->first,
           itr_gcp_measure->second.estimate_pos[0],
@@ -1339,6 +1300,13 @@ void GCPsPane::GCPConstrainedOptimize()
           itr_gcp_measure->second.estimate_pos[2]);
       }
     }
+  }
+
+  itr_photo = photo_entries_.begin();
+  itr_photo_end = photo_entries_.end();
+  for (size_t i = 0; itr_photo != itr_photo_end; ++itr_photo, ++i)
+  {
+    itr_photo->second.extrinsic_params.position() += offset;
   }
 }
 

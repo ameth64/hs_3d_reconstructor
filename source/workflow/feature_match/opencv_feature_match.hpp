@@ -34,6 +34,12 @@ private:
                     const KeysetMap& keysets,
                     const hs::sfm::MatchContainer& matches_initial,
                     hs::sfm::MatchContainer& matches_filtered);
+#if 0
+  int FilterMatchesOpenMVG(WorkflowStepConfig* config,
+                           const KeysetMap& keysets,
+                           const hs::sfm::MatchContainer& matches_initial,
+                           hs::sfm::MatchContainer& matches_filtered);
+#endif
 private:
   static cv::Mat LoadDescriptors(size_t number_of_keys,
                                  const std::string& descriptor_path);
