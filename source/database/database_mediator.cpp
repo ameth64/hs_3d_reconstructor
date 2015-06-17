@@ -261,6 +261,29 @@ bool CopyDirectory(boost::filesystem::path const & source,
   return true;
 }
 
+bool RemoveDirectory(boost::filesystem::path const & destination)
+{
+  namespace fs = boost::filesystem;
+  try
+  {
+    // Check whether the function call is valid
+    if(!fs::exists(destination) || !fs::is_directory(destination))
+    {
+      return false;
+    }
+    // delete the destination directory
+    if(!fs::remove_all(destination))
+    {
+      return false;
+    }
+  }
+  catch(fs::filesystem_error const & e)
+  {
+    return false;
+  }
+  return true;
+}
+
 }
 }
 }

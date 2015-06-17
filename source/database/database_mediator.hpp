@@ -58,7 +58,8 @@ public:
     NO_ERROR = 0,
     ERROR_FAIL_TO_REGISTER_RESOURCE = Database::NUMBER_OF_ERROR_CODE,
     ERROR_FAIL_TO_CREATE_DIRECTORY,
-    ERROR_FAIL_TO_COPY_DIRECTORY
+    ERROR_FAIL_TO_COPY_DIRECTORY,
+    ERROR_FAIL_TO_REMOVE_DIRECTORY
   };
 
   enum RequestFlag
@@ -114,6 +115,12 @@ public:
     REQUEST_COPY_POINT_CLOUD,
     REQUEST_COPY_SURFACE_MODEL,
     REQUEST_COPY_TEXTURE,
+    REQUEST_REMOVE_BLOCK,
+    REQUEST_REMOVE_FEATURE_MATCH,
+    REQUEST_REMOVE_PHOTO_ORIENTATION,
+    REQUEST_REMOVE_POINT_CLOUD,
+    REQUEST_REMOVE_SURFACE_MODEL,
+    REQUEST_REMOVE_TEXTURE,
     NUMBER_OF_REQUEST_FLAGS
 
   };
@@ -3020,6 +3027,329 @@ struct DatabaseRequestHandler <RequestCopyTexture,
 
       break;
     }
+    return response.error_code;
+  }
+};
+
+bool HS_EXPORT RemoveDirectory(boost::filesystem::path const & destination);
+
+//Request Remove texture
+struct RequestRemoveTextrue
+{
+  REQUEST_HEADER
+  Identifier id;
+};
+
+struct ResponseRemoveTextrue
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler < RequestRemoveTextrue,
+  ResponseRemoveTextrue >
+{
+  int operator() (const RequestRemoveTextrue& request,
+                  ResponseRemoveTextrue& response,
+                  DatabaseMediator& database_mediator)
+  {
+    //删除TEXTURE文件夹
+    std::string texture_path = database_mediator.GetTexturePath(request.id);
+    if(!RemoveDirectory(boost::filesystem::path(texture_path)))
+    {
+        response.error_code = DatabaseMediator::ERROR_FAIL_TO_REMOVE_DIRECTORY;
+    }
+
+    //删除TEXTURE数据库项
+    response.error_code =
+      database_mediator.texture_resource_->Delete(
+      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
+    return response.error_code;
+  }
+};
+
+//Request Remove Surface Model
+struct RequestRemoveSurfaceModel
+{
+  REQUEST_HEADER
+  Identifier id;
+};
+
+struct ResponseRemoveSurfaceModel
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler < RequestRemoveSurfaceModel,
+  ResponseRemoveSurfaceModel >
+{
+  int operator() (const RequestRemoveSurfaceModel& request,
+                  ResponseRemoveSurfaceModel& response,
+                  DatabaseMediator& database_mediator)
+  {
+    //删除SURFACEMODEL对应的TEXTURE
+    TextureResource::RecordContainer records;
+    database_mediator.texture_resource_->GetAll(records);
+    for(auto iter = records.begin();iter != records.end(); ++iter)
+    {
+      if(iter->second[TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID].ToInt()
+           == request.id)
+      {
+        RequestRemoveTextrue remove_request;
+        remove_request.id =
+          iter->second[TextureResource::TEXTURE_FIELD_ID].ToInt();
+        ResponseRemoveTextrue remove_reponse;
+        response.error_code = database_mediator.Request(
+          nullptr, DatabaseMediator::REQUEST_REMOVE_TEXTURE,
+          remove_request, remove_reponse, false);
+        if (response.error_code != DatabaseMediator::NO_ERROR)
+        {
+          return response.error_code;
+        }
+      }
+    }
+
+    //删除SURFACEMODEL文件夹
+    std::string surface_model_path =
+      database_mediator.GetSurfaceModelPath(request.id);
+
+    if(!RemoveDirectory(boost::filesystem::path(surface_model_path)))
+    {
+      response.error_code = DatabaseMediator::ERROR_FAIL_TO_REMOVE_DIRECTORY;
+    }
+
+    //删除SURFACEMODEL数据库项
+    response.error_code =
+      database_mediator.surface_model_resource_->Delete(
+      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
+    return response.error_code;
+  }
+};
+
+//Request Remove Point Cloud
+struct RequestRemovePointCloud
+{
+  REQUEST_HEADER
+  Identifier id;
+};
+
+struct ResponseRemovePointCloud
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler < RequestRemovePointCloud,
+  ResponseRemovePointCloud >
+{
+  int operator() (const RequestRemovePointCloud& request,
+                  ResponseRemovePointCloud& response,
+                  DatabaseMediator& database_mediator)
+  {
+    //删除POINTCLOUD对应的SURFACEMODEL
+    SurfaceModelResource::RecordContainer records;
+    database_mediator.surface_model_resource_->GetAll(records);
+    for(auto iter = records.begin(); iter != records.end(); ++iter)
+    {
+      if(iter->second[SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt()
+           == request.id)
+      {
+        RequestRemoveSurfaceModel remove_request;
+        remove_request.id = iter->second[
+          SurfaceModelResource::SURFACE_MODEL_FIELD_ID].ToInt();
+        ResponseRemoveSurfaceModel remove_reponse;
+        response.error_code = database_mediator.Request(
+          nullptr, DatabaseMediator::REQUEST_REMOVE_SURFACE_MODEL,
+          remove_request, remove_reponse, false);
+        if(response.error_code != DatabaseMediator::NO_ERROR)
+        {
+          return response.error_code;
+        }
+      }
+    }
+
+    //删除POINTCLOUD文件夹
+    std::string pointcloud_path =
+      database_mediator.GetPointCloudPath(request.id);
+
+    if(!RemoveDirectory(boost::filesystem::path(pointcloud_path)))
+    {
+      response.error_code = DatabaseMediator::ERROR_FAIL_TO_REMOVE_DIRECTORY;
+    }
+
+    //删除POINTCLOUD数据库项
+    response.error_code =
+      database_mediator.point_cloud_resource_->Delete(
+      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
+    return response.error_code;
+  }
+};
+
+//Request Remove Photo Orientation
+struct RequestRemovePhotoOrientation
+{
+  REQUEST_HEADER
+  Identifier id;
+};
+
+struct ResponseRemovePhotoOrientation
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler < RequestRemovePhotoOrientation,
+  ResponseRemovePhotoOrientation >
+{
+  int operator() (const RequestRemovePhotoOrientation& request,
+                  ResponseRemovePhotoOrientation& response,
+                  DatabaseMediator& database_mediator)
+  {
+    //删除PHOTOORIENTATION对应的POINTCLOUD
+    PointCloudResource::RecordContainer records;
+    database_mediator.point_cloud_resource_->GetAll(records);
+    for(auto iter = records.begin(); iter != records.end(); ++iter)
+    {
+      if(iter->second[PointCloudResource::
+        POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt() == request.id)
+      {
+        RequestRemovePointCloud remove_request;
+        remove_request.id =
+          iter->second[PointCloudResource::POINT_CLOUD_FIELD_ID].ToInt();
+        ResponseRemovePointCloud remove_reponse;
+        response.error_code = database_mediator.Request(
+          nullptr, DatabaseMediator::REQUEST_REMOVE_POINT_CLOUD,
+          remove_request, remove_reponse, false);
+        if(response.error_code != DatabaseMediator::NO_ERROR)
+        {
+          return response.error_code;
+        }
+      }
+    }
+
+    //删除PHOTOORIENTATION文件夹
+    std::string photo_orientation_path =
+      database_mediator.GetPhotoOrientationPath(request.id);
+
+    if(!RemoveDirectory(boost::filesystem::path(photo_orientation_path)))
+    {
+      response.error_code = DatabaseMediator::ERROR_FAIL_TO_REMOVE_DIRECTORY;
+    }
+
+    //删除PHOTOORIENTATION数据库项
+    response.error_code =
+      database_mediator.photo_orientation_resource_->Delete(
+      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
+    return response.error_code;
+  }
+};
+
+//Request Remove Feature match
+struct RequestRemoveFeatureMatch
+{
+  REQUEST_HEADER
+  Identifier id;
+};
+
+struct ResponseRemoveFeatureMatch
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler < RequestRemoveFeatureMatch,
+  ResponseRemoveFeatureMatch >
+{
+  int operator() (const RequestRemoveFeatureMatch& request,
+                  ResponseRemoveFeatureMatch& response,
+                  DatabaseMediator& database_mediator)
+  {
+    //删除FEATUREMATCH对应的PHOTOORIENTATION
+    PhotoOrientationResource::RecordContainer records;
+    database_mediator.photo_orientation_resource_->GetAll(records);
+    for(auto iter = records.begin(); iter != records.end(); ++iter)
+    {
+      if(iter->second[PhotoOrientationResource::
+        PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt() == request.id)
+      {
+        RequestRemovePhotoOrientation remove_request;
+        remove_request.id = iter->second[
+          PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_ID].ToInt();
+        ResponseRemovePhotoOrientation remove_reponse;
+        response.error_code = database_mediator.Request(
+          nullptr, DatabaseMediator::REQUEST_REMOVE_PHOTO_ORIENTATION,
+          remove_request, remove_reponse, false);
+        if(response.error_code != DatabaseMediator::NO_ERROR)
+        {
+          return response.error_code;
+        }
+      }
+    }
+
+    //删除FEATUREMATCH文件夹
+    std::string feature_match_path =
+      database_mediator.GetFeatureMatchPath(request.id);
+
+    if(!RemoveDirectory(boost::filesystem::path(feature_match_path)))
+    {
+      response.error_code = DatabaseMediator::ERROR_FAIL_TO_REMOVE_DIRECTORY;
+    }
+
+    //删除FEATUREMATCH数据库项
+    response.error_code =
+      database_mediator.feature_match_resource_->Delete(
+      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
+    return response.error_code;
+  }
+};
+
+//Request Remove Block
+struct RequestRemoveBlock
+{
+  REQUEST_HEADER
+  Identifier id;
+};
+
+struct ResponseRemoveBlock
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler < RequestRemoveBlock,
+  ResponseRemoveBlock >
+{
+  int operator() (const RequestRemoveBlock& request,
+                  ResponseRemoveBlock& response,
+                  DatabaseMediator& database_mediator)
+  {
+    //删除BLOCK对应的FEATUREMATCH
+    FeatureMatchResource::RecordContainer records;
+    database_mediator.feature_match_resource_->GetAll(records);
+    for(auto iter = records.begin(); iter != records.end(); ++iter)
+    {
+      if(iter->second[FeatureMatchResource::
+        FEATURE_MATCH_FIELD_BLOCK_ID].ToInt() == request.id)
+      {
+        RequestRemoveFeatureMatch remove_request;
+        remove_request.id = iter->second[
+          FeatureMatchResource::FEATURE_MATCH_FIELD_ID].ToInt();
+        ResponseRemoveFeatureMatch remove_reponse;
+        response.error_code = database_mediator.Request(
+          nullptr, DatabaseMediator::REQUEST_REMOVE_FEATURE_MATCH,
+          remove_request, remove_reponse, false);
+        if(response.error_code != DatabaseMediator::NO_ERROR)
+        {
+          return response.error_code;
+        }
+      }
+    }
+
+    //删除BLOCK数据库项
+    response.error_code =
+      database_mediator.block_resource_->Delete(
+      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
     return response.error_code;
   }
 };
