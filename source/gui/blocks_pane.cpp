@@ -1148,6 +1148,120 @@ void BlocksPane::OnActionCopyTriggered()
 
 void BlocksPane::OnActionRemoveTriggered()
 {
+  QMessageBox msgBox;
+  if(item_selected_mask_[BLOCK_SELECTED])
+  {
+     db::RequestRemoveBlock request;
+     request.id = selected_block_id_;
+     db::ResponseRemoveBlock response;
+     ((MainWindow*)parent())->database_mediator().Request(
+     this, db::DatabaseMediator::REQUEST_REMOVE_BLOCK,
+     request, response, false);
+     if(response.error_code == db::DatabaseMediator::NO_ERROR)
+     {
+       blocks_tree_widget_->DeleteBlock(selected_block_id_);
+     }
+     else
+     {
+       msgBox.setText(tr("delete block fail!"));
+       msgBox.exec();
+     }
+  }
+  else if(item_selected_mask_[FEATURE_MATCH_SELECTED])
+  {
+    db::RequestRemoveFeatureMatch request;
+    request.id = selected_feature_match_id_;
+    db::ResponseRemoveFeatureMatch response;
+    ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_REMOVE_FEATURE_MATCH,
+    request, response, false);
+    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      blocks_tree_widget_->DeleteFeatureMatch(selected_feature_match_id_);
+    }
+    else
+    {
+      msgBox.setText(tr("delete Feature match fail!"));
+      msgBox.exec();
+    }
+  }
+  else if(item_selected_mask_[PHOTO_ORIENTATION_SELECTED])
+  {
+    db::RequestRemovePhotoOrientation request;
+    request.id = selected_photo_orientation_id_;
+    db::ResponseRemovePhotoOrientation response;
+    ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_REMOVE_PHOTO_ORIENTATION,
+    request, response, false);
+    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      blocks_tree_widget_->
+        DeletePhotoOrientation(selected_photo_orientation_id_);
+    }
+    else
+    {
+      msgBox.setText(tr("delete Photo Orientation fail!"));
+      msgBox.exec();
+    }
+  }
+  else if(item_selected_mask_[POINT_CLOUD_SELECTED])
+  {
+    db::RequestRemoveSurfaceModel request;
+    request.id = selected_point_cloud_id_;
+    db::ResponseRemoveSurfaceModel response;
+    ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_REMOVE_POINT_CLOUD,
+    request, response, false);
+    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      blocks_tree_widget_->DeletePointCloud(selected_point_cloud_id_);
+    }
+    else
+    {
+      msgBox.setText(tr("delete point cloud fail!"));
+      msgBox.exec();
+    }
+  }
+  else if(item_selected_mask_[SURFACE_MODEL_SELECTED])
+  {
+    db::RequestRemoveSurfaceModel request;
+    request.id = selected_surface_model_id_;
+    db::ResponseRemoveSurfaceModel response;
+    ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_REMOVE_SURFACE_MODEL,
+    request, response, false);
+    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      blocks_tree_widget_->DeleteSurfaceModel(selected_surface_model_id_);
+    }
+    else
+    {
+      msgBox.setText(tr("delete surface model fail!"));
+      msgBox.exec();
+    }
+  }
+  else if(item_selected_mask_[TEXTURE_SELECTED])
+  {
+    db::RequestRemoveTextrue request;
+    request.id = selected_texture_id_;
+    db::ResponseRemoveTextrue response;
+    ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_REMOVE_TEXTURE,
+    request, response, false);
+    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    {
+      blocks_tree_widget_->DeleteTexture(selected_texture_id_);
+    }
+    else
+    {
+      msgBox.setText(tr("delete texture fail!"));
+      msgBox.exec();
+    }
+  }
+  else
+  {
+  return;
+  }
 
 }
 
