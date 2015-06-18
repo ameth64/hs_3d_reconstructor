@@ -91,19 +91,14 @@ int PhotoOrientationInfoWidget::Initialize(
   for (auto iter =  intrinsic_params_map_.begin();
             iter != intrinsic_params_map_.end(); ++iter)
   {
-    for (int i =0; i < 10; ++i)
-    {
-      QTreeWidgetItem* top_item = new QTreeWidgetItem;
-      top_item->setText(0,tr("Intrinsic Params: ")+QString::number(iter->first));
-      treewidget_intrinsic_param_->addTopLevelItem(top_item);
-      QTreeWidgetItem* intrinsic_item = new QTreeWidgetItem;
-      top_item->addChild(intrinsic_item);
-      IntrinsicParaminfoWidget* ipiw =
-        new IntrinsicParaminfoWidget(iter->second);
-      treewidget_intrinsic_param_->setItemWidget(intrinsic_item, 0, ipiw);
-
-    }
-    
+    QTreeWidgetItem* top_item = new QTreeWidgetItem;
+    top_item->setText(0,tr("Intrinsic Params: ")+QString::number(iter->first));
+    treewidget_intrinsic_param_->addTopLevelItem(top_item);
+    QTreeWidgetItem* intrinsic_item = new QTreeWidgetItem;
+    top_item->addChild(intrinsic_item);
+    IntrinsicParaminfoWidget* ipiw =
+      new IntrinsicParaminfoWidget(iter->second);
+    treewidget_intrinsic_param_->setItemWidget(intrinsic_item, 0, ipiw);
   }
   
   return 0;
