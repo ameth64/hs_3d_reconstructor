@@ -414,7 +414,7 @@ int IncrementalPhotoOrientation::SavePointCloud(
 {
   typedef hs::imgio::whole::ImageData::Byte Byte;
   typedef std::array<Byte, 3> Color;
-  typedef hs::graphics::PointCloudData<float> PointCloudData;
+  typedef hs::graphics::PointCloudData<double> PointCloudData;
 
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);

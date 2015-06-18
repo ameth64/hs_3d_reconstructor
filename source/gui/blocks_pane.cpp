@@ -48,10 +48,15 @@ BlocksPane::BlocksPane(QWidget* parent)
 {
   timer_ = new QTimer(this);
   blocks_tree_widget_ = new BlocksTreeWidget(this);
+  photo_orientation_info_widget_ = new PhotoOrientationInfoWidget(this);
+
   QTreeWidgetItem* header_item =
     new QTreeWidgetItem(QStringList()<<tr("Name")<<tr("Progress"));
   blocks_tree_widget_->setHeaderItem(header_item);
   AddWidget(blocks_tree_widget_);
+  AddWidget(photo_orientation_info_widget_);
+  photo_orientation_info_widget_->hide();
+
 
   progress_bar_ = new QProgressBar(this);
   progress_bar_->hide();
@@ -1273,6 +1278,10 @@ void BlocksPane::OnBlockItemSelected(uint block_id)
   selected_block_id_ = block_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(BLOCK_SELECTED);
+
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::OnPhotosInOneBlockSelected(uint block_id,
@@ -1282,6 +1291,9 @@ void BlocksPane::OnPhotosInOneBlockSelected(uint block_id,
   action_remove_->setEnabled(false);
   action_add_workflow_->setEnabled(false);
   selected_block_id_ = block_id;
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::OnPhotosItemSelected(uint block_id)
@@ -1292,6 +1304,9 @@ void BlocksPane::OnPhotosItemSelected(uint block_id)
   selected_block_id_ = block_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(PHOTOS_SELECTED);
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
@@ -1302,6 +1317,10 @@ void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
   selected_feature_match_id_ = feature_match_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(FEATURE_MATCH_SELECTED);
+
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
@@ -1312,6 +1331,28 @@ void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
   selected_photo_orientation_id_ = photo_orientation_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(PHOTO_ORIENTATION_SELECTED);
+
+  while(1)
+  {
+  typedef hs::recon::db::Database::Identifier Identifier;
+  hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+  hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+  request_photo_orientation.id = Identifier(selected_photo_orientation_id_);
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+    request_photo_orientation, response_photo_orientation, false);
+  if(response_photo_orientation.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+  {
+    break;
+  }
+  photo_orientation_info_widget_->Initialize(
+    response_photo_orientation.intrinsic_path,
+    response_photo_orientation.extrinsic_path,
+    response_photo_orientation.point_cloud_path);
+  photo_orientation_info_widget_->show();
+  break;
+  }
 }
 
 void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
@@ -1322,6 +1363,10 @@ void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
   selected_point_cloud_id_ = point_cloud_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(POINT_CLOUD_SELECTED);
+
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
@@ -1332,6 +1377,9 @@ void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
   selected_surface_model_id_ = surface_model_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(SURFACE_MODEL_SELECTED);
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::OnTextureItemSelected(uint texture_id)
@@ -1342,6 +1390,10 @@ void BlocksPane::OnTextureItemSelected(uint texture_id)
   selected_texture_id_ = texture_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(TEXTURE_SELECTED);
+
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
+
 }
 
 void BlocksPane::ActivatePhotoOrientationItem(

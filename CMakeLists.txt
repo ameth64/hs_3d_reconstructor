@@ -34,6 +34,8 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/photos_import_configure_dialog.cpp"
   "source/gui/photogroup_info_setting_widget.cpp"
   "source/gui/photo_display_widget.cpp"
+  "source/gui/photo_import_check_widget.cpp"
+  "source/gui/photo_import_check_dialog.cpp"
   "source/gui/image_container_widget.cpp"
   "source/gui/image_opengl_window.cpp"
   "source/gui/block_photos_select_widget.cpp"
@@ -41,6 +43,7 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/block_info_widget.cpp"
   "source/gui/feature_match_configure_widget.cpp"
   "source/gui/photo_orientation_configure_widget.cpp"
+  "source/gui/photo_orientation_info_widget.cpp"
   "source/gui/point_cloud_configure_widget.cpp"
   "source/gui/surface_model_configure_widget.cpp"
   "source/gui/texture_configure_widget.cpp"
@@ -60,8 +63,6 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/start_up_dialog.cpp"
   "source/gui/progress_dialog.cpp"
   "source/gui/default_longitude_latitude_convertor.cpp"
-  "source/gui/photo_import_check_widget.cpp"
-  "source/gui/photo_import_check_dialog.cpp"
   )
 
 if (MSVC)
