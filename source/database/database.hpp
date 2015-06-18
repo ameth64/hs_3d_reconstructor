@@ -4,6 +4,7 @@
 #include <bitset>
 
 #include <sqlite3.h>
+#include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 
 #include "hs_3d_reconstructor/config/hs_config.hpp"
