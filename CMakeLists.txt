@@ -34,6 +34,8 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/photos_import_configure_dialog.cpp"
   "source/gui/photogroup_info_setting_widget.cpp"
   "source/gui/photo_display_widget.cpp"
+  "source/gui/photo_import_check_widget.cpp"
+  "source/gui/photo_import_check_dialog.cpp"
   "source/gui/image_container_widget.cpp"
   "source/gui/image_opengl_window.cpp"
   "source/gui/block_photos_select_widget.cpp"
@@ -41,6 +43,7 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/block_info_widget.cpp"
   "source/gui/feature_match_configure_widget.cpp"
   "source/gui/photo_orientation_configure_widget.cpp"
+  "source/gui/photo_orientation_info_widget.cpp"
   "source/gui/point_cloud_configure_widget.cpp"
   "source/gui/surface_model_configure_widget.cpp"
   "source/gui/texture_configure_widget.cpp"
@@ -75,6 +78,7 @@ endif()
 set(RECONSTRUCTOR_QT_MODULES
   "Widgets"
   "Core"
+  "LinguistTools"
   )
 
 set(RECONSTRUCTOR_UI_FILES
@@ -85,11 +89,16 @@ set(RECONSTRUCTOR_RESOURCES
   "resource/3d_reconstructor.qrc"
   )
 
+set(RECONSTRUCTOR_TS_FILES
+    "ts/zh_cn.ts"
+  )
+
 hs_add_qt_executable(${RECONSTRUCTOR_NAME}
   SOURCES ${RECONSTRUCTOR_SOURCES}
   QT_MODULES ${RECONSTRUCTOR_QT_MODULES}
   UI_FILES ${RECONSTRUCTOR_UI_FILES}
   RESOURCES ${RECONSTRUCTOR_RESOURCES}
+  TS_FILES ${RECONSTRUCTOR_TS_FILES}
   )
 
 hslib_add_dep(${RECONSTRUCTOR_NAME}

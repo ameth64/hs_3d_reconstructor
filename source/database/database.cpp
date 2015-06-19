@@ -141,50 +141,38 @@ std::string Database::DatabaseFilePath() const
 
 std::string Database::ThumbnailPath() const
 {
-  boost::filesystem::path thumbnail_path =
-    database_file_path_.parent_path();
-  thumbnail_path /= "thumbnail/";
-  return thumbnail_path.string();
+  return boost::str(boost::format("%1%/%2%/") %
+    database_file_path_.parent_path().string() % "thumbnail");
 }
 
 std::string Database::FeatureMatchPath() const
 {
-  boost::filesystem::path feature_match_path =
-    database_file_path_.parent_path();
-  feature_match_path /= "feature_match/";
-  return feature_match_path.string();
+  return boost::str(boost::format("%1%/%2%/") %
+    database_file_path_.parent_path().string() % "feature_match");
 }
 
 std::string Database::PhotoOrientationPath() const
 {
-  boost::filesystem::path photo_orientation_path =
-    database_file_path_.parent_path();
-  photo_orientation_path /= "photo_orientation/";
-  return photo_orientation_path.string();
+  return boost::str(boost::format("%1%/%2%/") %
+    database_file_path_.parent_path().string() % "photo_orientation");
 }
 
 std::string Database::PointCloudPath() const
 {
-  boost::filesystem::path point_cloud_path =
-    database_file_path_.parent_path();
-  point_cloud_path /= "point_cloud/";
-  return point_cloud_path.string();
+  return boost::str(boost::format("%1%/%2%/") %
+    database_file_path_.parent_path().string() % "point_cloud");
 }
 
 std::string Database::SurfaceModelPath() const
 {
-  boost::filesystem::path surface_model_path =
-    database_file_path_.parent_path();
-  surface_model_path /= "surface_model/";
-  return surface_model_path.string();
+  return boost::str(boost::format("%1%/%2%/") %
+    database_file_path_.parent_path().string() % "surface_model");
 }
 
 std::string Database::TexturePath() const
 {
-  boost::filesystem::path texture_path =
-    database_file_path_.parent_path();
-  texture_path /= "texture/";
-  return texture_path.string();
+  return boost::str(boost::format("%1%/%2%/") %
+    database_file_path_.parent_path().string() % "texture");
 }
 
 }

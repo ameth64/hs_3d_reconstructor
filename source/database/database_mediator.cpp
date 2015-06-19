@@ -46,61 +46,43 @@ int DatabaseMediator::RegisterObserver(DatabaseObserver* observer)
 std::string DatabaseMediator::GetThumbnailPath(
   Identifier photo_id) const
 {
-  std::stringstream ss;
-  ss<<database_.ThumbnailPath()<<photo_id<<".jpg";
-  std::string result;
-  ss>>result;
-  return result;
+  return boost::str(boost::format("%1%%2%.jpg") % 
+    database_.ThumbnailPath() % photo_id);
 }
 
 std::string DatabaseMediator::GetFeatureMatchPath(
   Identifier feature_match_id) const
 {
-  std::stringstream ss;
-  ss<<database_.FeatureMatchPath()<<feature_match_id<<"/";
-  std::string result;
-  ss>>result;
-  return result;
+  return boost::str(boost::format("%1%%2%/") %
+    database_.FeatureMatchPath() % feature_match_id);
 }
 
 std::string DatabaseMediator::GetPhotoOrientationPath(
   Identifier photo_orientation_id) const
 {
-  std::stringstream ss;
-  ss<<database_.PhotoOrientationPath()<<photo_orientation_id<<"/";
-  std::string result;
-  ss>>result;
-  return result;
+  return boost::str(boost::format("%1%%2%/") % 
+    database_.PhotoOrientationPath() % photo_orientation_id);
 }
 
 std::string DatabaseMediator::GetPointCloudPath(
   Identifier point_cloud_id) const
 {
-  std::stringstream ss;
-  ss<<database_.PointCloudPath()<<point_cloud_id<<"/";
-  std::string result;
-  ss>>result;
-  return result;
+  return boost::str(boost::format("%1%%2%/") %
+    database_.PointCloudPath() % point_cloud_id);
 }
 
 std::string DatabaseMediator::GetSurfaceModelPath(
   Identifier surface_model_id) const
 {
-  std::stringstream ss;
-  ss<<database_.SurfaceModelPath()<<surface_model_id<<"/";
-  std::string result;
-  ss>>result;
-  return result;
+  return boost::str(boost::format("%1%%2%/") %
+    database_.SurfaceModelPath() % surface_model_id);
 }
 
 std::string DatabaseMediator::GetTexturePath(
   Identifier texture_id) const
 {
-  std::stringstream ss;
-  ss<<database_.TexturePath()<<texture_id<<"/";
-  std::string result;
-  ss>>result;
-  return result;
+  return boost::str(boost::format("%1%%2%/") %
+    database_.TexturePath() % texture_id);
 }
 
 int DatabaseMediator::Open(const std::string& database_file)

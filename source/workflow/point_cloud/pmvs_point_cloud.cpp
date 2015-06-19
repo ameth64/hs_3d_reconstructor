@@ -216,6 +216,8 @@ int PointCloud::CreateConfigXml(
   //share_section
   root.put("module_list.module_item.share_section.workspace", 
     config->workspace_path());
+  root.put("module_list.module_item.share_section.intermediate",
+    config->intermediate_path());
   root.put("module_list.module_item.share_section.parallel_number",
     config->s_number_of_threads());
   root.put("module_list.module_item.share_section.pyramid_level",

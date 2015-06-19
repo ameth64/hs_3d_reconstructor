@@ -17,6 +17,7 @@
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 #include "gui/manager_pane.hpp"
 #include "gui/blocks_tree_widget.hpp"
+#include "gui/photo_orientation_info_widget.hpp"
 #include "workflow/mesh_surface/poisson_surface_model.hpp"
 #include "workflow/texture/rough_texture.hpp"
 
@@ -136,6 +137,7 @@ signals:
 
 private:
   BlocksTreeWidget* blocks_tree_widget_;
+  PhotoOrientationInfoWidget* photo_orientation_info_widget_;
 
   QBrush backup_background_;
 
