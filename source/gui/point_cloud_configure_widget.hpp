@@ -9,6 +9,8 @@
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
+#include <QCheckBox>
+#include <QSpacerItem>
 
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 
@@ -29,12 +31,17 @@ public:
     workflow::PointCloudConfig& point_cloud_config);
 
 private:
+  void UsingSparsePointCloud();
+
   QVBoxLayout* layout_all_;
   QVBoxLayout* layout_inbox_;
   QGroupBox* group_box_;
   QComboBox* combo_box_;
+  QCheckBox* using_sparse_point_cloud_;
   QLabel* label_point_cloud_quality_;
+  QLabel* label_using_sparse_;
   QHBoxLayout* layout_point_cloud_quality_;
+  QHBoxLayout* layout_using_sparse_;
 
 };
 

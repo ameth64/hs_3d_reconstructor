@@ -8,6 +8,7 @@
 #include <boost/property_tree/ptree.hpp> 
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/typeof/typeof.hpp> 
+#include <boost/filesystem.hpp>
 
 #include <cereal/types/map.hpp>
 #include <cereal/types/utility.hpp>
@@ -27,10 +28,15 @@ namespace workflow
 {
 
 PointCloudConfig::PointCloudConfig()
+  :using_sparse_point_cloud_(false)
 {
   type_ = STEP_POINT_CLOUD;
 }
 
+void PointCloudConfig::set_using_sparse_point_cloud(bool is)
+{
+  using_sparse_point_cloud_ = is;
+}
 void PointCloudConfig::set_workspace_path(
   const std::string& workspace_path)
 {
@@ -109,6 +115,10 @@ void PointCloudConfig::set_m_visibility_threshold(int m_visibility_threshold)
   m_visibility_threshold_ = m_visibility_threshold;
 }
 
+bool PointCloudConfig::using_sparse_point_cloud() const
+{
+  return using_sparse_point_cloud_;
+}
 const std::string& PointCloudConfig::photo_orientation_path() const
 {
   return photo_orientation_path_;
@@ -360,6 +370,24 @@ int PointCloud::RunImplement(WorkflowStepConfig* config)
 {
   PointCloudConfig* point_cloud_config =
     static_cast<PointCloudConfig*>(config);
+
+  if (point_cloud_config->using_sparse_point_cloud())
+  {
+    //复制稀疏点云
+    std::string sparse_point_cloud_path = 
+      point_cloud_config->sparse_point_cloud_path();
+    std::string dense_point_cloud_path =
+      point_cloud_config->workspace_path() + "dense_pointcloud.bin";
+
+    boost::filesystem::copy_file(
+      boost::filesystem::path(sparse_point_cloud_path),
+      boost::filesystem::path(dense_point_cloud_path),
+      boost::filesystem::copy_option::overwrite_if_exists);
+
+    progress_manager_.SetCurrentSubProgressCompleteRatio(1);
+    return 0;
+  }
+  
   if (CreateConfigXml(point_cloud_config) != 0)
   {
     return -1;

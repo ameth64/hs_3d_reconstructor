@@ -22,6 +22,7 @@ class HS_EXPORT PointCloudConfig : public WorkflowStepConfig
 public:
   PointCloudConfig();
 
+  void set_using_sparse_point_cloud(bool is);
   void set_workspace_path(const std::string& workspace_path);
   void set_photo_orientation_path(const std::string& photo_orientation_path);
   void set_intrinsic_path(const std::string& intrinsic_path);
@@ -41,6 +42,7 @@ public:
   void set_m_quality_threshold(int m_quality_threshold);
   void set_m_visibility_threshold(int m_visibility_threshold);
 
+  bool using_sparse_point_cloud() const;
   const std::string& photo_orientation_path() const;
   const std::string& intrinsic_path() const;
   const std::string& extrinsic_path() const;
@@ -64,6 +66,7 @@ public:
   const std::map<int, std::string>& photo_paths() const;
 
 private:
+  bool using_sparse_point_cloud_;
   std::string photo_orientation_path_;
   std::string intrinsic_path_;
   std::string extrinsic_path_;
