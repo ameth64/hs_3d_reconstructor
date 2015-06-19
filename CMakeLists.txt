@@ -62,6 +62,8 @@ set(RECONSTRUCTOR_SOURCES
   "source/gui/default_longitude_latitude_convertor.cpp"
   "source/gui/photo_import_check_widget.cpp"
   "source/gui/photo_import_check_dialog.cpp"
+  "source/gui/gcp_constrained_optimization_config_widget.cpp"
+  "source/gui/gcp_constrained_optimization_config_dialog.cpp"
   )
 
 if (MSVC)

@@ -54,6 +54,7 @@ public:
   float GetCompleteRatio();
   int type() const;
   int state() const;
+  int result_code() const;
 
 protected:
   int Run(WorkflowStepConfig* config);
@@ -62,6 +63,7 @@ protected:
 protected:
   int type_;
   int state_;
+  int result_code_;
   hs::progress::ProgressManager progress_manager_;
   std::thread working_thread_;
 };

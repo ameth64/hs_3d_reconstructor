@@ -2,13 +2,16 @@
 #include <sstream>
 #include <limits>
 
-#include "workflow/texture/rough_texture.hpp"
+#include <cereal/archives/portable_binary.hpp>
 
+#include "hs_flowmodule/mesh_surface/kernel/mesh_type/mesh_type.hpp"
 #include "hs_texture/texture_multiview/dem_generator.hpp"
 #include "hs_texture/texture_multiview/dem_split_tiff_engine.hpp"
 #include "hs_texture/texture_multiview/triangles_image_selector.hpp"
 #include "hs_texture/texture_multiview/dom_generator.hpp"
 #include "hs_texture/texture_multiview/dom_split_tiff_engine.hpp"
+
+#include "workflow/texture/rough_texture.hpp"
 
 namespace hs
 {
@@ -139,68 +142,41 @@ int RoughTexture::LoadSurfaceModel(WorkflowStepConfig* config,
                                    VertexContainer& vertices,
                                    TriangleContainer& triangles)
 {
+  typedef hs::ms::MeshData<double, size_t> MeshData;
+
   TextureConfig* texture_config = static_cast<TextureConfig*>(config);
   std::string surface_model_path = texture_config->surface_model_path();
   const TextureConfig::SimilarTransform& similar_transform =
     texture_config->similar_transform();
 
-  const double threshold = 1e-9;
-  if (std::abs(similar_transform.scale - 1.0) < threshold &&
-      std::abs(similar_transform.rotation[0]) < threshold &&
-      std::abs(similar_transform.rotation[1]) < threshold &&
-      std::abs(similar_transform.rotation[2]) < threshold &&
-      std::abs(similar_transform.translate[0]) < threshold &&
-      std::abs(similar_transform.translate[1]) < threshold &&
-      std::abs(similar_transform.translate[2]) < threshold) return -1;
 
-  std::ifstream surface_file(surface_model_path);
-  if (!surface_file) return -1;
-  std::stringstream ss;
-  std::string line;
+  MeshData mesh_data;
+  {
+    std::ifstream surface_file(surface_model_path, std::ios::binary);
+    if (!surface_file) return -1;
+    cereal::PortableBinaryInputArchive archive(surface_file);
+    archive(mesh_data);
+  }
 
-#define TEXTURE_GETLINE(file, line, ss) \
-  std::getline(file, line); \
-  ss.clear(); \
-  ss.str(line); \
-
-  TEXTURE_GETLINE(surface_file, line, ss);
-  TEXTURE_GETLINE(surface_file, line, ss);
-  TEXTURE_GETLINE(surface_file, line, ss);
-
-  std::string dummy;
-  size_t number_of_vertices;
-  ss>>dummy>>dummy>>number_of_vertices;
-  TEXTURE_GETLINE(surface_file, line, ss);
-  TEXTURE_GETLINE(surface_file, line, ss);
-  TEXTURE_GETLINE(surface_file, line, ss);
-  TEXTURE_GETLINE(surface_file, line, ss);
-  size_t number_of_triangles;
-  ss>>dummy>>dummy>>number_of_triangles;
-  TEXTURE_GETLINE(surface_file, line, ss);
-  TEXTURE_GETLINE(surface_file, line, ss);
-
+  size_t number_of_vertices = mesh_data.vSize();
   vertices.resize(number_of_vertices);
-  triangles.resize(number_of_triangles);
-
   for (size_t i = 0; i < number_of_vertices; i++)
   {
-    TEXTURE_GETLINE(surface_file, line, ss);
-    ss>>vertices[i][0]>>vertices[i][1]>>vertices[i][2];
-    vertices[i] = similar_transform.scale * (similar_transform.rotation *
-                                             vertices[i]) +
-                  similar_transform.translate;
+    auto mesh_vertex = mesh_data.get_vertex(i);
+    vertices[i][0] = mesh_vertex[0];
+    vertices[i][1] = mesh_vertex[1];
+    vertices[i][2] = mesh_vertex[2];
   }
 
-  for (size_t i = 0; i < number_of_triangles; i++)
+  size_t number_of_faces = mesh_data.fSize();
+  triangles.resize(number_of_faces);
+  for (size_t i = 0; i < number_of_faces; i++)
   {
-    TEXTURE_GETLINE(surface_file, line, ss);
-    size_t three;
-    ss>>three>>triangles[i][0]>>triangles[i][1]>>triangles[i][2];
+    auto mesh_face = mesh_data.get_face(i);
+    triangles[i][0] = mesh_face.m_polygon[0];
+    triangles[i][1] = mesh_face.m_polygon[1];
+    triangles[i][2] = mesh_face.m_polygon[2];
   }
-
-  surface_file.close();
-
-#undef TEXTURE_GETLINE
 
   return 0;
 }

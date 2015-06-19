@@ -18,6 +18,8 @@
     <file>images/icon_gcp_show_measurement.png</file>
     <file>images/icon_gcp_show_estimate.png</file>
     <file>images/icon_gcp_show_error.png</file>
+    <file>images/icon_gcp_constrained_optimize.png</file>
+    <file>images/icon_gcp_config.png</file>
     <file>images/icon_tiepoint.png</file>
     <file>images/icon_feature_match.png</file>
     <file>images/icon_photo_orientation.png</file>
@@ -30,6 +32,5 @@
     <file>images/icon_block_add.png</file>
     <file>images/icon_block_remove.png</file>
     <file>images/icon_workflow_add.png</file>
-    <file>images/icon_gcp_constrained_optimize.png</file>
 </qresource>
 </RCC>

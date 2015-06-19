@@ -16,6 +16,7 @@
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
 #include "hs_sfm/sfm_pipeline/reprojective_error_calculator.hpp"
+#include "hs_sfm/sfm_pipeline/point_cloud_norm_calculator.hpp"
 #include "hs_image_io/whole_io/image_data.hpp"
 #include "hs_image_io/whole_io/image_io.hpp"
 #include "hs_graphics/graphics_utility/pointcloud_data.hpp"
@@ -323,13 +324,17 @@ int IncrementalPhotoOrientation::SimilarTransformByPosEntries(
                          similar_translate,
                          similar_scale);
 
-  //if (result == 0)
   {
     std::string similar_path =
       photo_orientation_config->similar_transform_path();
     std::ofstream similar_file(similar_path, std::ios::binary);
     cereal::PortableBinaryOutputArchive archive(similar_file);
     archive(similar_scale, similar_rotation, similar_translate);
+  }
+
+  if (result == 0)
+  {
+    result_code_ |= RESULT_GEOREFERENCE;
   }
 
   return result;
@@ -413,11 +418,17 @@ int IncrementalPhotoOrientation::SavePointCloud(
   const KeysetContainer& keysets,
   const hs::sfm::TrackContainer& tracks,
   const hs::sfm::ObjectIndexMap& track_point_map,
+  const hs::sfm::ObjectIndexMap& image_extrinsic_map,
+  const ExtrinsicParamsContainer& extrinsic_params_set,
+  const IntrinsicParamsContainer& intrinsic_params_set,
   const PointContainer& points)
 {
   typedef hs::imgio::whole::ImageData::Byte Byte;
   typedef std::array<Byte, 3> Color;
   typedef hs::graphics::PointCloudData<Scalar> PointCloudData;
+  typedef hs::sfm::pipeline::PointCloudNormCalculator<Scalar> NormCalculator;
+  typedef NormCalculator::CameraParams CameraParams;
+  typedef NormCalculator::CameraParamsContainer CameraParamsContainer;
 
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
@@ -428,6 +439,8 @@ int IncrementalPhotoOrientation::SavePointCloud(
     photo_orientation_config->point_cloud_path();
   const std::vector<std::string> image_paths =
     photo_orientation_config->image_paths();
+  const hs::sfm::ObjectIndexMap& image_intrinsic_map =
+    photo_orientation_config->image_intrinsic_map();
 
   hs::sfm::CameraViewContainer camera_views(image_ids.size());
   for (size_t i = 0; i < tracks.size(); i++)
@@ -486,6 +499,31 @@ int IncrementalPhotoOrientation::SavePointCloud(
     }
   }
 
+  //计算法向量
+  PointContainer norms;
+  {
+    NormCalculator calculator;
+    CameraParamsContainer camera_params_set;
+    hs::imgio::whole::ImageIO image_io;
+    for (size_t i = 0; i < image_intrinsic_map.Size(); i++)
+    {
+      if (image_intrinsic_map.IsValid(i) &&
+          image_extrinsic_map.IsValid(i))
+      {
+        size_t intrinsic_id = image_intrinsic_map[i];
+        size_t extrinsic_id = image_extrinsic_map[i];
+        CameraParams camera_params;
+        camera_params.intrinsic_params = intrinsic_params_set[intrinsic_id];
+        camera_params.extrinsic_params = extrinsic_params_set[extrinsic_id];
+        image_io.GetImageDimension(image_paths[i],
+                                   camera_params.image_width,
+                                   camera_params.image_height);
+        camera_params_set.push_back(camera_params);
+      }
+    }
+    calculator(camera_params_set, points, norms);
+  }
+
   PointCloudData point_cloud_data;
 
   for (size_t i = 0; i < points.size(); i++)
@@ -501,9 +539,9 @@ int IncrementalPhotoOrientation::SavePointCloud(
              Scalar(colors[i][2]) / 255.0;
     point_cloud_data.ColorData().push_back(color);
     PointCloudData::Vector3 norm;
-    norm << 1.0,
-            0.0,
-            0.0;
+    norm << norms[i][0],
+            norms[i][1],
+            norms[i][2];
     point_cloud_data.NormalData().push_back(norm);
   }
 
@@ -564,6 +602,7 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
   int result = 0;
   while (1)
   {
+    progress_manager_.AddSubProgress(0.01f);
     KeysetContainer keysets;
     result = LoadKeysets(config, keysets);
     if (result != 0)
@@ -579,7 +618,9 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
       std::cout<<"LoadMatches Error!\n";
       break;
     }
+    progress_manager_.FinishCurrentSubProgress();
 
+    progress_manager_.AddSubProgress(0.98f);
     IntrinsicParamsContainer intrinsic_params_set;
     ExtrinsicParamsContainer extrinsic_params_set;
     hs::sfm::ObjectIndexMap image_extrinsic_map;
@@ -602,7 +643,9 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
       std::cout<<"RunSFM Error!\n";
       break;
     }
+    progress_manager_.FinishCurrentSubProgress();
 
+    progress_manager_.AddSubProgress(0.01f);
     SimilarTransformByPosEntries(
       config, extrinsic_params_set, image_extrinsic_map);
 
@@ -620,7 +663,9 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
       break;
     }
 
-    result = SavePointCloud(config, keysets, tracks, track_point_map, points);
+    result = SavePointCloud(config, keysets, tracks, track_point_map,
+                            image_extrinsic_map, extrinsic_params_set,
+                            intrinsic_params_set, points);
     if (result != 0)
     {
       std::cout<<"SavePointCloud Error!\n";
@@ -632,6 +677,8 @@ int IncrementalPhotoOrientation::RunImplement(WorkflowStepConfig* config)
     {
       std::cout<<"SaveTracks Error!\n";
     }
+
+    progress_manager_.FinishCurrentSubProgress();
 
     break;
   }

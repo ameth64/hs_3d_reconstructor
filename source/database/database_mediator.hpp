@@ -9,10 +9,15 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
 #include <cereal/archives/portable_binary.hpp>
 
 #include "hs_math/geometry/rotation.hpp"
 #include "hs_image_io/whole_io/image_io.hpp"
+#include "hs_sfm/sfm_utility/camera_type.hpp"
+#include "hs_graphics/graphics_utility/pointcloud_data.hpp"
 
 #include "hs_3d_reconstructor/config/hs_config.hpp"
 #include "database/database.hpp"
@@ -59,7 +64,9 @@ public:
     ERROR_FAIL_TO_REGISTER_RESOURCE = Database::NUMBER_OF_ERROR_CODE,
     ERROR_FAIL_TO_CREATE_DIRECTORY,
     ERROR_FAIL_TO_COPY_DIRECTORY,
-    ERROR_FAIL_TO_REMOVE_DIRECTORY
+    ERROR_FAIL_TO_REMOVE_DIRECTORY,
+    ERROR_PARAMS_FILE_NOT_EXIST,
+    ERROR_PARAMS_FILE_NOT_MATCH
   };
 
   enum RequestFlag
@@ -90,6 +97,7 @@ public:
     REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
     REQUEST_UPDATE_PHOTO_ORIENTATION_TRANSFORM,
     REQUEST_UPDATE_PHOTO_ORIENTATION_COORDINATE_SYSTEM,
+    REQUEST_UPDATE_PHOTO_ORIENTATION_PARAMS,
     REQUEST_UPDATE_POINT_CLOUD_FLAG,
     REQUEST_GET_ALL_BLOCKS,
     REQUEST_GET_ALL_FEATURE_MATCHES,
@@ -1288,7 +1296,7 @@ struct DatabaseRequestHandler<RequestGetPointCloud,
     std::string point_cloud_path =
       database_mediator.GetPointCloudPath(request.id);
 
-    response.dense_pointcloud_path = point_cloud_path + "dense_pointcloud.ply";
+    response.dense_pointcloud_path = point_cloud_path + "dense_pointcloud.bin";
 
     return response.error_code;
   }
@@ -1471,6 +1479,190 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationCoordinateSystem,
     response.error_code =
       database_mediator.photo_orientation_resource_->Update(update_requests,
                                                             updated_records);
+    return response.error_code;
+  }
+};
+
+//Request Update Photo Orientation Params
+struct RequestUpdatePhotoOrientationParams
+{
+  REQUEST_HEADER
+  typedef double Scalar;
+  typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
+  typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
+  typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
+  typedef std::pair<size_t, size_t> ExtrinsicIndex;
+  typedef EIGEN_STD_MAP(ExtrinsicIndex, ExtrinsicParams) ExtrinsicParamsMap;
+  typedef EIGEN_VECTOR(Scalar, 3) Point;
+  typedef EIGEN_STD_VECTOR(Point) PointContainer;
+
+  Identifier photo_orientation_id;
+  IntrinsicParamsMap intrinsic_params_map_new;
+  ExtrinsicParamsMap extrinsic_params_map_new;
+  PointContainer points_new;
+  PointContainer norms_new;
+
+};
+
+struct ResponseUpdatePhotoOrientationParams
+{
+  RESPONSE_HEADER
+  Identifier photo_orientation_id;
+};
+
+template <>
+struct DatabaseRequestHandler <RequestUpdatePhotoOrientationParams,
+                               ResponseUpdatePhotoOrientationParams>
+{
+  int operator() (const RequestUpdatePhotoOrientationParams& request,
+                  ResponseUpdatePhotoOrientationParams& response,
+                  DatabaseMediator& database_mediator)
+  {
+    response.error_code = DatabaseMediator::NO_ERROR;
+    response.photo_orientation_id = request.photo_orientation_id;
+
+    while (1)
+    {
+      std::string photo_orientation_path =
+        database_mediator.GetPhotoOrientationPath(request.photo_orientation_id);
+      std::string intrinsic_path =
+        photo_orientation_path + "intrinsic.bin";
+      std::string extrinsic_path =
+        photo_orientation_path + "extrinsic.bin";
+      std::string point_cloud_path =
+        photo_orientation_path + "sparse_point_cloud.bin";
+
+      RequestUpdatePhotoOrientationParams::IntrinsicParamsMap
+        intrinsic_params_map_old;
+      {
+        std::ifstream intrinsic_file(intrinsic_path, std::ios::binary);
+        if (!intrinsic_file)
+        {
+          response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_EXIST;
+          break;
+        }
+        cereal::PortableBinaryInputArchive archive(intrinsic_file);
+        archive(intrinsic_params_map_old);
+      }
+
+      if (intrinsic_params_map_old.size() !=
+          request.intrinsic_params_map_new.size())
+      {
+        response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_MATCH;
+        std::cout << "1\n";
+        break;
+      }
+
+      auto itr_intrinsic_new = request.intrinsic_params_map_new.begin();
+      auto itr_intrinsic_new_end = request.intrinsic_params_map_new.end();
+      auto itr_intrinsic_old = intrinsic_params_map_old.begin();
+      auto itr_intrinsic_old_end = intrinsic_params_map_old.end();
+      bool is_match = true;
+      for (; itr_intrinsic_new != itr_intrinsic_new_end;
+           ++itr_intrinsic_new, ++itr_intrinsic_old)
+      {
+        if (itr_intrinsic_new->first != itr_intrinsic_old->first)
+        {
+          is_match = false;
+          break;
+        }
+      }
+      if (!is_match)
+      {
+        std::cout << "2\n";
+        response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_MATCH;
+        break;
+      }
+
+      RequestUpdatePhotoOrientationParams::ExtrinsicParamsMap
+        extrinsic_params_map_old;
+      {
+        std::ifstream extrinsic_file(extrinsic_path, std::ios::binary);
+        if (!extrinsic_file)
+        {
+          response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_EXIST;
+          break;
+        }
+        cereal::PortableBinaryInputArchive archive(extrinsic_file);
+        archive(extrinsic_params_map_old);
+      }
+      if (extrinsic_params_map_old.size() !=
+          request.extrinsic_params_map_new.size())
+      {
+        std::cout << "3\n";
+        response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_MATCH;
+        break;
+      }
+
+      auto itr_extrinsic_new = request.extrinsic_params_map_new.begin();
+      auto itr_extrinsic_new_end = request.extrinsic_params_map_new.end();
+      auto itr_extrinsic_old = extrinsic_params_map_old.begin();
+      auto itr_extrinsic_old_end = extrinsic_params_map_old.end();
+      is_match = true;
+      for (; itr_extrinsic_new != itr_extrinsic_new_end;
+           ++itr_extrinsic_new, ++itr_extrinsic_old)
+      {
+        if (itr_extrinsic_new->first != itr_extrinsic_old->first)
+        {
+          is_match = false;
+          break;
+        }
+      }
+      if (!is_match)
+      {
+        std::cout << "4\n";
+        response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_MATCH;
+        break;
+      }
+
+      hs::graphics::PointCloudData<double> pcd;
+      {
+        std::ifstream pcd_file(point_cloud_path, std::ios::binary);
+        if (!pcd_file)
+        {
+          response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_EXIST;
+          break;
+        }
+        cereal::PortableBinaryInputArchive archive(pcd_file);
+        archive(pcd);
+      }
+
+      if (pcd.PointCloudSize() != request.points_new.size())
+      {
+        std::cout << "5\n";
+        response.error_code = DatabaseMediator::ERROR_PARAMS_FILE_NOT_MATCH;
+        break;
+      }
+      for (size_t i = 0; i < pcd.PointCloudSize(); i++)
+      {
+        pcd.VertexData()[i][0] = request.points_new[i][0];
+        pcd.VertexData()[i][1] = request.points_new[i][1];
+        pcd.VertexData()[i][2] = request.points_new[i][2];
+        pcd.NormalData()[i][0] = request.norms_new[i][0];
+        pcd.NormalData()[i][1] = request.norms_new[i][1];
+        pcd.NormalData()[i][2] = request.norms_new[i][2];
+      }
+
+      {
+        std::ofstream intrinsic_file(intrinsic_path, std::ios::binary);
+        cereal::PortableBinaryOutputArchive archive(intrinsic_file);
+        archive(request.intrinsic_params_map_new);
+      }
+
+      {
+        std::ofstream extrinsic_file(extrinsic_path, std::ios::binary);
+        cereal::PortableBinaryOutputArchive archive(extrinsic_file);
+        archive(request.extrinsic_params_map_new);
+      }
+
+      {
+        std::ofstream pcd_file(point_cloud_path, std::ios::binary);
+        cereal::PortableBinaryOutputArchive archive(pcd_file);
+        archive(pcd);
+      }
+
+      break;
+    }
     return response.error_code;
   }
 };
@@ -2232,7 +2424,7 @@ struct DatabaseRequestHandler<RequestGetSurfaceModel,
       database_mediator.GetSurfaceModelPath(request.id);
 
         response.mesh_path =
-          surface_model_path + "mesh.ply";
+          surface_model_path + "mesh.bin";
         response.output_xml_path =
           surface_model_path + "output.xml";
 

@@ -16,9 +16,11 @@
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
 #include "hs_sfm/triangulate/multiple_view_maximum_likelihood_estimator.hpp"
 #include "hs_sfm/sfm_pipeline/bundle_adjustment_gcp_constrained_optimizor.hpp"
+#include "hs_sfm/sfm_pipeline/point_cloud_norm_calculator.hpp"
 
 #include "gui/property_field_asignment_dialog.hpp"
 #include "gui/main_window.hpp"
+#include "gui/gcp_constrained_optimization_config_dialog.hpp"
 #include "gui/gcps_pane.hpp"
 
 namespace hs
@@ -37,11 +39,17 @@ GCPsPane::GCPsPane(QWidget* parent)
   , icon_show_estimate_(":/images/icon_gcp_show_estimate.png")
   , icon_show_error_(":/images/icon_gcp_show_error.png")
   , icon_gcp_constrained_optimize_(":/images/icon_gcp_constrained_optimize.png")
+  , icon_gcp_config_(":/images/icon_gcp_config.png")
   , photo_orientation_id_(std::numeric_limits<uint>::max())
   , current_gcp_id_(std::numeric_limits<uint>::max())
   , similar_scale_(Scalar(1))
   , similar_rotation_(Rotation())
   , similar_translate_(Point3D::Zero())
+  , gcp_planar_accuracy_(0.005)
+  , gcp_height_accuracy_(0.01)
+  , tiepoint_feature_accuracy_(0.1)
+  , gcp_marker_accuracy_(4.0)
+  , is_gcp_constrained_(false)
 {
   gcps_table_widget_ = new GCPsTableWidget(this);
   tiepoint_measure_widget_ = new TiepointMeasureWidget(this);
@@ -70,6 +78,9 @@ GCPsPane::GCPsPane(QWidget* parent)
     new QAction(icon_gcp_constrained_optimize_,
                 tr("GCP Constrained Optimize"), this);
   action_gcp_constrained_optimize_->setEnabled(false);
+  action_gcp_config_ =
+    new QAction(icon_gcp_config_, tr("GCP Configuration"), this);
+  action_gcp_config_->setEnabled(true);
 
   tool_bar_ = new QToolBar(this);
   tool_bar_->addAction(action_add_gcp_);
@@ -79,6 +90,7 @@ GCPsPane::GCPsPane(QWidget* parent)
   tool_bar_->addAction(action_show_estimate_);
   tool_bar_->addAction(action_show_error_);
   tool_bar_->addAction(action_gcp_constrained_optimize_);
+  tool_bar_->addAction(action_gcp_config_);
   main_window_->addToolBar(tool_bar_);
 
   QObject::connect(action_add_gcp_, &QAction::triggered,
@@ -93,6 +105,8 @@ GCPsPane::GCPsPane(QWidget* parent)
                    this, &GCPsPane::OnActionShowErrorTriggered);
   QObject::connect(action_gcp_constrained_optimize_, &QAction::triggered,
                    this, &GCPsPane::OnActionGCPConstrainedOptimizeTriggered);
+  QObject::connect(action_gcp_config_, &QAction::triggered,
+                   this, &GCPsPane::OnActionGCPConfigTriggered);
 
   QObject::connect(gcps_table_widget_, &GCPsTableWidget::GCPsSelected,
                    this, &GCPsPane::OnGCPsSelected);
@@ -176,8 +190,6 @@ void GCPsPane::Response(int request_flag, void* response)
 
 void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
 {
-  typedef std::pair<size_t, size_t> ExtrinsicIndex;
-  typedef EIGEN_STD_MAP(ExtrinsicIndex, ExtrinsicParams) ExtrinsicParamsMap;
   if (photo_orientation_id == photo_orientation_id_)
   {
     return;
@@ -195,6 +207,18 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
   {
     return;
   }
+  int flag =
+    response_photo_orientation.record[
+      db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
+  if (flag & db::PhotoOrientationResource::FLAG_GCP_CONSTRAINED)
+  {
+    is_gcp_constrained_ = true;
+  }
+  else
+  {
+    is_gcp_constrained_ = false;
+  }
+
   std::string photo_orientation_path =
     ((MainWindow*)parent())->database_mediator().GetPhotoOrientationPath(
       request_photo_orientation.id);
@@ -584,6 +608,23 @@ void GCPsPane::OnActionGCPConstrainedOptimizeTriggered()
   }
 }
 
+void GCPsPane::OnActionGCPConfigTriggered()
+{
+  GCPConstrainedOptimizationConfigDialog dialog(this, 0,
+                                                gcp_planar_accuracy_,
+                                                gcp_height_accuracy_,
+                                                tiepoint_feature_accuracy_,
+                                                gcp_marker_accuracy_);
+
+  if (dialog.exec())
+  {
+    gcp_planar_accuracy_ = dialog.GetGCPPlanarAccuracy();
+    gcp_height_accuracy_ = dialog.GetGCPHeightAccuracy();
+    tiepoint_feature_accuracy_ = dialog.GetTiepointFeatureAccuracy();
+    gcp_marker_accuracy_ = dialog.GetGCPMarkerAccuracy();
+  }
+}
+
 void GCPsPane::OnPhotoMeasured(uint photo_id, const Point2F& image_pos)
 {
   typedef db::Database::Identifier Identifier;
@@ -885,6 +926,13 @@ int GCPsPane::ComputeSimilarTransform()
   int result = -1;
   while (1)
   {
+    if (is_gcp_constrained_)
+    {
+      result = 0;
+      action_gcp_constrained_optimize_->setEnabled(false);
+      break;
+    }
+
     auto itr_gcp_measure = gcp_measures_.begin();
     auto itr_gcp_measure_end = gcp_measures_.end();
     PointContainer points_relative;
@@ -1026,6 +1074,7 @@ void GCPsPane::GCPConstrainedOptimize()
   typedef hs::graphics::PointCloudData<Scalar> PointCloudData;
   typedef hs::recon::db::Identifier Identifier;
   typedef EIGEN_STD_MAP(size_t, ImageKeyset) ImageKeysetMap;
+  typedef hs::sfm::pipeline::PointCloudNormCalculator<Scalar> NormCalculator;
 
   //Get photo orientation
   hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
@@ -1208,7 +1257,11 @@ void GCPsPane::GCPConstrainedOptimize()
   QString number_of_threads_key = tr("number_of_threads");
   uint number_of_threads = settings.value(number_of_threads_key,
                                           QVariant(uint(1))).toUInt();
-  Optimizor optimizor(size_t(number_of_threads), 0.005, 0.005, 0.1, 4.0);
+  Optimizor optimizor(size_t(number_of_threads),
+                      gcp_planar_accuracy_,
+                      gcp_height_accuracy_,
+                      tiepoint_feature_accuracy_,
+                      gcp_marker_accuracy_);
   if (optimizor(image_keysets,
                 image_intrinsic_map,
                 tracks,
@@ -1225,6 +1278,17 @@ void GCPsPane::GCPConstrainedOptimize()
                 estimate_measure_map) != 0)
   {
     return;
+  }
+
+  //calculate norms.
+  PointContainer norms;
+  {
+    NormCalculator calculator;
+    Point up_vector;
+    up_vector << Scalar(0),
+                 Scalar(0),
+                 Scalar(1);
+    calculator(points, up_vector, norms);
   }
 
   TrackPointMap measure_estimate_map(gcps_measure.size());
@@ -1308,6 +1372,89 @@ void GCPsPane::GCPConstrainedOptimize()
   {
     itr_photo->second.extrinsic_params.position() += offset;
   }
+
+  is_gcp_constrained_ = true;
+
+  //update database
+  db::RequestUpdatePhotoOrientationTransform request_transform;
+  db::ResponseUpdatePhotoOrientationTransform response_transform;
+  request_transform.id = db::Identifier(photo_orientation_id_);
+  request_transform.rotation_x = similar_rotation_[0];
+  request_transform.rotation_y = similar_rotation_[1];
+  request_transform.rotation_z = similar_rotation_[2];
+  request_transform.scale = similar_scale_;
+  request_transform.translate_x = similar_translate_[0];
+  request_transform.translate_y = similar_translate_[1];
+  request_transform.translate_z = similar_translate_[2];
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_TRANSFORM,
+    request_transform, response_transform, true);
+
+  if (response_transform.error_code != db::DatabaseMediator::NO_ERROR)
+  {
+    return;
+  }
+
+#if 1
+  QMessageBox msg_box;
+  msg_box.setText("Update Transform");
+  msg_box.exec();
+#endif
+
+  db::RequestUpdatePhotoOrientationFlag request_flag;
+  db::ResponseUpdatePhotoOrientationFlag response_flag;
+  request_flag.id = db::Identifier(photo_orientation_id_);
+  request_flag.flag =
+    response_photo_orientation.record[
+      db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
+  request_flag.flag |= db::PhotoOrientationResource::FLAG_GEOREFERENCE;
+  request_flag.flag |= db::PhotoOrientationResource::FLAG_GCP_CONSTRAINED;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
+    request_flag, response_flag, true);
+
+  if (response_flag.error_code != db::DatabaseMediator::NO_ERROR)
+  {
+    return;
+  }
+
+#if 1
+  msg_box.setText("Update Flag");
+  msg_box.exec();
+#endif
+
+  db::RequestUpdatePhotoOrientationParams request_params;
+  db::ResponseUpdatePhotoOrientationParams response_params;
+  request_params.photo_orientation_id = db::Identifier(photo_orientation_id_);
+  request_params.intrinsic_params_map_new = intrinsic_params_set_;
+  for (const auto& photo_entry : photo_entries_)
+  {
+    ExtrinsicIndex extrinsic_id;
+    extrinsic_id.first = size_t(photo_entry.first);
+    extrinsic_id.second = size_t(photo_entry.second.intrinsic_id);
+    request_params.extrinsic_params_map_new[extrinsic_id] =
+      photo_entry.second.extrinsic_params;
+  }
+  request_params.points_new = points;
+  for (auto& point : request_params.points_new)
+  {
+    point += offset;
+  }
+  request_params.norms_new = norms;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_PARAMS,
+    request_params, response_params, true);
+
+  if (response_params.error_code != db::DatabaseMediator::NO_ERROR)
+  {
+    std::cout << "error:" << response_params.error_code << "\n";
+    return;
+  }
+
+#if 1
+  msg_box.setText("Update Params");
+  msg_box.exec();
+#endif
 }
 
 }

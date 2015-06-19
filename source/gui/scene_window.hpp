@@ -47,6 +47,7 @@ public:
   typedef PointCloudRenderLayer::PointCloudData PointCloudData;
   typedef PointCloudData::Vector3 Vector3;
   typedef EIGEN_STD_VECTOR(Vector3) PointContainer;
+  typedef EIGEN_VECTOR(double, 3) DoubleVector3;
   struct IntrinsicEntry
   {
     Float focal_length;
@@ -105,6 +106,9 @@ private:
   void BackupSelectedPointsColor(Float left, Float right,
                                  Float bottom, Float top,
                                  PointCloudData& pcd);
+  void UpdateScene(const std::string& intrinsic_path,
+                   const std::string& extrinsic_path,
+                   const std::string& pcd_path);
 
 signals:
   void FilterPhotosBySelectedPoints(const PointContainer& selected_points);
@@ -113,6 +117,8 @@ private:
   db::DatabaseMediator& database_mediator_;
   uint photo_orientation_id_;
   uint point_cloud_id_;
+
+  DoubleVector3 offset_;
 
   bool is_show_photo_orientation_;
 

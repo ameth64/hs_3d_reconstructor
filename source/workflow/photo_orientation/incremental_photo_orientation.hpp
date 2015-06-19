@@ -94,6 +94,12 @@ typedef std::shared_ptr<PhotoOrientationConfig> PhotoOrientationConfigPtr;
 class HS_EXPORT IncrementalPhotoOrientation : public WorkflowStep
 {
 public:
+  enum ResultCode
+  {
+    RESULT_COMPLETE = 1,
+    RESULT_GEOREFERENCE = 2
+  };
+
   IncrementalPhotoOrientation();
 
 private:
@@ -134,6 +140,9 @@ private:
                      const KeysetContainer& keysets,
                      const hs::sfm::TrackContainer& tracks,
                      const hs::sfm::ObjectIndexMap& track_point_map,
+                     const hs::sfm::ObjectIndexMap& image_extrinsic_map,
+                     const ExtrinsicParamsContainer& extrinsic_params_set,
+                     const IntrinsicParamsContainer& intrinsic_params_set,
                      const PointContainer& points);
   int SaveTracks(WorkflowStepConfig* config,
                  const hs::sfm::TrackContainer& tracks,

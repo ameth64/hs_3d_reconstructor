@@ -30,8 +30,8 @@ MainWindow::MainWindow()
   menu_file_ = new QMenu(tr("File"), menu_bar_);
   menu_bar_->addAction(menu_file_->menuAction());
 
-	menu_view_ = new QMenu(tr("View"), menu_bar_);
-	menu_bar_->addAction(menu_view_->menuAction());
+  menu_view_ = new QMenu(tr("View"), menu_bar_);
+  menu_bar_->addAction(menu_view_->menuAction());
 
   menu_tools_ = new QMenu(tr("Tools"), menu_bar_);
   menu_bar_->addAction(menu_tools_->menuAction());

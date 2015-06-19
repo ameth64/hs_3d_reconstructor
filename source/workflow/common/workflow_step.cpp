@@ -15,6 +15,7 @@ int WorkflowStepConfig::type()
 WorkflowStep::WorkflowStep()
   : type_(STEP_NONE)
   , state_(STATE_READY)
+  , result_code_(0)
 {
 
 }
@@ -54,6 +55,11 @@ int WorkflowStep::type() const
 int WorkflowStep::state() const
 {
   return state_;
+}
+
+int WorkflowStep::result_code() const
+{
+  return result_code_;
 }
 
 int WorkflowStep::Run(WorkflowStepConfig* config)

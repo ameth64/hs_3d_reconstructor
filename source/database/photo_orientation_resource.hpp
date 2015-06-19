@@ -27,7 +27,9 @@ public:
   enum Flag
   {
     FLAG_NOT_COMPLETED = 0,
-    FLAG_COMPLETED
+    FLAG_COMPLETED = 1,
+    FLAG_GEOREFERENCE = 2,
+    FLAG_GCP_CONSTRAINED = 4
   };
   static const int number_of_fields_ = NUMBER_OF_PHOTO_ORIENTATION_FIELDS;
   DECLARE_RESOURCE_COMMON_MEMBERS(PhotoOrientationResource)

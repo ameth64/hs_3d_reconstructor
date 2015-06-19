@@ -7,6 +7,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/archives/portable_binary.hpp>
+
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QMessageBox>
@@ -14,6 +19,7 @@
 
 #include "hs_cartographics/cartographics_format/formatter_proj4.hpp"
 #include "hs_cartographics/cartographics_conversion/convertor.hpp"
+#include "hs_sfm/sfm_utility/camera_type.hpp"
 
 //#include "workflow/feature_match//openmvg_feature_match.hpp"
 #include "workflow/feature_match/opencv_feature_match.hpp"
@@ -505,6 +511,11 @@ void BlocksPane::OnTimeout()
               db::ResponseUpdatePhotoOrientationFlag response;
               request.id = db::Database::Identifier(workflow_step_entry.id);
               request.flag = db::PhotoOrientationResource::FLAG_COMPLETED;
+              if (current_step_->result_code() &
+                workflow::IncrementalPhotoOrientation::RESULT_GEOREFERENCE)
+              {
+                request.flag |= db::PhotoOrientationResource::FLAG_GEOREFERENCE;
+              }
               ((MainWindow*)parent())->database_mediator().Request(
                 this,
                 db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
@@ -542,9 +553,9 @@ void BlocksPane::OnTimeout()
                 if (item)
                 {
                   item->setDisabled(false);
-                  ActivatePointCloudItem(item);
-                  emit PointCloudActivated(
-                    activated_point_cloud_id_);
+                  //ActivatePointCloudItem(item);
+                  //emit PointCloudActivated(
+                  //  activated_point_cloud_id_);
                 }
               }
               break;
@@ -2183,6 +2194,11 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
   typedef workflow::TextureConfig::ExtrinsicParams ExtrinsicParams;
   typedef workflow::TextureConfig::ImageParams ImageParams;
   typedef workflow::TextureConfig::ImageParamsContainer ImageParamsContainer;
+  typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
+  typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
+  typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
+  typedef std::pair<size_t, size_t> ExtrinsicIndex;
+  typedef EIGEN_STD_MAP(ExtrinsicIndex, ExtrinsicParams) ExtrinsicParamsMap;
 
   while (1)
   {
@@ -2253,111 +2269,93 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       break;
     }
 
-    std::ifstream similar_file(
-      response_photo_orientation.similar_transform_path);
-    if (!similar_file) break;
     workflow::TextureConfig::SimilarTransform similar_transform;
-    similar_file>>similar_transform.scale
-                >>similar_transform.rotation[0]
-                >>similar_transform.rotation[1]
-                >>similar_transform.rotation[2]
-                >>similar_transform.translate[0]
-                >>similar_transform.translate[1]
-                >>similar_transform.translate[2];
-    similar_file.close();
-
-    std::ifstream intrinsic_file(response_photo_orientation.intrinsic_path);
-    EIGEN_STD_MAP(size_t, IntrinsicParams) intrinsic_map;
-    if (intrinsic_file)
     {
-      while (!intrinsic_file.eof())
+      std::ifstream similar_file(
+        response_photo_orientation.similar_transform_path, std::ios::binary);
+      if (!similar_file)
       {
-        std::string line;
-        std::getline(intrinsic_file, line);
-        if (line.empty()) break;
-        std::stringstream ss(line);
-        size_t id;
-        Scalar focal_length, skew, principal_x, principal_y, pixel_ratio,
-               k1, k2, k3, d1, d2;
-        ss>>id>>focal_length>>skew>>principal_x>>principal_y>>pixel_ratio
-          >>k1>>k2>>k3>>d1>>d2;
-        intrinsic_map[id] = IntrinsicParams(focal_length,
-                                            skew,
-                                            principal_x,
-                                            principal_y,
-                                            pixel_ratio,
-                                            k1,
-                                            k2,
-                                            k3,
-                                            d1,
-                                            d2);
+        break;
       }
-      intrinsic_file.close();
+      cereal::PortableBinaryInputArchive archive(similar_file);
+      archive(similar_transform.scale,
+              similar_transform.rotation,
+              similar_transform.translate);
     }
 
-    std::ifstream extrinsic_file(response_photo_orientation.extrinsic_path);
-    ImageParamsContainer images;
-    if (extrinsic_file)
+    IntrinsicParamsMap intrinsic_params_map;
     {
-      while (!extrinsic_file.eof())
+      std::ifstream intrinsic_file(
+        response_photo_orientation.intrinsic_path, std::ios::binary);
+      if (!intrinsic_file)
       {
-        std::string line;
-        std::getline(extrinsic_file, line);
-        if (line.empty()) break;
-        std::stringstream ss(line);
-
-        ExtrinsicParams extrinsic_params;
-        size_t photo_id, intrinsic_id;
-        ss>>photo_id>>intrinsic_id
-          >>extrinsic_params.position()[0]
-          >>extrinsic_params.position()[1]
-          >>extrinsic_params.position()[2]
-          >>extrinsic_params.rotation()[0]
-          >>extrinsic_params.rotation()[1]
-          >>extrinsic_params.rotation()[2];
-        extrinsic_params.rotation() =
-          extrinsic_params.rotation() * similar_transform.rotation.Inverse();
-        extrinsic_params.position() =
-          similar_transform.scale * (similar_transform.rotation *
-                                      extrinsic_params.position()) +
-          similar_transform.translate;
-        auto itr_intrinsic = intrinsic_map.find(intrinsic_id);
-        if (itr_intrinsic == intrinsic_map.end()) continue;
-        db::RequestGetPhotogroup request_group;
-        db::ResponseGetPhotogroup response_group;
-        request_group.id = db::Database::Identifier(intrinsic_id);
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
-          request_group, response_group, false);
-        if (response_group.error_code != db::DatabaseMediator::NO_ERROR)
-        {
-          continue;
-        }
-        db::RequestGetPhoto request_photo;
-        db::ResponseGetPhoto response_photo;
-        request_photo.id = db::Database::Identifier(photo_id);
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_PHOTO,
-          request_photo, response_photo, false);
-        if (response_photo.error_code != db::DatabaseMediator::NO_ERROR)
-        {
-          continue;
-        }
-        ImageParams image;
-        image.intrinsic_params = itr_intrinsic->second;
-        image.extrinsic_params = extrinsic_params;
-        image.image_width =
-          response_group.record[
-            db::PhotogroupResource::PHOTOGROUP_FIELD_WIDTH].ToInt();
-        image.image_height =
-          response_group.record[
-            db::PhotogroupResource::PHOTOGROUP_FIELD_HEIGHT].ToInt();
-        image.image_path =
-          response_photo.record[
-            db::PhotoResource::PHOTO_FIELD_PATH].ToString();
-        images.push_back(image);
+        break;
       }
-      extrinsic_file.close();
+      cereal::PortableBinaryInputArchive archive(intrinsic_file);
+      archive(intrinsic_params_map);
+    }
+
+    ImageParamsContainer images;
+    ExtrinsicParamsMap extrinsic_params_map;
+    {
+      std::ifstream extrinsic_file(
+        response_photo_orientation.extrinsic_path, std::ios::binary);
+      if (!extrinsic_file)
+      {
+        break;
+      }
+      cereal::PortableBinaryInputArchive archive(extrinsic_file);
+      archive(extrinsic_params_map);
+    }
+
+    bool miss_intrinsic = false;
+    for (const auto& extrinsic_params : extrinsic_params_map)
+    {
+      ImageParams image;
+      size_t image_id = extrinsic_params.first.first;
+      size_t intrinsic_id = extrinsic_params.first.second;
+      auto itr_intrinsic = intrinsic_params_map.find(intrinsic_id);
+      if (itr_intrinsic == intrinsic_params_map.end())
+      {
+        miss_intrinsic = true;
+        break;
+      }
+      image.intrinsic_params = itr_intrinsic->second;
+      image.extrinsic_params = extrinsic_params.second;
+      db::RequestGetPhotogroup request_group;
+      db::ResponseGetPhotogroup response_group;
+      request_group.id = db::Database::Identifier(intrinsic_id);
+      ((MainWindow*)parent())->database_mediator().Request(
+        this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
+        request_group, response_group, false);
+      if (response_group.error_code != db::DatabaseMediator::NO_ERROR)
+      {
+        continue;
+      }
+      db::RequestGetPhoto request_photo;
+      db::ResponseGetPhoto response_photo;
+      request_photo.id = db::Database::Identifier(image_id);
+      ((MainWindow*)parent())->database_mediator().Request(
+        this, db::DatabaseMediator::REQUEST_GET_PHOTO,
+        request_photo, response_photo, false);
+      if (response_photo.error_code != db::DatabaseMediator::NO_ERROR)
+      {
+        continue;
+      }
+      image.image_width =
+        response_group.record[
+          db::PhotogroupResource::PHOTOGROUP_FIELD_WIDTH].ToInt();
+      image.image_height =
+        response_group.record[
+          db::PhotogroupResource::PHOTOGROUP_FIELD_HEIGHT].ToInt();
+      image.image_path =
+        response_photo.record[
+          db::PhotoResource::PHOTO_FIELD_PATH].ToString();
+      images.push_back(image);
+    }
+    if (miss_intrinsic)
+    {
+      break;
     }
 
     QSettings settings;

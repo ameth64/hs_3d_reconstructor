@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #if 1
+#include <iomanip>
 #include <QMessageBox>
 #endif
 
@@ -32,6 +33,7 @@ SceneWindow::SceneWindow(QWindow* parent,
   , photo_orientation_render_layer_(new PhotoOrientationRenderLayer)
   , rectangle_render_layer_(new RectangleRenderLayer)
   , is_show_photo_orientation_(true)
+  , offset_(DoubleVector3::Zero())
   , scene_flag_(FLAG_SHOW_SPARSE_POINT_CLOUD)
 {
   action_filter_photos_by_selected_points_ =
@@ -68,7 +70,29 @@ SceneWindow::~SceneWindow()
 
 void SceneWindow::Response(int request_flag, void* response)
 {
+  switch (request_flag)
+  {
+  case db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_PARAMS:
+    {
+      db::ResponseUpdatePhotoOrientationParams* response_params =
+        static_cast<db::ResponseUpdatePhotoOrientationParams*>(response);
+      if (response_params->error_code == db::DatabaseMediator::NO_ERROR)
+      {
+        if (response_params->photo_orientation_id ==
+            db::Identifier(photo_orientation_id_))
+        {
+          UpdatePhotoOrientation();
+        }
+      }
 
+      break;
+    }
+  default:
+    {
+
+      break;
+    }
+  }
 }
 
 QAction* SceneWindow::action_filter_photos_by_selected_points()
@@ -261,13 +285,6 @@ struct DistanceCompare
 
 void SceneWindow::UpdatePhotoOrientation()
 {
-  typedef hs::sfm::CameraIntrinsicParams<double> SFMIntrinsicParams;
-  typedef EIGEN_STD_MAP(size_t, SFMIntrinsicParams) SFMIntrinsicParamsMap;
-  typedef hs::sfm::CameraExtrinsicParams<double> SFMExtrinsicParams;
-  typedef std::pair<size_t, size_t> SFMExtrinsicIndex;
-  typedef EIGEN_STD_MAP(SFMExtrinsicIndex, SFMExtrinsicParams)
-          SFMExtrinsicParamsMap;
-
   hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
   hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
   request_photo_orientation.id =
@@ -280,13 +297,107 @@ void SceneWindow::UpdatePhotoOrientation()
   {
     return;
   }
-  std::string photo_orientation_path =
-    database_mediator_.GetPhotoOrientationPath(request_photo_orientation.id);
+
+  UpdateScene(response_photo_orientation.intrinsic_path,
+              response_photo_orientation.extrinsic_path,
+              response_photo_orientation.point_cloud_path);
+}
+
+void SceneWindow::UpdatePointCloud()
+{
+  hs::recon::db::RequestGetPointCloud request_point_cloud;
+  hs::recon::db::ResponseGetPointCloud response_point_cloud;
+  request_point_cloud.id =
+    db::Database::Identifier(point_cloud_id_);
+  database_mediator_.Request(
+    this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+    request_point_cloud, response_point_cloud, false);
+  if (response_point_cloud.error_code !=
+    hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+  std::string dense_pointcloud_path =
+    response_point_cloud.dense_pointcloud_path;
+
+  db::Identifier photo_orientation_id =
+    db::Identifier(response_point_cloud.record[
+      db::PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+
+  hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+  hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+  request_photo_orientation.id = photo_orientation_id;
+  database_mediator_.Request(
+    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+    request_photo_orientation, response_photo_orientation, false);
+  if (response_photo_orientation.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+
+  UpdateScene(response_photo_orientation.intrinsic_path,
+              response_photo_orientation.extrinsic_path,
+              dense_pointcloud_path);
+}
+
+
+void SceneWindow::BackupSelectedPointsColor(Float left, Float right,
+                                            Float bottom, Float top,
+                                            PointCloudData& pcd)
+{
+  //Restore colors
+  for (size_t i = 0; i < selected_points_backup_colors_.size(); i++)
+  {
+    pcd.ColorData()[selected_points_backup_colors_[i].id] =
+      selected_points_backup_colors_[i].color;
+  }
+
+  if (left < right && bottom < top)
+  {
+    ViewingTransformer::TransformMatrix transform_matrix =
+      viewing_transformer_.ViewingTransformMatrix();
+
+    selected_points_backup_colors_.clear();
+    selected_points_.clear();
+    for (size_t i = 0; i < pcd.VertexData().size(); i++)
+    {
+      EIGEN_VECTOR(Float, 4) point_h;
+      point_h << pcd.VertexData()[i][0],
+                 pcd.VertexData()[i][1],
+                 pcd.VertexData()[i][2],
+                 Float(1);
+      point_h = transform_matrix * point_h;
+      point_h /= point_h[3];
+
+      if (point_h[0] > left && point_h[0] < right &&
+          point_h[1] > bottom && point_h[1] < top)
+      {
+        BackupColor backup_color;
+        backup_color.id = i;
+        backup_color.color = pcd.ColorData()[i];
+        selected_points_backup_colors_.push_back(backup_color);
+        selected_points_.push_back(pcd.VertexData()[i]);
+
+      }
+    }
+  }
+}
+
+void SceneWindow::UpdateScene(const std::string& intrinsic_path,
+                              const std::string& extrinsic_path,
+                              const std::string& pcd_path)
+{
+  typedef hs::sfm::CameraIntrinsicParams<double> SFMIntrinsicParams;
+  typedef EIGEN_STD_MAP(size_t, SFMIntrinsicParams) SFMIntrinsicParamsMap;
+  typedef hs::sfm::CameraExtrinsicParams<double> SFMExtrinsicParams;
+  typedef std::pair<size_t, size_t> SFMExtrinsicIndex;
+  typedef EIGEN_STD_MAP(SFMExtrinsicIndex, SFMExtrinsicParams)
+          SFMExtrinsicParamsMap;
 
   SFMIntrinsicParamsMap intrinsic_map;
   {
-    std::ifstream intrinsic_file(response_photo_orientation.intrinsic_path,
-                                 std::ios::binary);
+    std::ifstream intrinsic_file(intrinsic_path, std::ios::binary);
     cereal::PortableBinaryInputArchive archive(intrinsic_file);
     archive(intrinsic_map);
   }
@@ -319,11 +430,17 @@ void SceneWindow::UpdatePhotoOrientation()
 
   SFMExtrinsicParamsMap extrinsic_params_map;
   {
-    std::ifstream extrinsic_file(response_photo_orientation.extrinsic_path,
-                                 std::ios::binary);
+    std::ifstream extrinsic_file(extrinsic_path, std::ios::binary);
     cereal::PortableBinaryInputArchive archive(extrinsic_file);
     archive(extrinsic_params_map);
   }
+
+  offset_.setZero();
+  for (const auto& extrinsic_params : extrinsic_params_map)
+  {
+    offset_ += extrinsic_params.second.position();
+  }
+  offset_ /= double(extrinsic_params_map.size());
 
   OrientationEntryContainer orientation_entries;
   for (auto extrinsic_params : extrinsic_params_map)
@@ -335,12 +452,10 @@ void SceneWindow::UpdatePhotoOrientation()
     orientation_entry.focal_length = itr_intrinsic_entry->second.focal_length;
     orientation_entry.width = itr_intrinsic_entry->second.width;
     orientation_entry.height = itr_intrinsic_entry->second.height;
-    orientation_entry.extrinsic_params.position()[0] =
-      Float(extrinsic_params.second.position()[0]);
-    orientation_entry.extrinsic_params.position()[1] =
-      Float(extrinsic_params.second.position()[1]);
-    orientation_entry.extrinsic_params.position()[2] =
-      Float(extrinsic_params.second.position()[2]);
+    DoubleVector3 position = extrinsic_params.second.position() - offset_;
+    orientation_entry.extrinsic_params.position()[0] = Float(position[0]);
+    orientation_entry.extrinsic_params.position()[1] = Float(position[1]);
+    orientation_entry.extrinsic_params.position()[2] = Float(position[2]);
     orientation_entry.extrinsic_params.rotation()[0] =
       Float(extrinsic_params.second.rotation()[0]);
     orientation_entry.extrinsic_params.rotation()[1] =
@@ -354,51 +469,32 @@ void SceneWindow::UpdatePhotoOrientation()
   PointCloudData pcd;
   {
     hs::graphics::PointCloudData<double> pcd_double;
-    std::ifstream point_cloud_file(response_photo_orientation.point_cloud_path,
-                                   std::ios::binary);
+    std::ifstream point_cloud_file(pcd_path, std::ios::binary);
     cereal::PortableBinaryInputArchive archive(point_cloud_file);
     archive(pcd_double);
+
+#if 1
+    std::ofstream test_pcd_file("point_cloud.txt");
+    test_pcd_file.setf(std::ios::fixed);
+    test_pcd_file << std::setprecision(4);
+    for (const auto& vertex : pcd_double.VertexData())
+    {
+      test_pcd_file << vertex[0] << " " << vertex[1] << " " << vertex[2] << "\n";
+    }
+    test_pcd_file.close();
+#endif
 
     pcd.VertexData().resize(pcd_double.PointCloudSize());
     pcd.NormalData().resize(pcd_double.PointCloudSize());
     pcd.ColorData().resize(pcd_double.PointCloudSize());
     for (size_t i = 0; i < pcd_double.PointCloudSize(); i++)
     {
-      pcd.VertexData()[i] = pcd_double.VertexData()[i].cast<float>();
-      pcd.NormalData()[i] = pcd_double.NormalData()[i].cast<float>();
-      pcd.ColorData()[i] = pcd_double.ColorData()[i].cast<float>();
+      pcd.VertexData()[i] =
+        (pcd_double.VertexData()[i] - offset_).cast<Float>();
+      pcd.NormalData()[i] = pcd_double.NormalData()[i].cast<Float>();
+      pcd.ColorData()[i] = pcd_double.ColorData()[i].cast<Float>();
     }
   }
-
-  ////计算中位数点
-  //std::vector<Vector3> vertex_data_order = pcd.VertexData();
-  //Vector3 median_point;
-  //std::sort(vertex_data_order.begin(), vertex_data_order.end(), XCompare());
-  //median_point[0] = vertex_data_order[vertex_data_order.size() / 2][0];
-  //std::sort(vertex_data_order.begin(), vertex_data_order.end(), YCompare());
-  //median_point[1] = vertex_data_order[vertex_data_order.size() / 2][1];
-  //std::sort(vertex_data_order.begin(), vertex_data_order.end(), ZCompare());
-  //median_point[2] = vertex_data_order[vertex_data_order.size() / 2][2];
-  //std::sort(vertex_data_order.begin(), vertex_data_order.end(),
-  //          DistanceCompare(median_point));
-  //size_t end = size_t(std::ceil(double(median_point.size()) * 0.9));
-  //Vector3 min, max;
-  //min << std::numeric_limits<Float>::max(),
-  //       std::numeric_limits<Float>::max(),
-  //       std::numeric_limits<Float>::max();
-  //max << -std::numeric_limits<Float>::max(),
-  //       -std::numeric_limits<Float>::max(),
-  //       -std::numeric_limits<Float>::max();
-  //for (size_t i = 0; i < end; i++)
-  //{
-  //  min[0] = std::min(min[0], vertex_data_order[i][0]);
-  //  min[1] = std::min(min[1], vertex_data_order[i][1]);
-  //  min[2] = std::min(min[2], vertex_data_order[i][2]);
-  //  max[0] = std::max(max[0], vertex_data_order[i][0]);
-  //  max[1] = std::max(max[1], vertex_data_order[i][1]);
-  //  max[2] = std::max(max[2], vertex_data_order[i][2]);
-  //}
-  //pcd.SetBoundingBox(min, max);
 
   Vector3 min, max;
   min << std::numeric_limits<Float>::max(),
@@ -446,77 +542,6 @@ void SceneWindow::UpdatePhotoOrientation()
 
   ViewAll();
   RenderNow();
-}
-
-void SceneWindow::UpdatePointCloud()
-{
-  hs::recon::db::RequestGetPointCloud request_point_cloud;
-  hs::recon::db::ResponseGetPointCloud response_point_cloud;
-  request_point_cloud.id =
-    db::Database::Identifier(point_cloud_id_);
-  database_mediator_.Request(
-    this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
-    request_point_cloud, response_point_cloud, false);
-  if (response_point_cloud.error_code !=
-    hs::recon::db::Database::NO_ERROR)
-  {
-    return;
-  }
-  std::string dense_pointcloud_path =
-    response_point_cloud.dense_pointcloud_path;
-
-  //读取密集点云
-  PointCloudData pcd;
-  hs::graphics::ReadFile<Float>::ReadPointPlyFile(
-    dense_pointcloud_path, pcd);
-  sparse_point_cloud_render_layer_->SetupPointCloudData(pcd);
-
-  ViewAll();
-  RenderNow();
-
-}
-
-
-void SceneWindow::BackupSelectedPointsColor(Float left, Float right,
-                                            Float bottom, Float top,
-                                            PointCloudData& pcd)
-{
-  //Restore colors
-  for (size_t i = 0; i < selected_points_backup_colors_.size(); i++)
-  {
-    pcd.ColorData()[selected_points_backup_colors_[i].id] =
-      selected_points_backup_colors_[i].color;
-  }
-
-  if (left < right && bottom < top)
-  {
-    ViewingTransformer::TransformMatrix transform_matrix =
-      viewing_transformer_.ViewingTransformMatrix();
-
-    selected_points_backup_colors_.clear();
-    selected_points_.clear();
-    for (size_t i = 0; i < pcd.VertexData().size(); i++)
-    {
-      EIGEN_VECTOR(Float, 4) point_h;
-      point_h << pcd.VertexData()[i][0],
-                 pcd.VertexData()[i][1],
-                 pcd.VertexData()[i][2],
-                 Float(1);
-      point_h = transform_matrix * point_h;
-      point_h /= point_h[3];
-
-      if (point_h[0] > left && point_h[0] < right &&
-          point_h[1] > bottom && point_h[1] < top)
-      {
-        BackupColor backup_color;
-        backup_color.id = i;
-        backup_color.color = pcd.ColorData()[i];
-        selected_points_backup_colors_.push_back(backup_color);
-        selected_points_.push_back(pcd.VertexData()[i]);
-
-      }
-    }
-  }
 }
 
 }

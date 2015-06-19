@@ -29,6 +29,8 @@ public:
   typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
   typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
   typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
+  typedef std::pair<size_t, size_t> ExtrinsicIndex;
+  typedef EIGEN_STD_MAP(ExtrinsicIndex, ExtrinsicParams) ExtrinsicParamsMap;
 
   struct PhotoEntry
   {
@@ -84,6 +86,7 @@ private slots:
   void OnActionShowEstimateTriggered();
   void OnActionShowErrorTriggered();
   void OnActionGCPConstrainedOptimizeTriggered();
+  void OnActionGCPConfigTriggered();
   void OnPhotoMeasured(uint photo_id, const Point2F& image_pos);
   void OnGCPsSelected(const std::vector<uint>& gcp_ids);
   void OnGCPUpdated(uint gcp_id, const GCPsTableWidget::GCPEntry& gcp_updated);
@@ -103,6 +106,8 @@ private:
   GCPsTableWidget* gcps_table_widget_;
   TiepointMeasureWidget* tiepoint_measure_widget_;
 
+  bool is_gcp_constrained_;
+
   QIcon icon_add_gcp_;
   QIcon icon_remove_gcps_;
   QIcon icon_import_gcps_;
@@ -110,6 +115,7 @@ private:
   QIcon icon_show_estimate_;
   QIcon icon_show_error_;
   QIcon icon_gcp_constrained_optimize_;
+  QIcon icon_gcp_config_;
 
   QAction* action_add_gcp_;
   QAction* action_remove_gcps_;
@@ -118,6 +124,7 @@ private:
   QAction* action_show_estimate_;
   QAction* action_show_error_;
   QAction* action_gcp_constrained_optimize_;
+  QAction* action_gcp_config_;
 
   PhotoEntryContainer photo_entries_;
   GCPMeasureContainer gcp_measures_;
@@ -125,6 +132,11 @@ private:
 
   uint photo_orientation_id_;
   uint current_gcp_id_;
+
+  Scalar gcp_planar_accuracy_;
+  Scalar gcp_height_accuracy_;
+  Scalar tiepoint_feature_accuracy_;
+  Scalar gcp_marker_accuracy_;
 
   Scalar similar_scale_;
   Rotation similar_rotation_;
