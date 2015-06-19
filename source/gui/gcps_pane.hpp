@@ -8,6 +8,7 @@
 
 #include "hs_math/geometry/rotation.hpp"
 #include "hs_sfm/sfm_utility/camera_type.hpp"
+#include "hs_progress/progress_utility/progress_manager.hpp"
 
 #include "database/database_mediator.hpp"
 #include "gui/manager_pane.hpp"
@@ -88,6 +89,7 @@ private slots:
   void OnActionGCPConstrainedOptimizeTriggered();
   void OnActionGCPConfigTriggered();
   void OnPhotoMeasured(uint photo_id, const Point2F& image_pos);
+  void OnPhotoMeasureDeleted(uint photo_id);
   void OnGCPsSelected(const std::vector<uint>& gcp_ids);
   void OnGCPUpdated(uint gcp_id, const GCPsTableWidget::GCPEntry& gcp_updated);
 
@@ -97,7 +99,8 @@ private:
     const std::map<uint, PhotoMeasure>& photo_measures,
     Point3D& point) const;
   int ComputeSimilarTransform();
-  void GCPConstrainedOptimize();
+  void GCPConstrainedOptimize(
+    hs::progress::ProgressManager* progress_manager = nullptr);
 
 signals:
   void GCPRelateLocationState(bool is_calculated);

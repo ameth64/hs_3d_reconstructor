@@ -81,10 +81,12 @@ private slots:
   int UpdateImageWindows();
   void OnTimeout();
   void OnMeasured(uint photo_id, const EIGEN_VECTOR(Float, 2)& position);
+  void OnMeasureDeleted(uint photo_id);
 
 signals:
   void TransmissionMeasured(uint photo_id,
                             const EIGEN_VECTOR(Float, 2)& position);
+  void TransmissionMeasureDeleted(uint photo_id);
 
 private:
   TiepointPhotoContainer tiepoint_photos_;

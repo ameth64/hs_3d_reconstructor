@@ -226,6 +226,9 @@ int TiepointMeasureWidget::UpdateImageWindows()
       QObject::connect(image_measure_opengl_window,
                        &ImageMeasureOpenGLWindow::Measured,
                        this, &TiepointMeasureWidget::OnMeasured);
+      QObject::connect(image_measure_opengl_window,
+                       &ImageMeasureOpenGLWindow::MeasureDeleted,
+                       this, &TiepointMeasureWidget::OnMeasureDeleted);
       displayer->resize(displayer_width_, displayer_height_);
       displayer->hide();
       displayer_pool_.push_back(displayer);
@@ -425,6 +428,11 @@ void TiepointMeasureWidget::OnMeasured(uint photo_id,
                                        const EIGEN_VECTOR(Float, 2)& position)
 {
   emit TransmissionMeasured(photo_id, position);
+}
+
+void TiepointMeasureWidget::OnMeasureDeleted(uint photo_id)
+{
+  emit TransmissionMeasureDeleted(photo_id);
 }
 
 

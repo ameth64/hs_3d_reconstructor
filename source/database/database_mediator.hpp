@@ -106,6 +106,7 @@ public:
     REQUEST_ADD_GCPS,
     REQUEST_GET_ALL_GCPS,
     REQUEST_ADD_PHOTO_MEASURE,
+    REQUEST_DELETE_PHOTO_MEASURE,
     REQUEST_UPDATE_PHOTO_MEASURE_POS,
     REQUEST_GET_PHOTO_MEASURES_IN_PHOTO_ORIENTATION,
     REQUEST_UPDATE_GCP,
@@ -1991,6 +1992,45 @@ struct DatabaseRequestHandler<RequestAddPhotoMeasure, ResponseAddPhotoMeasure>
   }
 };
 
+//Request Delete Photo Measure
+struct RequestDeletePhotoMeasure
+{
+  REQUEST_HEADER
+  Identifier photo_orientation_id;
+  Identifier gcp_id;
+  Identifier photo_id;
+};
+
+struct ResponseDeletePhotoMeasure
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler <RequestDeletePhotoMeasure,
+                               ResponseDeletePhotoMeasure>
+{
+  int operator() (const RequestDeletePhotoMeasure& request,
+                  ResponseDeletePhotoMeasure& response,
+                  DatabaseMediator& database_mediator)
+  {
+    response.error_code =
+      database_mediator.photo_measure_resource_->Delete(
+        And(EqualTo(db::PhotoMeasureResource::fields_[
+                    db::PhotoMeasureResource::
+                      PHOTO_MEASURE_FIELD_PHOTO_ORIENTATION_ID],
+                    Value(int(request.photo_orientation_id))),
+         And(
+            EqualTo(db::PhotoMeasureResource::fields_[
+                    db::PhotoMeasureResource::PHOTO_MEASURE_FIELD_GCP_ID],
+                    Value(int(request.gcp_id))),
+            EqualTo(db::PhotoMeasureResource::fields_[
+                    db::PhotoMeasureResource::PHOTO_MEASURE_FIELD_PHOTO_ID],
+                    Value(int(request.photo_id))))));
+    return response.error_code;
+  }
+};
+
 //Request Update Photo Measure
 struct RequestUpdatePhotoMeasurePos
 {
@@ -3432,7 +3472,16 @@ struct DatabaseRequestHandler < RequestRemovePhotoOrientation,
     //删除PHOTOORIENTATION数据库项
     response.error_code =
       database_mediator.photo_orientation_resource_->Delete(
-      EqualTo(BlockResource::fields_[0], Value(int(request.id))));
+      EqualTo(PhotoOrientationResource::fields_[0], Value(int(request.id))));
+
+    //删除所有与photo_orientation相关的photo_measure
+    response.error_code =
+      database_mediator.photo_measure_resource_->Delete(
+        EqualTo(db::PhotoMeasureResource::fields_[
+                    db::PhotoMeasureResource::
+                      PHOTO_MEASURE_FIELD_PHOTO_ORIENTATION_ID],
+                Value(int(request.id))));
+
     return response.error_code;
   }
 };

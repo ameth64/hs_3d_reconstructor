@@ -21,6 +21,7 @@
 #include "gui/property_field_asignment_dialog.hpp"
 #include "gui/main_window.hpp"
 #include "gui/gcp_constrained_optimization_config_dialog.hpp"
+#include "gui/progress_dialog.hpp"
 #include "gui/gcps_pane.hpp"
 
 namespace hs
@@ -114,6 +115,9 @@ GCPsPane::GCPsPane(QWidget* parent)
   QObject::connect(tiepoint_measure_widget_,
                    &TiepointMeasureWidget::TransmissionMeasured,
                    this, &GCPsPane::OnPhotoMeasured);
+  QObject::connect(tiepoint_measure_widget_,
+                   &TiepointMeasureWidget::TransmissionMeasureDeleted,
+                   this, &GCPsPane::OnPhotoMeasureDeleted);
   QObject::connect(gcps_table_widget_, &GCPsTableWidget::GCPUpdated,
                    this, &GCPsPane::OnGCPUpdated);
 }
@@ -604,7 +608,9 @@ void GCPsPane::OnActionGCPConstrainedOptimizeTriggered()
   }
   else
   {
-    GCPConstrainedOptimize();
+    ProgressDialog dialog;
+    dialog.Start(&GCPsPane::GCPConstrainedOptimize,
+                 this, dialog.GetProgressManagerPtr());
   }
 }
 
@@ -679,6 +685,48 @@ void GCPsPane::OnPhotoMeasured(uint photo_id, const Point2F& image_pos)
         itr_photo_measure->second.x = Scalar(image_pos[0]);
         itr_photo_measure->second.y = Scalar(image_pos[1]);
       }
+    }
+
+    if (photo_measures.size() >= 2)
+    {
+      Point3D point;
+      if (TriangulatePoint(photo_measures, point) == 0)
+      {
+        point = similar_scale_ * (similar_rotation_ * point) +
+                similar_translate_;
+        itr_gcp_measure->second.estimate_pos[0] = point[0];
+        itr_gcp_measure->second.estimate_pos[1] = point[1];
+        itr_gcp_measure->second.estimate_pos[2] = point[2];
+
+        gcps_table_widget_->SetGCPTypeEditable(
+          itr_gcp_measure->second.gcp_id, true);
+      }
+    }
+
+    ComputeSimilarTransform();
+    UpdateTiepointWidget();
+  }
+}
+
+void GCPsPane::OnPhotoMeasureDeleted(uint photo_id)
+{
+  auto itr_gcp_measure = gcp_measures_.find(current_gcp_id_);
+  if (itr_gcp_measure != gcp_measures_.end())
+  {
+    auto& photo_measures = itr_gcp_measure->second.photo_measures;
+    auto itr_photo_measure = photo_measures.find(photo_id);
+    if (itr_photo_measure != photo_measures.end())
+    {
+      photo_measures.erase(itr_photo_measure);
+
+      db::RequestDeletePhotoMeasure request;
+      db::ResponseDeletePhotoMeasure response;
+      request.gcp_id = db::Identifier(current_gcp_id_);
+      request.photo_id = db::Identifier(photo_id);
+      request.photo_orientation_id = db::Identifier(photo_orientation_id_);
+      ((MainWindow*)parent())->database_mediator().Request(
+        this, db::DatabaseMediator::REQUEST_DELETE_PHOTO_MEASURE,
+        request, response, true);
     }
 
     if (photo_measures.size() >= 2)
@@ -1052,7 +1100,8 @@ int GCPsPane::ComputeSimilarTransform()
   return result;
 }
 
-void GCPsPane::GCPConstrainedOptimize()
+void GCPsPane::GCPConstrainedOptimize(
+  hs::progress::ProgressManager* progress_manager)
 {
   typedef hs::sfm::pipeline::BundleAdjustmentGCPConstrainedOptimizor < Scalar >
           Optimizor;
@@ -1075,6 +1124,11 @@ void GCPsPane::GCPConstrainedOptimize()
   typedef hs::recon::db::Identifier Identifier;
   typedef EIGEN_STD_MAP(size_t, ImageKeyset) ImageKeysetMap;
   typedef hs::sfm::pipeline::PointCloudNormCalculator<Scalar> NormCalculator;
+
+  if (progress_manager)
+  {
+    progress_manager->AddSubProgress(0.1f);
+  }
 
   //Get photo orientation
   hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
@@ -1251,6 +1305,13 @@ void GCPsPane::GCPConstrainedOptimize()
     }
   }
 
+  if (progress_manager)
+  {
+    progress_manager->FinishCurrentSubProgress();
+
+    progress_manager->AddSubProgress(0.89f);
+  }
+
   PointContainer gcps_estimate;
   TrackPointMap estimate_measure_map;
   QSettings settings;
@@ -1278,6 +1339,12 @@ void GCPsPane::GCPConstrainedOptimize()
                 estimate_measure_map) != 0)
   {
     return;
+  }
+
+  if (progress_manager)
+  {
+    progress_manager->FinishCurrentSubProgress();
+    progress_manager->AddSubProgress(0.01f);
   }
 
   //calculate norms.
@@ -1395,12 +1462,6 @@ void GCPsPane::GCPConstrainedOptimize()
     return;
   }
 
-#if 1
-  QMessageBox msg_box;
-  msg_box.setText("Update Transform");
-  msg_box.exec();
-#endif
-
   db::RequestUpdatePhotoOrientationFlag request_flag;
   db::ResponseUpdatePhotoOrientationFlag response_flag;
   request_flag.id = db::Identifier(photo_orientation_id_);
@@ -1417,11 +1478,6 @@ void GCPsPane::GCPConstrainedOptimize()
   {
     return;
   }
-
-#if 1
-  msg_box.setText("Update Flag");
-  msg_box.exec();
-#endif
 
   db::RequestUpdatePhotoOrientationParams request_params;
   db::ResponseUpdatePhotoOrientationParams response_params;
@@ -1445,16 +1501,11 @@ void GCPsPane::GCPConstrainedOptimize()
     this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_PARAMS,
     request_params, response_params, true);
 
-  if (response_params.error_code != db::DatabaseMediator::NO_ERROR)
+  if (progress_manager)
   {
-    std::cout << "error:" << response_params.error_code << "\n";
-    return;
+    progress_manager->FinishCurrentSubProgress();
   }
 
-#if 1
-  msg_box.setText("Update Params");
-  msg_box.exec();
-#endif
 }
 
 }

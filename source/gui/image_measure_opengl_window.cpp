@@ -17,10 +17,19 @@ ImageMeasureOpenGLWindow::ImageMeasureOpenGLWindow(QWindow* parent)
   , position_icon_2d_render_layer_measure_(new PositionIcon2DRenderLayer)
   , photo_id_(std::numeric_limits<uint>::max())
 {
+  action_measure_ = new QAction(tr("Measure GCP"), this);
+  action_delete_measure_ = new QAction(tr("Delete Measure"), this);
+
+  menu_context_ = new QMenu;
+  menu_context_->addAction(action_measure_);
+  menu_context_->addAction(action_delete_measure_);
+
   pos_predicated_ << -std::numeric_limits<Float>::max(),
                      -std::numeric_limits<Float>::max();
   pos_measure_ << -std::numeric_limits<Float>::max(),
                   -std::numeric_limits<Float>::max();
+  pos_menu_ << -std::numeric_limits<Float>::max(),
+               -std::numeric_limits<Float>::max();
 
   AddRenderLayer(
     std::static_pointer_cast<RenderLayer>(
@@ -40,6 +49,12 @@ ImageMeasureOpenGLWindow::ImageMeasureOpenGLWindow(QWindow* parent)
 
   QObject::connect(this, &OpenGLWindow::MouseClicked,
                    this, &ImageMeasureOpenGLWindow::OnMouseClicked);
+  QObject::connect(
+    action_measure_, &QAction::triggered,
+    this, &ImageMeasureOpenGLWindow::OnActionMeasureTriggered);
+  QObject::connect(
+    action_delete_measure_, &QAction::triggered,
+    this, &ImageMeasureOpenGLWindow::OnActionDeleteMeasureTriggered);
 }
 
 ImageMeasureOpenGLWindow::Position
@@ -117,26 +132,26 @@ void ImageMeasureOpenGLWindow::ClearPosition()
 void ImageMeasureOpenGLWindow::OnMouseClicked(
   Qt::KeyboardModifiers state_key, Qt::MouseButton mouse_button, QPoint pos)
 {
+  typedef EIGEN_VECTOR(Float, 4) Vector4;
+  typedef ViewingTransformer::TransformMatrix TransformMatrix;
+  TransformMatrix transform_matrix =
+    viewing_transformer_.ViewingTransformMatrix();
+  Vector4 screen_pos;
+  screen_pos << Float(pos.x()),
+                Float(pos.y()),
+                Float(0),
+                Float(1);
+  screen_pos[0] /=
+    Float(viewing_transformer_.viewport_width()) * Float(0.5);
+  screen_pos[1] /=
+    Float(viewing_transformer_.viewport_height()) * Float(0.5);
+  screen_pos[0] -= Float(1);
+  screen_pos[1] -= Float(1);
+  Vector4 object_pos = transform_matrix.inverse() * screen_pos;
+  object_pos /= object_pos[3];
+
   if (state_key == Qt::ShiftModifier && mouse_button == Qt::LeftButton)
   {
-    typedef EIGEN_VECTOR(Float, 4) Vector4;
-    typedef ViewingTransformer::TransformMatrix TransformMatrix;
-    TransformMatrix transform_matrix =
-      viewing_transformer_.ViewingTransformMatrix();
-    Vector4 screen_pos;
-    screen_pos << Float(pos.x()),
-                  Float(pos.y()),
-                  Float(0),
-                  Float(1);
-    screen_pos[0] /=
-      Float(viewing_transformer_.viewport_width()) * Float(0.5);
-    screen_pos[1] /=
-      Float(viewing_transformer_.viewport_height()) * Float(0.5);
-    screen_pos[0] -= Float(1);
-    screen_pos[1] -= Float(1);
-    Vector4 object_pos = transform_matrix.inverse() * screen_pos;
-    object_pos /= object_pos[3];
-
     pos_measure_ << object_pos[0],
                     object_pos[1];
     PositionContainer positions(1, pos_measure_);
@@ -145,6 +160,44 @@ void ImageMeasureOpenGLWindow::OnMouseClicked(
 
     RenderNow();
   }
+
+  if (state_key == Qt::NoModifier && mouse_button == Qt::RightButton)
+  {
+    QPoint qt_pos = pos;
+    qt_pos.setY(height() - qt_pos.y() - 1);
+
+    pos_menu_ << object_pos[0],
+                    object_pos[1];
+
+    menu_context_->popup(mapToGlobal(qt_pos));
+  }
+  else
+  {
+    pos_menu_ << -std::numeric_limits<Float>::max(),
+                 -std::numeric_limits<Float>::max();
+    menu_context_->hide();
+  }
+}
+
+void ImageMeasureOpenGLWindow::OnActionMeasureTriggered()
+{
+  pos_measure_ = pos_menu_;
+  pos_menu_ << -std::numeric_limits<Float>::max(),
+               -std::numeric_limits<Float>::max();
+
+  PositionContainer positions(1, pos_measure_);
+  position_icon_2d_render_layer_measure_->SetPositions(positions);
+  emit Measured(photo_id_, WindowPosToPhotoPos(pos_measure_));
+
+  RenderNow();
+}
+
+void ImageMeasureOpenGLWindow::OnActionDeleteMeasureTriggered()
+{
+  pos_menu_ << -std::numeric_limits<Float>::max(),
+               -std::numeric_limits<Float>::max();
+  ClearPosition();
+  emit MeasureDeleted(photo_id_);
 }
 
 ImageMeasureOpenGLWindow::ImageData

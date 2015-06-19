@@ -1,6 +1,9 @@
 ﻿#ifndef _HS_3D_RECONSTRUCTOR_IMAGE_MEASURE_OPENGL_WINDOW_HPP_
 #define _HS_3D_RECONSTRUCTOR_IMAGE_MEASURE_OPENGL_WINDOW_HPP_
 
+#include <QMenu>
+#include <QAction>
+
 #include "hs_graphics/graphics_render/position_icon_2d_render_layer.hpp"
 
 #include "gui/image_opengl_window.hpp"
@@ -58,9 +61,12 @@ public:
 protected slots:
   void OnMouseClicked(Qt::KeyboardModifiers state_key,
                       Qt::MouseButton mouse_button, QPoint pos);
+  void OnActionMeasureTriggered();
+  void OnActionDeleteMeasureTriggered();
 
 signals:
   void Measured(uint photo_id, const Position& position);
+  void MeasureDeleted(uint photo_id);
 
 private:
   ImageData LoadIcon(const QString& icon_path);
@@ -72,11 +78,17 @@ private:
 private:
   Position pos_predicated_;
   Position pos_measure_;
+  Position pos_menu_;
 
   uint photo_id_;
 
   PPositionIcon2DRenderLayer position_icon_2d_render_layer_predicated_;
   PPositionIcon2DRenderLayer position_icon_2d_render_layer_measure_;
+
+  QAction* action_measure_;
+  QAction* action_delete_measure_;
+
+  QMenu* menu_context_;
 };
 
 }
