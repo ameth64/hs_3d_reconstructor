@@ -229,7 +229,8 @@ set(WORKFLOW_SOURCES
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
 hslib_add_dep(${WORKFLOW_NAME}
-  3RDPARTY_DEPS boost DEP_LIBS boost_thread
+  3RDPARTY_DEPS boost DEP_LIBS boost_filesystem
+                               boost_thread
                                boost_chrono
                                boost_regex
                                boost_system
