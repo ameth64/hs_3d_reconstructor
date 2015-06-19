@@ -26,6 +26,7 @@ namespace gui
 
 class PhotoOrientationInfoWidget: public QWidget
 {
+  Q_OBJECT
 public:
   typedef double Scalar;
   typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
@@ -71,6 +72,7 @@ private:
   
 class IntrinsicParaminfoWidget: public QWidget
 {
+  Q_OBJECT
 public:
   typedef PhotoOrientationInfoWidget::IntrinsicParams IntrinsicParams;
 
