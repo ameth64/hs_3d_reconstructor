@@ -23,6 +23,7 @@
 
 //#include "workflow/feature_match//openmvg_feature_match.hpp"
 #include "workflow/feature_match/opencv_feature_match.hpp"
+#include "workflow/mesh_surface/delaunay_surface_model.hpp"
 
 #include "gui/blocks_pane.hpp"
 #include "gui/block_photos_select_dialog.hpp"
@@ -2233,7 +2234,8 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
     break;
   }
 
-  return WorkflowStepPtr(new workflow::PoissonSurface);
+  //return WorkflowStepPtr(new workflow::PoissonSurface);
+  return WorkflowStepPtr(new workflow::DelaunaySurfaceModel);
 }
 
 BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(

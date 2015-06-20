@@ -18,7 +18,8 @@
 #include "gui/manager_pane.hpp"
 #include "gui/blocks_tree_widget.hpp"
 #include "gui/photo_orientation_info_widget.hpp"
-#include "workflow/mesh_surface/poisson_surface_model.hpp"
+//#include "workflow/mesh_surface/poisson_surface_model.hpp"
+#include "workflow/mesh_surface/surface_model_config.hpp"
 #include "workflow/texture/rough_texture.hpp"
 
 namespace hs

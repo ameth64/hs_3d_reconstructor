@@ -2,6 +2,8 @@
 #include <sstream>
 #include <limits>
 
+#include <cereal/types/array.hpp>
+#include <cereal/types/vector.hpp>
 #include <cereal/archives/portable_binary.hpp>
 
 #include "hs_flowmodule/mesh_surface/kernel/mesh_type/mesh_type.hpp"
@@ -149,34 +151,47 @@ int RoughTexture::LoadSurfaceModel(WorkflowStepConfig* config,
   const TextureConfig::SimilarTransform& similar_transform =
     texture_config->similar_transform();
 
-
-  MeshData mesh_data;
   {
-    std::ifstream surface_file(surface_model_path, std::ios::binary);
-    if (!surface_file) return -1;
-    cereal::PortableBinaryInputArchive archive(surface_file);
-    archive(mesh_data);
+    std::ifstream mesh_file(surface_model_path, std::ios::binary);
+    if (!mesh_file) return -1;
+    cereal::PortableBinaryInputArchive archive(mesh_file);
+    archive(vertices, triangles);
   }
 
-  size_t number_of_vertices = mesh_data.vSize();
-  vertices.resize(number_of_vertices);
-  for (size_t i = 0; i < number_of_vertices; i++)
+  for (auto& vertex : vertices)
   {
-    auto mesh_vertex = mesh_data.get_vertex(i);
-    vertices[i][0] = mesh_vertex[0];
-    vertices[i][1] = mesh_vertex[1];
-    vertices[i][2] = mesh_vertex[2];
+    vertex = similar_transform.scale *
+             (similar_transform.rotation * vertex) +
+             similar_transform.translate;
   }
 
-  size_t number_of_faces = mesh_data.fSize();
-  triangles.resize(number_of_faces);
-  for (size_t i = 0; i < number_of_faces; i++)
-  {
-    auto mesh_face = mesh_data.get_face(i);
-    triangles[i][0] = mesh_face.m_polygon[0];
-    triangles[i][1] = mesh_face.m_polygon[1];
-    triangles[i][2] = mesh_face.m_polygon[2];
-  }
+  //MeshData mesh_data;
+  //{
+  //  std::ifstream surface_file(surface_model_path, std::ios::binary);
+  //  if (!surface_file) return -1;
+  //  cereal::PortableBinaryInputArchive archive(surface_file);
+  //  archive(mesh_data);
+  //}
+
+  //size_t number_of_vertices = mesh_data.vSize();
+  //vertices.resize(number_of_vertices);
+  //for (size_t i = 0; i < number_of_vertices; i++)
+  //{
+  //  auto mesh_vertex = mesh_data.get_vertex(i);
+  //  vertices[i][0] = mesh_vertex[0];
+  //  vertices[i][1] = mesh_vertex[1];
+  //  vertices[i][2] = mesh_vertex[2];
+  //}
+
+  //size_t number_of_faces = mesh_data.fSize();
+  //triangles.resize(number_of_faces);
+  //for (size_t i = 0; i < number_of_faces; i++)
+  //{
+  //  auto mesh_face = mesh_data.get_face(i);
+  //  triangles[i][0] = mesh_face.m_polygon[0];
+  //  triangles[i][1] = mesh_face.m_polygon[1];
+  //  triangles[i][2] = mesh_face.m_polygon[2];
+  //}
 
   return 0;
 }

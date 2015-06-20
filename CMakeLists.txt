@@ -12,6 +12,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 endif ()
 
 include_directories("source")
+add_definitions(-DBOOST_ALL_NO_LIB -DCGAL_NO_AUTOLINK)
 
 find_package(OpenGL REQUIRED)
 
@@ -146,6 +147,7 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   3RDPARTY_DEPS cereal HEADONLY
   3RDPARTY_DEPS lemon DEP_STATIC_LIBS lemon
   3RDPARTY_DEPS flann DEP_STATIC_LIBS flann
+  3RDPARTY_DEPS cgal DEP_LIBS CGAL
   HS_DEPS hs_math HEADONLY
   HS_DEPS hs_sfm HEADONLY
   HS_DEPS hs_image_io DEP_LIBS whole_io
@@ -185,7 +187,6 @@ set(DATABASE_SOURCES
   "source/database/texture_resource.cpp"
   "source/database/photo_block_relation_resource.cpp"
   )
-add_definitions(-DBOOST_ALL_NO_LIB)
 hslib_add_library(${DATABASE_NAME} ${HSPRJ_NAME} ${DATABASE_SOURCES})
 hslib_add_dep(${DATABASE_NAME}
   3RDPARTY_DEPS boost DEP_LIBS boost_filesystem boost_system
@@ -224,7 +225,9 @@ set(WORKFLOW_SOURCES
   "source/workflow/feature_match/opencv_feature_match.cpp"
   "source/workflow/photo_orientation/incremental_photo_orientation.cpp"
   "source/workflow/point_cloud/pmvs_point_cloud.cpp"
-  "source/workflow/mesh_surface/poisson_surface_model.cpp"
+  #"source/workflow/mesh_surface/poisson_surface_model.cpp"
+  "source/workflow/mesh_surface/surface_model_config.cpp"
+  "source/workflow/mesh_surface/delaunay_surface_model.cpp"
   "source/workflow/texture/rough_texture.cpp"
   )
 hslib_add_library(${WORKFLOW_NAME} ${HSPRJ_NAME} ${WORKFLOW_SOURCES})
@@ -269,6 +272,7 @@ hslib_add_dep(${WORKFLOW_NAME}
     DEP_STATIC_LIBS clp CoinUtils Osi OsiClpSolver
   3RDPARTY_DEPS cereal HEADONLY
   3RDPARTY_DEPS lemon DEP_STATIC_LIBS lemon
+  3RDPARTY_DEPS cgal DEP_LIBS CGAL
   HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
