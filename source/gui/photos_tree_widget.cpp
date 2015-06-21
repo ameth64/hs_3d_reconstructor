@@ -32,6 +32,9 @@ PhotosTreeWidget::PhotosTreeWidget(QWidget* parent)
 
 int PhotosTreeWidget::ClearGroups()
 {
+  group_item_map_.clear();
+  photo_item_map_.clear();
+  clear();
   return 0;
 }
 

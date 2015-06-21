@@ -147,6 +147,11 @@ int PhotoOrientationInfoWidget::Initialize(
   QObject::connect(timer_reprojection_error_, &QTimer::timeout,
                    this, &PhotoOrientationInfoWidget::OnTimeOut);
 
+  if (reprojection_compute_thread_.joinable())
+  {
+    reprojection_compute_thread_.join();
+  }
+
   reprojection_compute_thread_ =
     std::thread(&PhotoOrientationInfoWidget::ComputeReprojectionError,
     this, keysets, pcd, tracks, track_point_map);

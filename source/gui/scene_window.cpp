@@ -87,6 +87,21 @@ void SceneWindow::Response(int request_flag, void* response)
 
       break;
     }
+  case db::DatabaseMediator::REQUEST_CLOSE_DATABASE:
+    {
+      db::ResponseCloseDatabase* response_close =
+        static_cast<db::ResponseCloseDatabase*>(response);
+      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      {
+        photo_orientation_render_layer_->SetOrientationEntries(
+          OrientationEntryContainer());
+        sparse_point_cloud_render_layer_->SetupPointCloudData(PointCloudData());
+
+        ViewAll();
+        RenderNow();
+      }
+      break;
+    }
   default:
     {
 
@@ -472,17 +487,6 @@ void SceneWindow::UpdateScene(const std::string& intrinsic_path,
     std::ifstream point_cloud_file(pcd_path, std::ios::binary);
     cereal::PortableBinaryInputArchive archive(point_cloud_file);
     archive(pcd_double);
-
-#if 1
-    std::ofstream test_pcd_file("point_cloud.txt");
-    test_pcd_file.setf(std::ios::fixed);
-    test_pcd_file << std::setprecision(4);
-    for (const auto& vertex : pcd_double.VertexData())
-    {
-      test_pcd_file << vertex[0] << " " << vertex[1] << " " << vertex[2] << "\n";
-    }
-    test_pcd_file.close();
-#endif
 
     pcd.VertexData().resize(pcd_double.PointCloudSize());
     pcd.NormalData().resize(pcd_double.PointCloudSize());

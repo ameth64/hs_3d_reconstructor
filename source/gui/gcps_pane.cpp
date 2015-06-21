@@ -128,64 +128,90 @@ void GCPsPane::Response(int request_flag, void* response)
   {
   case db::DatabaseMediator::REQUEST_OPEN_DATABASE:
     {
-      while (1)
+      db::ResponseOpenDatabase* response_open =
+        static_cast<db::ResponseOpenDatabase*>(response);
+      if (response_open->error_code == db::DatabaseMediator::NO_ERROR)
       {
-        db::RequestGetAllGCPs gcps_request;
-        db::ResponseGetAllGCPs gcps_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_GCPS,
-          gcps_request, gcps_response, false);
-        if (gcps_response.error_code != db::DatabaseMediator::NO_ERROR)
-          break;
-
-        auto itr_record = gcps_response.records.begin();
-        auto itr_record_end = gcps_response.records.end();
-        GCPsTableWidget::GCPContainer gcps;
-        gcp_measures_.clear();
-        for (; itr_record != itr_record_end; ++itr_record)
+        while (1)
         {
-          GCPsTableWidget::GCPEntry gcp;
-          gcp.id = uint(itr_record->first);
-          std::string name =
-            itr_record->second[
-              db::GroundControlPointResource::GCP_FIELD_NAME].ToString();
-          gcp.name = QString::fromLocal8Bit(name.c_str());
-          db::Database::Float x =
-            itr_record->second[
-              db::GroundControlPointResource::GCP_FIELD_X].ToFloat();
-          db::Database::Float y =
-            itr_record->second[
-              db::GroundControlPointResource::GCP_FIELD_Y].ToFloat();
-          db::Database::Float z =
-            itr_record->second[
-              db::GroundControlPointResource::GCP_FIELD_Z].ToFloat();
-          gcp.measure_pos[0] = GCPsTableWidget::Float(x);
-          gcp.measure_pos[1] = GCPsTableWidget::Float(y);
-          gcp.measure_pos[2] = GCPsTableWidget::Float(z);
-          gcp.estimate_pos[0] =
-            -std::numeric_limits<GCPsTableWidget::Float>::max();
-          gcp.estimate_pos[1] =
-            -std::numeric_limits<GCPsTableWidget::Float>::max();
-          gcp.estimate_pos[2] =
-            -std::numeric_limits<GCPsTableWidget::Float>::max();
-          gcp.type = GCPsTableWidget::GCPEntry::NOT_USED;
-          gcps[gcp.id] = gcp;
+          db::RequestGetAllGCPs gcps_request;
+          db::ResponseGetAllGCPs gcps_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_GCPS,
+            gcps_request, gcps_response, false);
+          if (gcps_response.error_code != db::DatabaseMediator::NO_ERROR)
+            break;
 
-          GCPMeasure gcp_measure;
-          gcp_measure.gcp_id = gcp.id;
-          gcp_measure.type = GCPsTableWidget::GCPEntry::NOT_USED;
-          gcp_measure.measure_pos[0] = gcp.measure_pos[0];
-          gcp_measure.measure_pos[1] = gcp.measure_pos[1];
-          gcp_measure.measure_pos[2] = gcp.measure_pos[2];
-          gcp_measure.estimate_pos[0] = gcp.estimate_pos[0];
-          gcp_measure.estimate_pos[1] = gcp.estimate_pos[1];
-          gcp_measure.estimate_pos[2] = gcp.estimate_pos[2];
-          gcp_measures_[gcp_measure.gcp_id] = gcp_measure;
+          auto itr_record = gcps_response.records.begin();
+          auto itr_record_end = gcps_response.records.end();
+          GCPsTableWidget::GCPContainer gcps;
+          gcp_measures_.clear();
+          for (; itr_record != itr_record_end; ++itr_record)
+          {
+            GCPsTableWidget::GCPEntry gcp;
+            gcp.id = uint(itr_record->first);
+            std::string name =
+              itr_record->second[
+                db::GroundControlPointResource::GCP_FIELD_NAME].ToString();
+            gcp.name = QString::fromLocal8Bit(name.c_str());
+            db::Database::Float x =
+              itr_record->second[
+                db::GroundControlPointResource::GCP_FIELD_X].ToFloat();
+            db::Database::Float y =
+              itr_record->second[
+                db::GroundControlPointResource::GCP_FIELD_Y].ToFloat();
+            db::Database::Float z =
+              itr_record->second[
+                db::GroundControlPointResource::GCP_FIELD_Z].ToFloat();
+            gcp.measure_pos[0] = GCPsTableWidget::Float(x);
+            gcp.measure_pos[1] = GCPsTableWidget::Float(y);
+            gcp.measure_pos[2] = GCPsTableWidget::Float(z);
+            gcp.estimate_pos[0] =
+              -std::numeric_limits<GCPsTableWidget::Float>::max();
+            gcp.estimate_pos[1] =
+              -std::numeric_limits<GCPsTableWidget::Float>::max();
+            gcp.estimate_pos[2] =
+              -std::numeric_limits<GCPsTableWidget::Float>::max();
+            gcp.type = GCPsTableWidget::GCPEntry::NOT_USED;
+            gcps[gcp.id] = gcp;
+
+            GCPMeasure gcp_measure;
+            gcp_measure.gcp_id = gcp.id;
+            gcp_measure.type = GCPsTableWidget::GCPEntry::NOT_USED;
+            gcp_measure.measure_pos[0] = gcp.measure_pos[0];
+            gcp_measure.measure_pos[1] = gcp.measure_pos[1];
+            gcp_measure.measure_pos[2] = gcp.measure_pos[2];
+            gcp_measure.estimate_pos[0] = gcp.estimate_pos[0];
+            gcp_measure.estimate_pos[1] = gcp.estimate_pos[1];
+            gcp_measure.estimate_pos[2] = gcp.estimate_pos[2];
+            gcp_measures_[gcp_measure.gcp_id] = gcp_measure;
+          }
+          gcps_table_widget_->ClearGCPs();
+          gcps_table_widget_->AddGCPs(gcps);
+
+          break;
         }
+      }
+      break;
+    }
+  case db::DatabaseMediator::REQUEST_CLOSE_DATABASE:
+    {
+      db::ResponseCloseDatabase* response_close =
+        static_cast<db::ResponseCloseDatabase*>(response);
+      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      {
         gcps_table_widget_->ClearGCPs();
-        gcps_table_widget_->AddGCPs(gcps);
-
-        break;
+        tiepoint_measure_widget_->SetTiepointPhotos(
+          TiepointMeasureWidget::TiepointPhotoContainer());
+        action_gcp_constrained_optimize_->setEnabled(false);
+        photo_entries_.clear();
+        gcp_measures_.clear();
+        intrinsic_params_set_.clear();
+        photo_orientation_id_ = std::numeric_limits<uint>::max();
+        current_gcp_id_ = std::numeric_limits<uint>::max();
+        similar_scale_ = 1.0;
+        similar_rotation_.SetIdentity();
+        similar_translate_.setZero();
       }
       break;
     }

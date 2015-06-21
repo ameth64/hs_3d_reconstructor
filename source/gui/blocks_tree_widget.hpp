@@ -60,6 +60,8 @@ public:
   int DeleteTexture(uint texture_id);
   int DeleteDOM(uint dom_id);
 
+  void Clear();
+
   QTreeWidgetItem* BlockItem(uint block_id);
   QTreeWidgetItem* PhotosItem(uint block_id);
   QTreeWidgetItem* PhotoItem(uint block_id, uint photo_id);

@@ -23,7 +23,10 @@ PhotosPane::PhotosPane(QWidget* parent)
   //, icon_add_photos_(":/images/icon_photo_add.png")
   , icon_remove_photogroup_(":/images/icon_group_remove.png")
   , icon_remove_photos_(":/images/icon_photo_remove.png")
+  , is_import_complete_(false)
 {
+  timer_import_photos_ = new QTimer;
+
   AddWidget(photos_tree_widget_);
   photogroup_info_widget_->hide();
   photo_display_widget_->hide();
@@ -89,6 +92,10 @@ PhotosPane::PhotosPane(QWidget* parent)
     this,
     &PhotosPane::OnPhotogroupInfoUpdated);
 
+  QObject::connect(
+    timer_import_photos_, &QTimer::timeout,
+    this, &PhotosPane::OnImportTimeout);
+
   //progress_import_photos_ = new ProgressDialog;
   //progress_import_photos_->SetRange(0, 100);
   //timer_ = new QTimer(this);
@@ -105,94 +112,109 @@ void PhotosPane::Response(int request_flag, void* response)
     {
       while (1)
       {
-        db::RequestGetAllPhotogroups photogroups_request;
-        db::ResponseGetAllPhotogroups photogroups_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOGROUPS,
-          photogroups_request, photogroups_response, false);
-        if (photogroups_response.error_code != db::DatabaseMediator::NO_ERROR)
-          break;
-
-        db::RequestGetAllPhotos photos_request;
-        db::ResponseGetAllPhotos photos_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOS,
-          photos_request, photos_response, false);
-        if (photos_response.error_code != db::DatabaseMediator::NO_ERROR)
-          break;
-
-        std::map<uint, PhotosTreeWidget::GroupEntry> group_entries;
-        auto itr_group_record = photogroups_response.records.begin();
-        auto itr_group_record_end = photogroups_response.records.end();
-        for (; itr_group_record != itr_group_record_end; ++itr_group_record)
+        db::ResponseOpenDatabase* response_open =
+          static_cast<db::ResponseOpenDatabase*>(response);
+        if (response_open->error_code == db::DatabaseMediator::NO_ERROR)
         {
-          PhotosTreeWidget::GroupEntry group_entry;
-          group_entry.id = uint(itr_group_record->first);
-          std::string name =
-            itr_group_record->second[
-              db::PhotogroupResource::PHOTOGROUP_FIELD_NAME].ToString();
-          group_entry.name = QString::fromLocal8Bit(name.c_str());
-          group_entries[group_entry.id] = group_entry;
-        }
+          db::RequestGetAllPhotogroups photogroups_request;
+          db::ResponseGetAllPhotogroups photogroups_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOGROUPS,
+            photogroups_request, photogroups_response, false);
+          if (photogroups_response.error_code != db::DatabaseMediator::NO_ERROR)
+            break;
 
-        auto itr_photo_record = photos_response.records.begin();
-        auto itr_photo_record_end = photos_response.records.end();
-        for (; itr_photo_record != itr_photo_record_end; ++itr_photo_record)
-        {
-          uint group_id =
-            uint(itr_photo_record->second[
-              db::PhotoResource::PHOTO_FIELD_PHOTOGROUP_ID].ToInt());
-          auto itr_group_entry = group_entries.find(group_id);
-          if (itr_group_entry == group_entries.end()) continue;
+          db::RequestGetAllPhotos photos_request;
+          db::ResponseGetAllPhotos photos_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOS,
+            photos_request, photos_response, false);
+          if (photos_response.error_code != db::DatabaseMediator::NO_ERROR)
+            break;
 
-          PhotosTreeWidget::PhotoEntry photo_entry;
-          photo_entry.id = uint(itr_photo_record->first);
-          std::string photo_path =
-            itr_photo_record->second[
-              db::PhotoResource::PHOTO_FIELD_PATH].ToString();
-          QFileInfo file_info(QString::fromLocal8Bit(photo_path.c_str()));
-          photo_entry.file_name = file_info.fileName();
-          photo_entry.x =
-            PhotosTreeWidget::Float(
-              itr_photo_record->second[
-                db::PhotoResource::PHOTO_FIELD_POS_X].ToFloat());
-          photo_entry.y =
-            PhotosTreeWidget::Float(
-              itr_photo_record->second[
-                db::PhotoResource::PHOTO_FIELD_POS_Y].ToFloat());
-          photo_entry.z =
-            PhotosTreeWidget::Float(
-              itr_photo_record->second[
-                db::PhotoResource::PHOTO_FIELD_POS_Z].ToFloat());
-          photo_entry.pitch =
-            PhotosTreeWidget::Float(
-              itr_photo_record->second[
-                db::PhotoResource::PHOTO_FIELD_PITCH].ToFloat());
-          photo_entry.roll =
-            PhotosTreeWidget::Float(
-              itr_photo_record->second[
-                db::PhotoResource::PHOTO_FIELD_ROLL].ToFloat());
-          photo_entry.heading =
-            PhotosTreeWidget::Float(
-              itr_photo_record->second[
-                db::PhotoResource::PHOTO_FIELD_HEADING].ToFloat());
-          itr_group_entry->second.photos[photo_entry.id] = photo_entry;
-        }
+          std::map<uint, PhotosTreeWidget::GroupEntry> group_entries;
+          auto itr_group_record = photogroups_response.records.begin();
+          auto itr_group_record_end = photogroups_response.records.end();
+          for (; itr_group_record != itr_group_record_end; ++itr_group_record)
+          {
+            PhotosTreeWidget::GroupEntry group_entry;
+            group_entry.id = uint(itr_group_record->first);
+            std::string name =
+              itr_group_record->second[
+                db::PhotogroupResource::PHOTOGROUP_FIELD_NAME].ToString();
+            group_entry.name = QString::fromLocal8Bit(name.c_str());
+            group_entries[group_entry.id] = group_entry;
+          }
 
-        auto itr_group_entry = group_entries.begin();
-        auto itr_group_entry_end = group_entries.end();
-        for (; itr_group_entry != itr_group_entry_end; ++itr_group_entry)
-        {
-          photos_tree_widget_->AddGroup(itr_group_entry->first,
-                                        itr_group_entry->second);
-        }
-        for (int column = 0; column < photos_tree_widget_->columnCount();
-             column++)
-        {
-          photos_tree_widget_->resizeColumnToContents(column);
+          auto itr_photo_record = photos_response.records.begin();
+          auto itr_photo_record_end = photos_response.records.end();
+          for (; itr_photo_record != itr_photo_record_end; ++itr_photo_record)
+          {
+            uint group_id =
+              uint(itr_photo_record->second[
+                db::PhotoResource::PHOTO_FIELD_PHOTOGROUP_ID].ToInt());
+            auto itr_group_entry = group_entries.find(group_id);
+            if (itr_group_entry == group_entries.end()) continue;
+
+            PhotosTreeWidget::PhotoEntry photo_entry;
+            photo_entry.id = uint(itr_photo_record->first);
+            std::string photo_path =
+              itr_photo_record->second[
+                db::PhotoResource::PHOTO_FIELD_PATH].ToString();
+            QFileInfo file_info(QString::fromLocal8Bit(photo_path.c_str()));
+            photo_entry.file_name = file_info.fileName();
+            photo_entry.x =
+              PhotosTreeWidget::Float(
+                itr_photo_record->second[
+                  db::PhotoResource::PHOTO_FIELD_POS_X].ToFloat());
+            photo_entry.y =
+              PhotosTreeWidget::Float(
+                itr_photo_record->second[
+                  db::PhotoResource::PHOTO_FIELD_POS_Y].ToFloat());
+            photo_entry.z =
+              PhotosTreeWidget::Float(
+                itr_photo_record->second[
+                  db::PhotoResource::PHOTO_FIELD_POS_Z].ToFloat());
+            photo_entry.pitch =
+              PhotosTreeWidget::Float(
+                itr_photo_record->second[
+                  db::PhotoResource::PHOTO_FIELD_PITCH].ToFloat());
+            photo_entry.roll =
+              PhotosTreeWidget::Float(
+                itr_photo_record->second[
+                  db::PhotoResource::PHOTO_FIELD_ROLL].ToFloat());
+            photo_entry.heading =
+              PhotosTreeWidget::Float(
+                itr_photo_record->second[
+                  db::PhotoResource::PHOTO_FIELD_HEADING].ToFloat());
+            itr_group_entry->second.photos[photo_entry.id] = photo_entry;
+          }
+
+          auto itr_group_entry = group_entries.begin();
+          auto itr_group_entry_end = group_entries.end();
+          for (; itr_group_entry != itr_group_entry_end; ++itr_group_entry)
+          {
+            photos_tree_widget_->AddGroup(itr_group_entry->first,
+                                          itr_group_entry->second);
+          }
+          for (int column = 0; column < photos_tree_widget_->columnCount();
+               column++)
+          {
+            photos_tree_widget_->resizeColumnToContents(column);
+          }
         }
 
         break;
+      }
+      break;
+    }
+  case db::DatabaseMediator::REQUEST_CLOSE_DATABASE:
+    {
+      db::ResponseCloseDatabase* response_close =
+        static_cast<db::ResponseCloseDatabase*>(response);
+      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      {
+        photos_tree_widget_->ClearGroups();
       }
       break;
     }
@@ -210,10 +232,12 @@ void PhotosPane::OnActionAddPhotogroupTriggered()
     PhotogroupPOSConfigureWidget::POSEntryContainer pos_entries =
       dialog.GetPOSEntries();
 
+    is_import_complete_ = false;
     ProgressDialog progress_dialog;
     progress_dialog.Start(&PhotosPane::ImportPhotos,
                           this, photogroup_info, pos_entries,
                           progress_dialog.GetProgressManagerPtr());
+    timer_import_photos_->start(100);
   }
 }
 
@@ -460,6 +484,28 @@ void PhotosPane::OnPhotogroupInfoUpdated(uint id, const PhotogroupInfo& info)
     request, response, true);
 }
 
+void PhotosPane::OnImportTimeout()
+{
+  if (is_import_complete_)
+  {
+    if (imported_group_entry_.id != std::numeric_limits<uint>::max())
+    {
+      photos_tree_widget_->AddGroup(imported_group_entry_.id,
+                                    imported_group_entry_);
+      for (int column = 0; column < photos_tree_widget_->columnCount();
+        column++)
+      {
+        photos_tree_widget_->resizeColumnToContents(column);
+      }
+    }
+
+    if (timer_import_photos_->isActive())
+    {
+      timer_import_photos_->stop();
+    }
+  }
+}
+
 //void PhotosPane::SetProgress()
 //{
 //    if (progress_manager_->CheckKeepWorking())
@@ -473,6 +519,8 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
   , const PhotogroupPOSConfigureWidget::POSEntryContainer &pos_entries,
   hs::progress::ProgressManager* progress_manager)
 {
+  imported_group_entry_.id = std::numeric_limits<uint>::max();
+
   hs::recon::db::RequestAddPhotogroup request;
   hs::recon::db::ResponseAddPhotogroup response;
   request.name = photogroup_info.name.toLocal8Bit().data();
@@ -528,9 +576,9 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
 
     if (response_add_photos.error_code == db::DatabaseMediator::NO_ERROR)
     {
-      PhotosTreeWidget::GroupEntry group_entry;
-      group_entry.id = uint(response.added_id);
-      group_entry.name = photogroup_info.name;
+      imported_group_entry_.id = uint(response.added_id);
+      imported_group_entry_.name = photogroup_info.name;
+      imported_group_entry_.photos.clear();
       auto itr_added_photo = response_add_photos.added_photos.begin();
       auto itr_added_photo_end = response_add_photos.added_photos.end();
       for (; itr_added_photo != itr_added_photo_end; ++itr_added_photo)
@@ -552,17 +600,12 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
           PhotosTreeWidget::Float(itr_added_photo->second.roll);
         photo_entry.heading =
           PhotosTreeWidget::Float(itr_added_photo->second.heading);
-        group_entry.photos[photo_entry.id] = photo_entry;
-      }
-      photos_tree_widget_->AddGroup(group_entry.id, group_entry);
-      for (int column = 0; column < photos_tree_widget_->columnCount();
-        column++)
-      {
-        photos_tree_widget_->resizeColumnToContents(column);
+        imported_group_entry_.photos[photo_entry.id] = photo_entry;
       }
     }
   }
-  //QMetaObject::invokeMethod(progress_import_photos_, "close", Qt::QueuedConnection);
+
+  is_import_complete_ = true;
 }
 
 }

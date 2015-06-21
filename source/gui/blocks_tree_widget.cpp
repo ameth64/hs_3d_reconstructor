@@ -499,6 +499,22 @@ int BlocksTreeWidget::DeleteDOM(uint dom_id)
   }
 }
 
+void BlocksTreeWidget::Clear()
+{
+  block_item_map_.clear();
+  photos_item_map_.clear();
+  photo_item_map_.clear();
+  feature_match_item_map_.clear();
+  photo_orientation_item_map_.clear();
+  point_cloud_item_map_.clear();
+  surface_model_item_map_.clear();
+  dem_item_map_.clear();
+  texture_item_map_.clear();
+  dom_item_map_.clear();
+
+  clear();
+}
+
 //int BlocksTreeWidget::ChangeBlockName(uint block_id, const QString& block_name)
 //{
 //  return 0;

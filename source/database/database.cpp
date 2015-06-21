@@ -103,7 +103,7 @@ int Database::Create(const std::string& database_directory)
   }
   else
   {
-    sqlite3_close(sqlite_db_);
+    sqlite3_close_v2(sqlite_db_);
     sqlite_db_ = nullptr;
     return ERROR_FAIL_TO_OPEN_SQLITE_DATABASE;
   }
@@ -111,7 +111,7 @@ int Database::Create(const std::string& database_directory)
 
 int Database::Close()
 {
-  int result = sqlite3_close(sqlite_db_);
+  int result = sqlite3_close_v2(sqlite_db_);
   sqlite_db_ = nullptr;
   if (result != 0)
   {

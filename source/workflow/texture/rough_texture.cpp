@@ -301,6 +301,14 @@ int RoughTexture::GenerateDOM(WorkflowStepConfig* config,
     for (size_t i = 0; i < config_images.size(); i++)
     {
       generator_images[i].extrinsic_params = config_images[i].extrinsic_params;
+      generator_images[i].extrinsic_params.rotation() =
+        generator_images[i].extrinsic_params.rotation() *
+        similar_transform.rotation.Inverse();
+      generator_images[i].extrinsic_params.position() =
+        similar_transform.scale *
+        (similar_transform.rotation *
+         generator_images[i].extrinsic_params.position()) +
+        similar_transform.translate;
       generator_images[i].intrinsic_params = config_images[i].intrinsic_params;
       generator_images[i].image_path = config_images[i].image_path;
     }

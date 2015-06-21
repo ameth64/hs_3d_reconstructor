@@ -133,249 +133,254 @@ void BlocksPane::Response(int request_flag, void* response)
   {
   case db::DatabaseMediator::REQUEST_OPEN_DATABASE:
     {
-      while (1)
+      db::ResponseOpenDatabase* response_open =
+        static_cast<db::ResponseOpenDatabase*>(response);
+      if (response_open->error_code == db::DatabaseMediator::NO_ERROR)
       {
-        db::RequestGetAllBlocks blocks_request;
-        db::ResponseGetAllBlocks blocks_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_BLOCKS,
-          blocks_request, blocks_response, false);
-        if (blocks_response.error_code != db::DatabaseMediator::NO_ERROR)
-          break;
-
-        auto itr_block = blocks_response.records.begin();
-        auto itr_block_end = blocks_response.records.end();
-        for (; itr_block != itr_block_end; ++itr_block)
+        while (1)
         {
-          uint block_id = uint(itr_block->first);
-          std::string block_std_name =
-            itr_block->second[db::BlockResource::BLOCK_FIELD_NAME].ToString();
-          QString block_name = QString::fromLocal8Bit(block_std_name.c_str());
-          blocks_tree_widget_->AddBlock(block_id, block_name);
-
-          hs::recon::db::RequestGetPhotosInBlock request_get_photos_in_block;
-          hs::recon::db::ResponseGetPhotosInBlock response_get_photos_in_block;
-          request_get_photos_in_block.block_id =
-            db::Database::Identifier(block_id);
+          db::RequestGetAllBlocks blocks_request;
+          db::ResponseGetAllBlocks blocks_response;
           ((MainWindow*)parent())->database_mediator().Request(
-            this, db::DatabaseMediator::REQUEST_GET_PHOTOS_IN_BLOCK,
-            request_get_photos_in_block, response_get_photos_in_block, false);
+            this, db::DatabaseMediator::REQUEST_GET_ALL_BLOCKS,
+            blocks_request, blocks_response, false);
+          if (blocks_response.error_code != db::DatabaseMediator::NO_ERROR)
+            break;
 
-          if (response_get_photos_in_block.error_code !=
-              hs::recon::db::Database::NO_ERROR)
+          auto itr_block = blocks_response.records.begin();
+          auto itr_block_end = blocks_response.records.end();
+          for (; itr_block != itr_block_end; ++itr_block)
           {
-            continue;
-          }
-          auto itr_photo = response_get_photos_in_block.records.begin();
-          auto itr_photo_end = response_get_photos_in_block.records.end();
-          BlocksTreeWidget::StringMap photo_names;
-          for (; itr_photo != itr_photo_end; ++itr_photo)
-          {
-            std::string photo_path =
-              itr_photo->second[db::PhotoResource::PHOTO_FIELD_PATH].ToString();
-            QFileInfo file_info(QString::fromLocal8Bit(photo_path.c_str()));
-            photo_names[uint(itr_photo->first)] = file_info.fileName();
-          }
-          blocks_tree_widget_->AddPhotosToBlock(block_id, photo_names);
-        }
+            uint block_id = uint(itr_block->first);
+            std::string block_std_name =
+              itr_block->second[db::BlockResource::BLOCK_FIELD_NAME].ToString();
+            QString block_name = QString::fromLocal8Bit(block_std_name.c_str());
+            blocks_tree_widget_->AddBlock(block_id, block_name);
 
-        hs::recon::db::RequestGetAllFeatureMatches feature_matches_request;
-        hs::recon::db::ResponseGetAllFeatureMatches feature_matches_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_FEATURE_MATCHES,
-          feature_matches_request, feature_matches_response, false);
-        if (feature_matches_response.error_code !=
+            hs::recon::db::RequestGetPhotosInBlock request_get_photos_in_block;
+            hs::recon::db::ResponseGetPhotosInBlock response_get_photos_in_block;
+            request_get_photos_in_block.block_id =
+              db::Database::Identifier(block_id);
+            ((MainWindow*)parent())->database_mediator().Request(
+              this, db::DatabaseMediator::REQUEST_GET_PHOTOS_IN_BLOCK,
+              request_get_photos_in_block, response_get_photos_in_block, false);
+
+            if (response_get_photos_in_block.error_code !=
+                hs::recon::db::Database::NO_ERROR)
+            {
+              continue;
+            }
+            auto itr_photo = response_get_photos_in_block.records.begin();
+            auto itr_photo_end = response_get_photos_in_block.records.end();
+            BlocksTreeWidget::StringMap photo_names;
+            for (; itr_photo != itr_photo_end; ++itr_photo)
+            {
+              std::string photo_path =
+                itr_photo->second[db::PhotoResource::PHOTO_FIELD_PATH].ToString();
+              QFileInfo file_info(QString::fromLocal8Bit(photo_path.c_str()));
+              photo_names[uint(itr_photo->first)] = file_info.fileName();
+            }
+            blocks_tree_widget_->AddPhotosToBlock(block_id, photo_names);
+          }
+
+          hs::recon::db::RequestGetAllFeatureMatches feature_matches_request;
+          hs::recon::db::ResponseGetAllFeatureMatches feature_matches_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_FEATURE_MATCHES,
+            feature_matches_request, feature_matches_response, false);
+          if (feature_matches_response.error_code !=
+              db::DatabaseMediator::NO_ERROR)
+            break;
+
+          auto itr_feature_match = feature_matches_response.records.begin();
+          auto itr_feature_match_end = feature_matches_response.records.end();
+          for (; itr_feature_match != itr_feature_match_end; ++itr_feature_match)
+          {
+            uint feature_match_id = itr_feature_match->first;
+            uint block_id =
+              uint(itr_feature_match->second[
+                db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
+            std::string feature_match_std_name =
+              itr_feature_match->second[
+                db::FeatureMatchResource::FEATURE_MATCH_FIELD_NAME].ToString();
+            QString feature_match_name =
+              QString::fromLocal8Bit(feature_match_std_name.c_str());
+            int flag =
+              itr_feature_match->second[
+                db::FeatureMatchResource::FEATURE_MATCH_FIELD_FLAG].ToInt();
+            if (blocks_tree_widget_->AddFeatureMatch(
+                  block_id, feature_match_id, feature_match_name) == 0 &&
+                flag == db::FeatureMatchResource::FLAG_NOT_COMPLETED)
+            {
+              QTreeWidgetItem* item =
+                blocks_tree_widget_->FeatureMatchItem(feature_match_id);
+              item->setDisabled(true);
+            }
+          }
+
+          db::RequestGetAllPhotoOrientations photo_orientations_request;
+          db::ResponseGetAllPhotoOrientations photo_orientations_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
+            photo_orientations_request, photo_orientations_response, false);
+          if (photo_orientations_response.error_code !=
+              db::DatabaseMediator::NO_ERROR)
+            break;
+
+          auto itr_photo_orientation =
+            photo_orientations_response.records.begin();
+          auto itr_photo_orientation_end =
+            photo_orientations_response.records.end();
+          for (; itr_photo_orientation != itr_photo_orientation_end;
+               ++itr_photo_orientation)
+          {
+            uint photo_orientation_id = itr_photo_orientation->first;
+            uint feature_match_id =
+              uint(itr_photo_orientation->second[
+                db::PhotoOrientationResource::
+                  PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
+            std::string photo_orientation_std_name =
+              itr_photo_orientation->second[
+                db::PhotoOrientationResource::
+                  PHOTO_ORIENTATION_FIELD_NAME].ToString();
+            QString photo_orientation_name =
+              QString::fromLocal8Bit(photo_orientation_std_name.c_str());
+            int flag =
+              itr_photo_orientation->second[
+                db::PhotoOrientationResource::
+                  PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
+            if (blocks_tree_widget_->AddPhotoOrientation(
+                  feature_match_id, photo_orientation_id,
+                  photo_orientation_name) == 0 &&
+                flag == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
+            {
+              QTreeWidgetItem* item =
+                blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
+              item->setDisabled(true);
+            }
+          }
+
+          //读取点云数据
+          db::RequestGetAllPointClouds point_cloud_request;
+          db::ResponseGetAllPointClouds point_cloud_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_POINT_CLOUDS,
+            point_cloud_request, point_cloud_response, false);
+          if (point_cloud_response.error_code !=
             db::DatabaseMediator::NO_ERROR)
-          break;
+            break;
 
-        auto itr_feature_match = feature_matches_response.records.begin();
-        auto itr_feature_match_end = feature_matches_response.records.end();
-        for (; itr_feature_match != itr_feature_match_end; ++itr_feature_match)
-        {
-          uint feature_match_id = itr_feature_match->first;
-          uint block_id =
-            uint(itr_feature_match->second[
-              db::FeatureMatchResource::FEATURE_MATCH_FIELD_BLOCK_ID].ToInt());
-          std::string feature_match_std_name =
-            itr_feature_match->second[
-              db::FeatureMatchResource::FEATURE_MATCH_FIELD_NAME].ToString();
-          QString feature_match_name =
-            QString::fromLocal8Bit(feature_match_std_name.c_str());
-          int flag =
-            itr_feature_match->second[
-              db::FeatureMatchResource::FEATURE_MATCH_FIELD_FLAG].ToInt();
-          if (blocks_tree_widget_->AddFeatureMatch(
-                block_id, feature_match_id, feature_match_name) == 0 &&
-              flag == db::FeatureMatchResource::FLAG_NOT_COMPLETED)
+          auto itr_point_cloud =
+            point_cloud_response.records.begin();
+          auto itr_point_cloud_end =
+            point_cloud_response.records.end();
+          for (; itr_point_cloud != itr_point_cloud_end;
+            ++itr_point_cloud)
           {
-            QTreeWidgetItem* item =
-              blocks_tree_widget_->FeatureMatchItem(feature_match_id);
-            item->setDisabled(true);
-          }
-        }
-
-        db::RequestGetAllPhotoOrientations photo_orientations_request;
-        db::ResponseGetAllPhotoOrientations photo_orientations_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
-          photo_orientations_request, photo_orientations_response, false);
-        if (photo_orientations_response.error_code !=
-            db::DatabaseMediator::NO_ERROR)
-          break;
-
-        auto itr_photo_orientation =
-          photo_orientations_response.records.begin();
-        auto itr_photo_orientation_end =
-          photo_orientations_response.records.end();
-        for (; itr_photo_orientation != itr_photo_orientation_end;
-             ++itr_photo_orientation)
-        {
-          uint photo_orientation_id = itr_photo_orientation->first;
-          uint feature_match_id =
-            uint(itr_photo_orientation->second[
-              db::PhotoOrientationResource::
-                PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
-          std::string photo_orientation_std_name =
-            itr_photo_orientation->second[
-              db::PhotoOrientationResource::
-                PHOTO_ORIENTATION_FIELD_NAME].ToString();
-          QString photo_orientation_name =
-            QString::fromLocal8Bit(photo_orientation_std_name.c_str());
-          int flag =
-            itr_photo_orientation->second[
-              db::PhotoOrientationResource::
-                PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
-          if (blocks_tree_widget_->AddPhotoOrientation(
-                feature_match_id, photo_orientation_id,
-                photo_orientation_name) == 0 &&
-              flag == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
-          {
-            QTreeWidgetItem* item =
-              blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
-            item->setDisabled(true);
-          }
-        }
-
-        //读取点云数据
-        db::RequestGetAllPointClouds point_cloud_request;
-        db::ResponseGetAllPointClouds point_cloud_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_POINT_CLOUDS,
-          point_cloud_request, point_cloud_response, false);
-        if (point_cloud_response.error_code !=
-          db::DatabaseMediator::NO_ERROR)
-          break;
-
-        auto itr_point_cloud =
-          point_cloud_response.records.begin();
-        auto itr_point_cloud_end =
-          point_cloud_response.records.end();
-        for (; itr_point_cloud != itr_point_cloud_end;
-          ++itr_point_cloud)
-        {
-          uint point_cloud_id = itr_point_cloud->first;
-          uint photo_orientation_id =
-            uint(itr_point_cloud->second[
-            db::PointCloudResource::
-            POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
-          std::string point_cloud_std_name =
+            uint point_cloud_id = itr_point_cloud->first;
+            uint photo_orientation_id =
+              uint(itr_point_cloud->second[
+              db::PointCloudResource::
+              POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+            std::string point_cloud_std_name =
+              itr_point_cloud->second[
+              db::PointCloudResource::
+              POINT_CLOUD_FIELD_NAME].ToString();
+            QString point_cloud_name =
+            QString::fromLocal8Bit(point_cloud_std_name.c_str());
+            int flag =
             itr_point_cloud->second[
-            db::PointCloudResource::
-            POINT_CLOUD_FIELD_NAME].ToString();
-          QString point_cloud_name =
-          QString::fromLocal8Bit(point_cloud_std_name.c_str());
-          int flag =
-          itr_point_cloud->second[
-            db::PointCloudResource::
-            POINT_CLOUD_FIELD_FLAG].ToInt();
-          if (blocks_tree_widget_->AddPointCloud(
-            photo_orientation_id, point_cloud_id,
-            point_cloud_name) == 0 &&
-            flag == db::PointCloudResource::FLAG_NOT_COMPLETED)
-          {
-            QTreeWidgetItem* item =
-              blocks_tree_widget_->PointCloudItem(point_cloud_id);
-            item->setDisabled(true);
+              db::PointCloudResource::
+              POINT_CLOUD_FIELD_FLAG].ToInt();
+            if (blocks_tree_widget_->AddPointCloud(
+              photo_orientation_id, point_cloud_id,
+              point_cloud_name) == 0 &&
+              flag == db::PointCloudResource::FLAG_NOT_COMPLETED)
+            {
+              QTreeWidgetItem* item =
+                blocks_tree_widget_->PointCloudItem(point_cloud_id);
+              item->setDisabled(true);
+            }
           }
-        }
 
-        //读取model
-        db::RequestGetAllSurfaceModels surface_model_request;
-        db::ResponseGetAllSurfaceModels surface_model_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_SURFACE_MODELS,
-          surface_model_request, surface_model_response, false);
-        if (surface_model_response.error_code !=
-          db::DatabaseMediator::NO_ERROR)
-          break;
+          //读取model
+          db::RequestGetAllSurfaceModels surface_model_request;
+          db::ResponseGetAllSurfaceModels surface_model_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_SURFACE_MODELS,
+            surface_model_request, surface_model_response, false);
+          if (surface_model_response.error_code !=
+            db::DatabaseMediator::NO_ERROR)
+            break;
 
-        auto itr_surface_model =
-          surface_model_response.records.begin();
-        auto itr_surface_model_end =
-          surface_model_response.records.end();
-        for (; itr_surface_model != itr_surface_model_end;
-          ++itr_surface_model)
-        {
-          uint surface_model_id = itr_surface_model->first;
-          uint point_cloud_id =
-            uint(itr_surface_model->second[
-              db::SurfaceModelResource::
-                SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt());
-              std::string surface_model_std_name =
-                itr_surface_model->second[
-                  db::SurfaceModelResource::
-                    SURFACE_MODEL_FIELD_NAME].ToString();
-                  QString surface_model_name =
-                    QString::fromLocal8Bit(surface_model_std_name.c_str());
-                  int flag =
-                    itr_surface_model->second[
-                      db::SurfaceModelResource::
-                        SURFACE_MODEL_FIELD_FLAG].ToInt();
-                      if (blocks_tree_widget_->AddSurfaceModel(
-                        point_cloud_id, surface_model_id,
-                        surface_model_name) == 0 &&
-                        flag == db::SurfaceModelResource::FLAG_NOT_COMPLETED)
-                      {
-                        QTreeWidgetItem* item =
-                          blocks_tree_widget_->SurfaceModelItem(surface_model_id);
-                        item->setDisabled(true);
-                      }
-        }
-
-        //读取Texture
-        db::RequestGetAllTextures texture_request;
-        db::ResponseGetAllTextures texture_response;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_ALL_TEXTURES,
-          texture_request, texture_response, false);
-        if (texture_response.error_code != db::DatabaseMediator::NO_ERROR)
-          break;
-
-        auto itr_texture = texture_response.records.begin();
-        auto itr_texture_end = texture_response.records.end();
-        for (; itr_texture != itr_texture_end; ++itr_texture)
-        {
-          uint texture_id = uint(itr_texture->first);
-          uint surface_model_id =
-            uint(itr_texture->second[
-              db::TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID].ToInt());
-          std::string texture_std_name =
-            itr_texture->second[
-              db::TextureResource::TEXTURE_FIELD_NAME].ToString();
-          QString texture_name =
-            QString::fromLocal8Bit(texture_std_name.c_str());
-          int flag = itr_texture->second[
-                       db::TextureResource::TEXTURE_FIELD_FLAG].ToInt();
-          if (blocks_tree_widget_->AddTexture(surface_model_id, texture_id,
-                                              texture_name) == 0 &&
-              flag == db::TextureResource::FLAG_NOT_COMPLETED)
+          auto itr_surface_model =
+            surface_model_response.records.begin();
+          auto itr_surface_model_end =
+            surface_model_response.records.end();
+          for (; itr_surface_model != itr_surface_model_end;
+            ++itr_surface_model)
           {
-            QTreeWidgetItem* item =
-              blocks_tree_widget_->TextureItem(texture_id);
-            item->setDisabled(true);
+            uint surface_model_id = itr_surface_model->first;
+            uint point_cloud_id =
+              uint(itr_surface_model->second[
+                db::SurfaceModelResource::
+                  SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt());
+                std::string surface_model_std_name =
+                  itr_surface_model->second[
+                    db::SurfaceModelResource::
+                      SURFACE_MODEL_FIELD_NAME].ToString();
+                    QString surface_model_name =
+                      QString::fromLocal8Bit(surface_model_std_name.c_str());
+                    int flag =
+                      itr_surface_model->second[
+                        db::SurfaceModelResource::
+                          SURFACE_MODEL_FIELD_FLAG].ToInt();
+                        if (blocks_tree_widget_->AddSurfaceModel(
+                          point_cloud_id, surface_model_id,
+                          surface_model_name) == 0 &&
+                          flag == db::SurfaceModelResource::FLAG_NOT_COMPLETED)
+                        {
+                          QTreeWidgetItem* item =
+                            blocks_tree_widget_->SurfaceModelItem(surface_model_id);
+                          item->setDisabled(true);
+                        }
           }
+
+          //读取Texture
+          db::RequestGetAllTextures texture_request;
+          db::ResponseGetAllTextures texture_response;
+          ((MainWindow*)parent())->database_mediator().Request(
+            this, db::DatabaseMediator::REQUEST_GET_ALL_TEXTURES,
+            texture_request, texture_response, false);
+          if (texture_response.error_code != db::DatabaseMediator::NO_ERROR)
+            break;
+
+          auto itr_texture = texture_response.records.begin();
+          auto itr_texture_end = texture_response.records.end();
+          for (; itr_texture != itr_texture_end; ++itr_texture)
+          {
+            uint texture_id = uint(itr_texture->first);
+            uint surface_model_id =
+              uint(itr_texture->second[
+                db::TextureResource::TEXTURE_FIELD_SURFACE_MODEL_ID].ToInt());
+            std::string texture_std_name =
+              itr_texture->second[
+                db::TextureResource::TEXTURE_FIELD_NAME].ToString();
+            QString texture_name =
+              QString::fromLocal8Bit(texture_std_name.c_str());
+            int flag = itr_texture->second[
+                         db::TextureResource::TEXTURE_FIELD_FLAG].ToInt();
+            if (blocks_tree_widget_->AddTexture(surface_model_id, texture_id,
+                                                texture_name) == 0 &&
+                flag == db::TextureResource::FLAG_NOT_COMPLETED)
+            {
+              QTreeWidgetItem* item =
+                blocks_tree_widget_->TextureItem(texture_id);
+              item->setDisabled(true);
+            }
+          }
+          break;
         }
-        break;
       }
 
       break;
@@ -399,6 +404,22 @@ void BlocksPane::Response(int request_flag, void* response)
         blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
       ActivatePhotoOrientationItem(item);
       emit PhotoOrientationActivated(activated_photo_orientation_id_);
+      break;
+    }
+  case db::DatabaseMediator::REQUEST_CLOSE_DATABASE:
+    {
+      db::ResponseCloseDatabase* response_close =
+        static_cast<db::ResponseCloseDatabase*>(response);
+      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      {
+        blocks_tree_widget_->Clear();
+        action_copy_->setEnabled(false);
+        action_remove_->setEnabled(false);
+        action_add_workflow_->setEnabled(false);
+        photo_orientation_info_widget_->hide();
+
+        item_selected_mask_.reset();
+      }
       break;
     }
   }
@@ -615,6 +636,9 @@ void BlocksPane::OnTimeout()
           current_step_ = nullptr;
           if (workflow_config.step_queue.empty())
           {
+            boost::filesystem::path intermediate_path =
+              workflow_config.workflow_intermediate_directory;
+            db::RemoveDirectory(intermediate_path);
             workflow_queue_.pop();
           }
           break;

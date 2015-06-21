@@ -223,6 +223,8 @@ void MainWindow::OnActionCloseProjectTriggered()
     msg_box.setText(tr("Fail to close database!"));
     msg_box.exec();
   }
+  start_up_dialog_->resize(800,200);
+  start_up_dialog_->exec();
 }
 
 void MainWindow::DefaultSetting()

@@ -39,7 +39,7 @@ public:
     progress_manager_.StartWorking();
     start_time = std::chrono::system_clock::now(); 
     working_thread_ = std::thread(std::forward<Args>(a)...);
-    timer_->start(100);
+    timer_->start(1000);
     QObject::connect(timer_, &QTimer::timeout,
                      this, &ProgressDialog::OnTimeout);
     this->exec();

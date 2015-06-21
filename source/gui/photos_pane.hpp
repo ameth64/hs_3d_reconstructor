@@ -49,7 +49,8 @@ private slots:
   void OnSelectedPhotosRemoved(const std::vector<uint>& photo_ids);
 
   void OnPhotogroupInfoUpdated(uint id, const PhotogroupInfo& photogroup_info);
-  //void SetProgress();
+
+  void OnImportTimeout();
 
 private:
   void ImportPhotos(
@@ -72,9 +73,10 @@ private:
   //QAction* action_add_photos_;
   QAction* action_remove_photogroup_;
   QAction* action_remove_photos_;
-  //ProgressDialog* progress_import_photos_;
-  //hs::progress::ProgressManager* progress_manager_;
-  //QTimer* timer_;
+  QTimer* timer_import_photos_;
+
+  PhotosTreeWidget::GroupEntry imported_group_entry_;
+  bool is_import_complete_;
 };
 
 }
