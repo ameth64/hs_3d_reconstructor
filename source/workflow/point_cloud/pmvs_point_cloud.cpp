@@ -16,8 +16,8 @@
 
 #include "workflow/point_cloud/pmvs_point_cloud.hpp"
 
-#include "hs_flowmodule/point_cloud/define/pc_define.hpp"
-#include "hs_flowmodule/point_cloud/agent/pc_agent.hpp"
+//#include "hs_flowmodule/point_cloud/define/pc_define.hpp"
+//#include "hs_flowmodule/point_cloud/agent/pc_agent.hpp"
 #include "hs_math/geometry/rotation.hpp"
 
 namespace hs
@@ -371,8 +371,8 @@ int PointCloud::RunImplement(WorkflowStepConfig* config)
   PointCloudConfig* point_cloud_config =
     static_cast<PointCloudConfig*>(config);
 
-  if (point_cloud_config->using_sparse_point_cloud())
-  {
+  //if (point_cloud_config->using_sparse_point_cloud())
+  //{
     //复制稀疏点云
     std::string sparse_point_cloud_path = 
       point_cloud_config->sparse_point_cloud_path();
@@ -386,42 +386,42 @@ int PointCloud::RunImplement(WorkflowStepConfig* config)
 
     progress_manager_.SetCurrentSubProgressCompleteRatio(1);
     return 0;
-  }
+  //}
   
-  if (CreateConfigXml(point_cloud_config) != 0)
-  {
-    return -1;
-  }
+//  if (CreateConfigXml(point_cloud_config) != 0)
+//  {
+//    return -1;
+//  }
 
-  std::string point_cloud_xml =
-    point_cloud_config->intermediate_path() + "point_cloud_input.xml";
-  std::string point_cloud_xml_out = 
-    point_cloud_config->intermediate_path() + "point_cloud_output.xml";
+//  std::string point_cloud_xml =
+//    point_cloud_config->intermediate_path() + "point_cloud_input.xml";
+//  std::string point_cloud_xml_out = 
+//    point_cloud_config->intermediate_path() + "point_cloud_output.xml";
 
-  bm::CBaseAgent *agent = pc::CPCAgent::create();
-  agent->init();
-  agent->input(point_cloud_xml.c_str());
-  agent->start(bm::CBaseDefine::E_MX_ASYNC);
+//  bm::CBaseAgent *agent = pc::CPCAgent::create();
+//  agent->init();
+//  agent->input(point_cloud_xml.c_str());
+//  agent->start(bm::CBaseDefine::E_MX_ASYNC);
 
-  int pc_progress = 0;
-  while(agent->getState() == bm::CBaseDefine::E_MS_BUSY)
-  {
-#if WIN32
-    Sleep(1000);
-#else
-    sleep(1);
-#endif
-    pc_progress = agent->getProgress();
-    progress_manager_.SetCurrentSubProgressCompleteRatio(
-      float(pc_progress)/float(100));
-  }
+//  int pc_progress = 0;
+//  while(agent->getState() == bm::CBaseDefine::E_MS_BUSY)
+//  {
+//#if WIN32
+//    Sleep(1000);
+//#else
+//    sleep(1);
+//#endif
+//    pc_progress = agent->getProgress();
+//    progress_manager_.SetCurrentSubProgressCompleteRatio(
+//      float(pc_progress)/float(100));
+//  }
 
-  agent->stop();
-  agent->output(point_cloud_xml_out.c_str());
-  agent->uninit();
-  pc::CPCAgent::destroy((pc::CPCAgent*)agent);
+//  agent->stop();
+//  agent->output(point_cloud_xml_out.c_str());
+//  agent->uninit();
+//  pc::CPCAgent::destroy((pc::CPCAgent*)agent);
 
-  return 0;
+//  return 0;
 }
 
 

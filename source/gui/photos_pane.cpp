@@ -43,8 +43,8 @@ PhotosPane::PhotosPane(QWidget* parent)
   tool_bar_ = new QToolBar(this);
   tool_bar_->addAction(action_add_photogroup_);
   //tool_bar_->addAction(action_add_photos_);
-  tool_bar_->addAction(action_remove_photogroup_);
-  tool_bar_->addAction(action_remove_photos_);
+  //tool_bar_->addAction(action_remove_photogroup_);
+  //tool_bar_->addAction(action_remove_photos_);
 
   main_window_->addToolBar(tool_bar_);
 

@@ -6,7 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/archives/portable_binary.hpp>
 
-#include "hs_flowmodule/mesh_surface/kernel/mesh_type/mesh_type.hpp"
+//#include "hs_flowmodule/mesh_surface/kernel/mesh_type/mesh_type.hpp"
 #include "hs_texture/texture_multiview/dem_generator.hpp"
 #include "hs_texture/texture_multiview/dem_split_tiff_engine.hpp"
 #include "hs_texture/texture_multiview/triangles_image_selector.hpp"
@@ -144,7 +144,7 @@ int RoughTexture::LoadSurfaceModel(WorkflowStepConfig* config,
                                    VertexContainer& vertices,
                                    TriangleContainer& triangles)
 {
-  typedef hs::ms::MeshData<double, size_t> MeshData;
+  //typedef hs::ms::MeshData<double, size_t> MeshData;
 
   TextureConfig* texture_config = static_cast<TextureConfig*>(config);
   std::string surface_model_path = texture_config->surface_model_path();
@@ -269,6 +269,8 @@ int RoughTexture::GenerateDOM(WorkflowStepConfig* config,
 
   TextureConfig* texture_config = static_cast<TextureConfig*>(config);
   const std::string& dom_path = texture_config->dom_path();
+  const TextureConfig::SimilarTransform& similar_transform =
+    texture_config->similar_transform();
   if (!dom_path.empty())
   {
     const ConfigImageContainer& config_images = texture_config->images();
@@ -276,6 +278,14 @@ int RoughTexture::GenerateDOM(WorkflowStepConfig* config,
     for (size_t i = 0; i < config_images.size(); i++)
     {
       selector_images[i].extrinsic_params = config_images[i].extrinsic_params;
+      selector_images[i].extrinsic_params.rotation() =
+        selector_images[i].extrinsic_params.rotation() *
+        similar_transform.rotation.Inverse();
+      selector_images[i].extrinsic_params.position() =
+        similar_transform.scale *
+        (similar_transform.rotation *
+         selector_images[i].extrinsic_params.position()) +
+        similar_transform.translate;
       selector_images[i].intrinsic_params = config_images[i].intrinsic_params;
       selector_images[i].image_width = config_images[i].image_width;
       selector_images[i].image_height = config_images[i].image_height;

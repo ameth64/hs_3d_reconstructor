@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <thread>
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -13,8 +14,11 @@
 #include <QVBoxLayout>
 #include <QSpacerItem>
 #include <QHeaderView>
+#include <QTimer>
 
+#include "hs_sfm/sfm_utility/key_type.hpp"
 #include "hs_sfm/sfm_utility/camera_type.hpp"
+#include "hs_sfm/sfm_utility/match_type.hpp"
 #include "hs_graphics/graphics_utility/pointcloud_data.hpp"
 
 namespace hs
@@ -29,6 +33,10 @@ class PhotoOrientationInfoWidget: public QWidget
   Q_OBJECT
 public:
   typedef double Scalar;
+
+  typedef hs::sfm::ImageKeys<Scalar> Keyset;
+  typedef EIGEN_STD_MAP(size_t, Keyset) KeysetMap;
+
   typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
   typedef EIGEN_STD_MAP(size_t, IntrinsicParams) IntrinsicParamsMap;
 
@@ -40,10 +48,21 @@ public:
   typedef hs::graphics::PointCloudData<Scalar> PointCloudData;
 
   PhotoOrientationInfoWidget(QWidget* parent = 0);
+  ~PhotoOrientationInfoWidget();
 
-  int Initialize(const std::string& intrinsic_path,
+  int Initialize(const std::string& keysets_path,
+                 const std::string& intrinsic_path,
                  const std::string& extrinsic_path,
-                 const std::string& sparse_point_cloud_path);
+                 const std::string& sparse_point_cloud_path,
+                 const std::string& tracks_path);
+
+  void ComputeReprojectionError(
+    const KeysetMap& keysets,
+    const PointCloudData& pcd,
+    const hs::sfm::TrackContainer& tracks,
+    const hs::sfm::ObjectIndexMap& track_point_map);
+
+  void OnTimeOut();
 
 protected:
 
@@ -66,10 +85,17 @@ private:
   QSpacerItem* spacer_;
 
   QTreeWidget* treewidget_intrinsic_param_;
+
+  QTimer* timer_reprojection_error_;
+
   IntrinsicParamsMap intrinsic_params_map_;
   ExtrinsicParamsMap extrinsic_params_map_;
+
+  Scalar reprojection_error_;
+  int reprojection_error_computed_;
+  std::thread reprojection_compute_thread_;
 };
-  
+
 class IntrinsicParaminfoWidget: public QWidget
 {
   Q_OBJECT

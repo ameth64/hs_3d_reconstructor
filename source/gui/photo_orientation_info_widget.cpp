@@ -2,9 +2,11 @@
 
 #include <cereal/types/map.hpp>
 #include <cereal/types/utility.hpp>
-#include "photo_orientation_info_widget.hpp"
+#include <cereal/archives/portable_binary.hpp>
 
-#include "cereal/archives/portable_binary.hpp"
+#include "hs_sfm/sfm_utility/projective_functions.hpp"
+
+#include "photo_orientation_info_widget.hpp"
 
 namespace hs
 {
@@ -14,7 +16,9 @@ namespace gui
 {
 
 PhotoOrientationInfoWidget::PhotoOrientationInfoWidget(QWidget* parent)
-  :QWidget(parent)
+  : QWidget(parent)
+  , reprojection_error_(0.0)
+  , reprojection_error_computed_(false)
 {
   layout_main_ = new QVBoxLayout;
   setLayout(layout_main_);
@@ -55,53 +59,170 @@ PhotoOrientationInfoWidget::PhotoOrientationInfoWidget(QWidget* parent)
   layout_intrinsic_param_->addWidget(treewidget_intrinsic_param_);
   layout_main_->addLayout(layout_intrinsic_param_);
 
+  timer_reprojection_error_ = new QTimer(this);
+}
+
+PhotoOrientationInfoWidget::~PhotoOrientationInfoWidget()
+{
+  if (reprojection_compute_thread_.joinable())
+  {
+    reprojection_compute_thread_.join();
+  }
 }
 
 int PhotoOrientationInfoWidget::Initialize(
+  const std::string& keysets_path,
   const std::string& intrinsic_path,
   const std::string& extrinsic_path,
-  const std::string& sparse_point_cloud_path)
+  const std::string& sparse_point_cloud_path,
+  const std::string& tracks_path)
 {
+  //读取特征点集
+  KeysetMap keysets;
+  {
+    std::ifstream keysets_file(keysets_path, std::ios::binary);
+    if (!keysets_file) return -1;
+    cereal::PortableBinaryInputArchive archive(keysets_file);
+    archive(keysets);
+  }
+
   //读取外参数获取num_used_photo
-  std::ifstream extrinsic_file(extrinsic_path, std::ios::binary);
-  if(!extrinsic_file) return -1;
-  cereal::PortableBinaryInputArchive archive_extrinsic(extrinsic_file);
-  archive_extrinsic(extrinsic_params_map_);
-  lineedit_num_used_photo_->setText(
-    QString::number(extrinsic_params_map_.size()));
+  {
+    std::ifstream extrinsic_file(extrinsic_path, std::ios::binary);
+    if(!extrinsic_file) return -1;
+    cereal::PortableBinaryInputArchive archive_extrinsic(extrinsic_file);
+    archive_extrinsic(extrinsic_params_map_);
+    lineedit_num_used_photo_->setText(
+      QString::number(extrinsic_params_map_.size()));
+  }
 
   //读取稀疏点云获取num_pointcloud
   PointCloudData pcd;
-  std::ifstream sparse_point_cloud_file(
-    sparse_point_cloud_path, std::ios::binary);
-  if(!sparse_point_cloud_file) return -1;
-  cereal::PortableBinaryInputArchive archive_sparse_point_cloud(
-    sparse_point_cloud_file);
-  archive_sparse_point_cloud(pcd);
-  lineedit_num_pointcloud_->setText(
-    QString::number(pcd.PointCloudSize()));
+  {
+    std::ifstream sparse_point_cloud_file(
+      sparse_point_cloud_path, std::ios::binary);
+    if(!sparse_point_cloud_file) return -1;
+    cereal::PortableBinaryInputArchive archive_sparse_point_cloud(
+      sparse_point_cloud_file);
+    archive_sparse_point_cloud(pcd);
+    lineedit_num_pointcloud_->setText(
+      QString::number(pcd.PointCloudSize()));
+  }
 
   //读取内参数
-  std::ifstream intrinsic_file(intrinsic_path, std::ios::binary);
-  if(!intrinsic_file) return -1;
-  cereal::PortableBinaryInputArchive archive_intrinsic(intrinsic_file);
-  archive_intrinsic(intrinsic_params_map_);
-
-  treewidget_intrinsic_param_->clear();
-  for (auto iter =  intrinsic_params_map_.begin();
-            iter != intrinsic_params_map_.end(); ++iter)
   {
-    QTreeWidgetItem* top_item = new QTreeWidgetItem;
-    top_item->setText(0,tr("Intrinsic Params: ")+QString::number(iter->first));
-    treewidget_intrinsic_param_->addTopLevelItem(top_item);
-    QTreeWidgetItem* intrinsic_item = new QTreeWidgetItem;
-    top_item->addChild(intrinsic_item);
-    IntrinsicParaminfoWidget* ipiw =
-      new IntrinsicParaminfoWidget(iter->second);
-    treewidget_intrinsic_param_->setItemWidget(intrinsic_item, 0, ipiw);
+    std::ifstream intrinsic_file(intrinsic_path, std::ios::binary);
+    if(!intrinsic_file) return -1;
+    cereal::PortableBinaryInputArchive archive_intrinsic(intrinsic_file);
+    archive_intrinsic(intrinsic_params_map_);
+
+    treewidget_intrinsic_param_->clear();
+    for (auto iter =  intrinsic_params_map_.begin();
+              iter != intrinsic_params_map_.end(); ++iter)
+    {
+      QTreeWidgetItem* top_item = new QTreeWidgetItem;
+      top_item->setText(0,tr("Intrinsic Params: ")+QString::number(iter->first));
+      treewidget_intrinsic_param_->addTopLevelItem(top_item);
+      QTreeWidgetItem* intrinsic_item = new QTreeWidgetItem;
+      top_item->addChild(intrinsic_item);
+      IntrinsicParaminfoWidget* ipiw =
+        new IntrinsicParaminfoWidget(iter->second);
+      treewidget_intrinsic_param_->setItemWidget(intrinsic_item, 0, ipiw);
+    }
   }
-  
+
+  //读取tracks
+  hs::sfm::TrackContainer tracks;
+  hs::sfm::ObjectIndexMap track_point_map;
+  {
+    std::ifstream tracks_file(tracks_path, std::ios::binary);
+    if (!tracks_file) return -1;
+    cereal::PortableBinaryInputArchive archive(tracks_file);
+    archive(tracks, track_point_map);
+  }
+
+  lineedit_reprojection_error_->setText(tr("Computing..."));
+  reprojection_error_computed_ = false;
+  timer_reprojection_error_->start(100);
+  QObject::connect(timer_reprojection_error_, &QTimer::timeout,
+                   this, &PhotoOrientationInfoWidget::OnTimeOut);
+
+  reprojection_compute_thread_ =
+    std::thread(&PhotoOrientationInfoWidget::ComputeReprojectionError,
+    this, keysets, pcd, tracks, track_point_map);
+
   return 0;
+}
+
+void PhotoOrientationInfoWidget::ComputeReprojectionError(
+  const KeysetMap& keysets,
+  const PointCloudData& pcd,
+  const hs::sfm::TrackContainer& tracks,
+  const hs::sfm::ObjectIndexMap& track_point_map)
+{
+  typedef Keyset::Key Key;
+
+  std::map<size_t, size_t> image_intrinsic_map;
+  for (const auto& extrinsic_params : extrinsic_params_map_)
+  {
+    image_intrinsic_map[extrinsic_params.first.first] =
+      extrinsic_params.first.second;
+  }
+
+  reprojection_error_ = 0.0;
+  size_t number_of_projection = 0;
+  for (size_t track_id = 0; track_id < tracks.size(); track_id++)
+  {
+    if (track_point_map.IsValid(track_id))
+    {
+      size_t point_id = track_point_map[track_id];
+      for (size_t view_id = 0; view_id < tracks[track_id].size(); view_id++)
+      {
+        size_t image_id = tracks[track_id][view_id].first;
+        size_t key_id = tracks[track_id][view_id].second;
+
+        auto itr_intrinsic_id = image_intrinsic_map.find(image_id);
+        if (itr_intrinsic_id == image_intrinsic_map.end()) continue;
+        size_t intrinsic_id = itr_intrinsic_id->second;
+
+        auto itr_intrinsic = intrinsic_params_map_.find(intrinsic_id);
+        if (itr_intrinsic == intrinsic_params_map_.end()) continue;
+
+        auto itr_extrinsic =
+          extrinsic_params_map_.find(std::make_pair(image_id, intrinsic_id));
+        if (itr_extrinsic == extrinsic_params_map_.end()) continue;
+
+        auto itr_keyset = keysets.find(image_id);
+        if (itr_keyset == keysets.end()) continue;
+
+        Key projected =
+          hs::sfm::ProjectiveFunctions<Scalar>::WorldPointProjectToImageKey(
+            itr_intrinsic->second,
+            itr_extrinsic->second,
+            pcd.VertexData()[point_id]);
+
+        reprojection_error_ +=
+          (projected - itr_keyset->second[key_id]).norm();
+        number_of_projection++;
+
+      }
+    }
+  }
+
+  reprojection_error_ /= Scalar(number_of_projection);
+  reprojection_error_computed_ = true;
+}
+
+void PhotoOrientationInfoWidget::OnTimeOut()
+{
+  if (reprojection_error_computed_)
+  {
+    lineedit_reprojection_error_->setText(QString::number(reprojection_error_));
+    if (timer_reprojection_error_->isActive())
+    {
+      timer_reprojection_error_->stop();
+    }
+  }
 }
 
 IntrinsicParaminfoWidget::IntrinsicParaminfoWidget(const IntrinsicParams& ip)

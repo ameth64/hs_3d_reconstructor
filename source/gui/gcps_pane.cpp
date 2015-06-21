@@ -84,8 +84,8 @@ GCPsPane::GCPsPane(QWidget* parent)
   action_gcp_config_->setEnabled(true);
 
   tool_bar_ = new QToolBar(this);
-  tool_bar_->addAction(action_add_gcp_);
-  tool_bar_->addAction(action_remove_gcps_);
+  //tool_bar_->addAction(action_add_gcp_);
+  //tool_bar_->addAction(action_remove_gcps_);
   tool_bar_->addAction(action_import_gcps_);
   tool_bar_->addAction(action_show_measurement_);
   tool_bar_->addAction(action_show_estimate_);

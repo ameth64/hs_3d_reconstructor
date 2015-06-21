@@ -1346,24 +1346,43 @@ void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
 
   while(1)
   {
-  typedef hs::recon::db::Database::Identifier Identifier;
-  hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
-  hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
-  request_photo_orientation.id = Identifier(selected_photo_orientation_id_);
-  ((MainWindow*)parent())->database_mediator().Request(
-    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
-    request_photo_orientation, response_photo_orientation, false);
-  if(response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
-  {
+    typedef hs::recon::db::Database::Identifier Identifier;
+    hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+    hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+    request_photo_orientation.id = Identifier(selected_photo_orientation_id_);
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+      request_photo_orientation, response_photo_orientation, false);
+    if(response_photo_orientation.error_code !=
+        hs::recon::db::Database::NO_ERROR)
+    {
+      break;
+    }
+
+    Identifier feature_match_id =
+      int(response_photo_orientation.record[
+            db::PhotoOrientationResource::
+              PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
+    hs::recon::db::RequestGetFeatureMatch request_feature_match;
+    request_feature_match.id = feature_match_id;
+    hs::recon::db::ResponseGetFeatureMatch response_feature_match;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
+      request_feature_match, response_feature_match, false);
+    if (response_feature_match.error_code !=
+      db::DatabaseMediator::NO_ERROR)
+    {
+      break;
+    }
+
+    photo_orientation_info_widget_->Initialize(
+      response_feature_match.keysets_path,
+      response_photo_orientation.intrinsic_path,
+      response_photo_orientation.extrinsic_path,
+      response_photo_orientation.point_cloud_path,
+      response_photo_orientation.tracks_path);
+    photo_orientation_info_widget_->show();
     break;
-  }
-  photo_orientation_info_widget_->Initialize(
-    response_photo_orientation.intrinsic_path,
-    response_photo_orientation.extrinsic_path,
-    response_photo_orientation.point_cloud_path);
-  photo_orientation_info_widget_->show();
-  break;
   }
 }
 

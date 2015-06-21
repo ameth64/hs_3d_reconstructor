@@ -10,7 +10,7 @@
 #include <QComboBox>
 #include <QPushButton>
 
-#include"workflow/mesh_surface/poisson_surface_model.hpp"
+#include"workflow/mesh_surface/surface_model_config.hpp"
 
 namespace hs
 {

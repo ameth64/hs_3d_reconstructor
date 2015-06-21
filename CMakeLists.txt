@@ -154,11 +154,11 @@ hslib_add_dep(${RECONSTRUCTOR_NAME}
   HS_DEPS hs_graphics DEP_LIBS graphics_qt
   HS_DEPS hs_cartographics DEP_LIBS cartographics_qt
   HS_DEPS hs_progress DEP_LIBS progress_utility
-  HS_DEPS hs_flowmodule
-    DEP_LIBS base_module
-             point_cloud
-             mesh_surface
-             utility_tool
+  #HS_DEPS hs_flowmodule
+  #  DEP_LIBS base_module
+  #           point_cloud
+  #           mesh_surface
+  #           utility_tool
   LOCAL_DEPS database
   LOCAL_DEPS workflow
   )
@@ -273,7 +273,7 @@ hslib_add_dep(${WORKFLOW_NAME}
   3RDPARTY_DEPS cereal HEADONLY
   3RDPARTY_DEPS lemon DEP_STATIC_LIBS lemon
   3RDPARTY_DEPS cgal DEP_LIBS CGAL
-  HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
+  #HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_optimizor HEADONLY
@@ -310,7 +310,7 @@ hslib_add_dep(${WORKFLOW_NAME}_utest
   3RDPARTY_DEPS z
   3RDPARTY_DEPS graclus DEP_STATIC_LIBS graclus
   3RDPARTY_DEPS levmar DEP_STATIC_LIBS levmar
-  HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
+  #HS_DEPS hs_flowmodule DEP_LIBS base_module point_cloud mesh_surface utility_tool
   HS_DEPS hs_image_io DEP_LIBS whole_io
   HS_DEPS hs_progress DEP_LIBS progress_utility
   HS_DEPS hs_optimizor HEADONLY
