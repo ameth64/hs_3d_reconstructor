@@ -124,97 +124,101 @@
 <context>
     <name>hs::recon::gui::BlocksPane</name>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="35"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="42"/>
         <source>Blocks</source>
         <translation>分块</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="54"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="61"/>
         <source>Name</source>
         <translation>名称</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="54"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="61"/>
         <source>Progress</source>
         <translation>进度</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="65"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="72"/>
         <source>Add Block</source>
         <translation>添加分块</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="67"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="74"/>
+        <source>Copy Workflow Step</source>
+        <translation>复制所选工作进度</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/blocks_pane.cpp" line="77"/>
         <source>Remove Block</source>
         <translation>移除分块</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="70"/>
         <source>Remove Photos</source>
-        <translation>移除照片</translation>
+        <translation type="vanished">移除照片</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="73"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="80"/>
         <source>Add Workflow</source>
         <translation>添加工作流</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="750"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="786"/>
         <source>Block name exists!</source>
         <translation>分块名已存在!！</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="779"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="815"/>
         <source>Add photos to block failed!</source>
         <translation>无法想分块添加照片！</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="799"/>
-        <location filename="../source/gui/blocks_pane.cpp" line="1043"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="835"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="1079"/>
         <source>Photo not exists!</source>
         <translation>照片不存在！</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="850"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="886"/>
         <source>intermediate_directory</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="1171"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="1207"/>
         <source>delete block fail!</source>
-        <translation type="unfinished"></translation>
+        <translation>删除分块失败！</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="1189"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="1225"/>
         <source>delete Feature match fail!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="1208"/>
-        <source>delete Photo Orientation fail!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="1226"/>
-        <source>delete point cloud fail!</source>
-        <translation type="unfinished"></translation>
+        <translation>删除特征点匹配失败！</translation>
     </message>
     <message>
         <location filename="../source/gui/blocks_pane.cpp" line="1244"/>
-        <source>delete surface model fail!</source>
-        <translation type="unfinished"></translation>
+        <source>delete Photo Orientation fail!</source>
+        <translation>删除照片定向失败！</translation>
     </message>
     <message>
         <location filename="../source/gui/blocks_pane.cpp" line="1262"/>
-        <source>delete texture fail!</source>
-        <translation type="unfinished"></translation>
+        <source>delete point cloud fail!</source>
+        <translation>删除点云失败！</translation>
     </message>
     <message>
-        <location filename="../source/gui/blocks_pane.cpp" line="1821"/>
-        <location filename="../source/gui/blocks_pane.cpp" line="2053"/>
-        <location filename="../source/gui/blocks_pane.cpp" line="2150"/>
-        <location filename="../source/gui/blocks_pane.cpp" line="2214"/>
-        <location filename="../source/gui/blocks_pane.cpp" line="2416"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="1280"/>
+        <source>delete surface model fail!</source>
+        <translation>删除模型重建失败！</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/blocks_pane.cpp" line="1298"/>
+        <source>delete texture fail!</source>
+        <translation>删除纹理贴图失败！</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/blocks_pane.cpp" line="1876"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="2108"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="2205"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="2269"/>
+        <location filename="../source/gui/blocks_pane.cpp" line="2459"/>
         <source>number_of_threads</source>
         <translation></translation>
     </message>
@@ -246,79 +250,107 @@
     </message>
 </context>
 <context>
+    <name>hs::recon::gui::GCPConstrainedOptimizationConfigWidget</name>
+    <message>
+        <location filename="../source/gui/gcp_constrained_optimization_config_widget.cpp" line="27"/>
+        <source>GCP Planar Accuracy:</source>
+        <translation>像控点平面准确性：</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/gcp_constrained_optimization_config_widget.cpp" line="37"/>
+        <source>GCP Height Accuracy:</source>
+        <translation>像控点高程准确性：</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/gcp_constrained_optimization_config_widget.cpp" line="48"/>
+        <source>Tiepoint Feature Accuracy (Pixels):</source>
+        <translation>连接点影像测量精度（像素）：</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/gcp_constrained_optimization_config_widget.cpp" line="60"/>
+        <source>GCP Marker Accuracy (Pixels):</source>
+        <translation>像控点影像测量精度（像素）：</translation>
+    </message>
+</context>
+<context>
     <name>hs::recon::gui::GCPsPane</name>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="36"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="35"/>
         <source>Ground Control Points</source>
         <translation>像控点</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="56"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="61"/>
         <source>Add Ground Control Point</source>
         <translation>添加像控点</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="59"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="64"/>
         <source>Remove Ground Control Points</source>
         <translation>移除像控点</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="62"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="67"/>
         <source>Import Ground Control Points</source>
         <translation>导入像控点</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="65"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="70"/>
         <source>Show Measurement</source>
         <translation>显示测算</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="68"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="73"/>
         <source>Show Estimate</source>
         <translation>显示估计</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="71"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="76"/>
         <source>Show Error</source>
         <translation>显示误差</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="75"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="80"/>
         <source>GCP Constrained Optimize</source>
         <translation>像控点约束优化</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="408"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="83"/>
+        <source>GCP Configuration</source>
+        <translation>像控参数设置：</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/gcps_pane.cpp" line="458"/>
         <source>Character-separated values (*.csv *.txt)</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="420"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="470"/>
         <source>Name</source>
         <translation>名称</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="421"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="471"/>
         <source>X</source>
         <translation>X坐标</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="422"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="472"/>
         <source>Y</source>
         <translation>Y坐标</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="423"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="473"/>
         <source>Z</source>
         <translation>Z坐标</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="569"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="619"/>
         <source>Current photo orientation contains some point clouds.Would you like to copy this photo orientation to optimize?</source>
         <translation>所选照片包含点云数据，是否拷贝照片进行优化？</translation>
     </message>
     <message>
-        <location filename="../source/gui/gcps_pane.cpp" line="1226"/>
+        <location filename="../source/gui/gcps_pane.cpp" line="1344"/>
         <source>number_of_threads</source>
         <translation></translation>
     </message>
@@ -372,49 +404,62 @@
     </message>
 </context>
 <context>
+    <name>hs::recon::gui::ImageMeasureOpenGLWindow</name>
+    <message>
+        <location filename="../source/gui/image_measure_opengl_window.cpp" line="20"/>
+        <source>Measure GCP</source>
+        <translation>测量像控点</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/image_measure_opengl_window.cpp" line="21"/>
+        <source>Delete Measure</source>
+        <translation>删除测量</translation>
+    </message>
+</context>
+<context>
     <name>hs::recon::gui::IntrinsicParaminfoWidget</name>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="112"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="238"/>
         <source>Focal length:</source>
         <translation>焦距：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="121"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="247"/>
         <source>Principal point x:</source>
         <translation>主点X坐标：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="131"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="257"/>
         <source>Principal point y:</source>
         <translation>主点Y坐标：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="141"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="267"/>
         <source>Skew coefficient:</source>
         <translation>倾斜参数：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="151"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="277"/>
         <source>K1:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="161"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="287"/>
         <source>K2:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="171"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="297"/>
         <source>k3:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="181"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="307"/>
         <source>d1:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="191"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="317"/>
         <source>d2:</source>
         <translation></translation>
     </message>
@@ -473,7 +518,7 @@
     </message>
     <message>
         <location filename="../source/gui/main_window.cpp" line="156"/>
-        <location filename="../source/gui/main_window.cpp" line="232"/>
+        <location filename="../source/gui/main_window.cpp" line="234"/>
         <source>default_projects_directory</source>
         <translation></translation>
     </message>
@@ -489,7 +534,7 @@
     </message>
     <message>
         <location filename="../source/gui/main_window.cpp" line="184"/>
-        <location filename="../source/gui/main_window.cpp" line="292"/>
+        <location filename="../source/gui/main_window.cpp" line="294"/>
         <source>Fail to open database!</source>
         <translation>无法打开数据库！</translation>
     </message>
@@ -514,22 +559,22 @@
         <translation>无法关闭数据库！</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="239"/>
+        <location filename="../source/gui/main_window.cpp" line="241"/>
         <source>intermediate_directory</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="243"/>
+        <location filename="../source/gui/main_window.cpp" line="245"/>
         <source>/intermediate</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="247"/>
+        <location filename="../source/gui/main_window.cpp" line="249"/>
         <source>number_of_threads</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="298"/>
+        <location filename="../source/gui/main_window.cpp" line="300"/>
         <source>Database file not exist!</source>
         <translation>数据库文件不存在！</translation>
     </message>
@@ -682,24 +727,29 @@
 <context>
     <name>hs::recon::gui::PhotoOrientationInfoWidget</name>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="24"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="28"/>
         <source>Number of used photo:</source>
         <translation>使用的照片数：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="31"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="35"/>
         <source>Number of points:</source>
         <translation>点数：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="38"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="42"/>
         <source>Reporjection Error:</source>
         <translation>重投影误差：</translation>
     </message>
     <message>
-        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="95"/>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="124"/>
         <source>Intrinsic Params: </source>
         <translation>内参数：</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/photo_orientation_info_widget.cpp" line="144"/>
+        <source>Computing...</source>
+        <translation>计算中...</translation>
     </message>
 </context>
 <context>
@@ -873,22 +923,22 @@
         <translation>照片</translation>
     </message>
     <message>
-        <location filename="../source/gui/photos_pane.cpp" line="32"/>
+        <location filename="../source/gui/photos_pane.cpp" line="35"/>
         <source>Add Photogroup</source>
         <translation>添加照片组</translation>
     </message>
     <message>
-        <location filename="../source/gui/photos_pane.cpp" line="37"/>
+        <location filename="../source/gui/photos_pane.cpp" line="40"/>
         <source>Remove Photogroup</source>
         <translation>移除照片组</translation>
     </message>
     <message>
-        <location filename="../source/gui/photos_pane.cpp" line="40"/>
+        <location filename="../source/gui/photos_pane.cpp" line="43"/>
         <source>Remove Photos</source>
         <translation>移除照片</translation>
     </message>
     <message>
-        <location filename="../source/gui/photos_pane.cpp" line="206"/>
+        <location filename="../source/gui/photos_pane.cpp" line="228"/>
         <source>Import Photos</source>
         <translation>导入照片</translation>
     </message>
@@ -939,22 +989,27 @@
         <translation>点云设置</translation>
     </message>
     <message>
-        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="26"/>
+        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="24"/>
+        <source>Using Sparse Point Cloud:</source>
+        <translation>使用密集点云：</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="38"/>
         <source>Point Cloud Quality</source>
         <translation>点云质量</translation>
     </message>
     <message>
-        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="32"/>
+        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="45"/>
         <source>Low</source>
         <translation>低</translation>
     </message>
     <message>
-        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="33"/>
+        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="46"/>
         <source>Medium</source>
         <translation>中</translation>
     </message>
     <message>
-        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="34"/>
+        <location filename="../source/gui/point_cloud_configure_widget.cpp" line="47"/>
         <source>High</source>
         <translation>高</translation>
     </message>
@@ -1032,13 +1087,13 @@
     <message>
         <location filename="../source/gui/property_field_asignment_widget.cpp" line="358"/>
         <source>?</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
     <name>hs::recon::gui::SceneWindow</name>
     <message>
-        <location filename="../source/gui/scene_window.cpp" line="38"/>
+        <location filename="../source/gui/scene_window.cpp" line="40"/>
         <source>Filter Photos By Selected Points</source>
         <translation>通过算选点筛选照片</translation>
     </message>
@@ -1109,7 +1164,7 @@
     <message>
         <location filename="../source/gui/start_up_dialog.cpp" line="112"/>
         <source>&amp;%1 %2</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
