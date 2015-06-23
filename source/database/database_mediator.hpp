@@ -149,13 +149,16 @@ public:
     typedef DatabaseRequestHandler<_RequestType, _ResponseType> Handler;
     Handler handler;
     int result = handler(request, response, *this);
-    auto itr_observer = observers_.begin();
-    auto itr_observer_end = observers_.end();
-    for (; itr_observer != itr_observer_end; ++itr_observer)
+    if (broadcast)
     {
-      if ((*itr_observer) != sender)
+      auto itr_observer = observers_.begin();
+      auto itr_observer_end = observers_.end();
+      for (; itr_observer != itr_observer_end; ++itr_observer)
       {
-        (*itr_observer)->Response(request_flag, (void*)(&response));
+        if ((*itr_observer) != sender)
+        {
+          (*itr_observer)->Response(request_flag, (void*)(&response));
+        }
       }
     }
     return result;
@@ -1522,6 +1525,15 @@ struct DatabaseRequestHandler <RequestUpdatePhotoOrientationParams,
     response.error_code = DatabaseMediator::NO_ERROR;
     response.photo_orientation_id = request.photo_orientation_id;
 
+    //TODO:this is for update notify.Ugly.
+    if (request.extrinsic_params_map_new.empty() &&
+        request.intrinsic_params_map_new.empty() &&
+        request.norms_new.empty() &&
+        request.points_new.empty())
+    {
+      return response.error_code;
+    }
+
     while (1)
     {
       std::string photo_orientation_path =
@@ -1639,9 +1651,12 @@ struct DatabaseRequestHandler <RequestUpdatePhotoOrientationParams,
         pcd.VertexData()[i][0] = request.points_new[i][0];
         pcd.VertexData()[i][1] = request.points_new[i][1];
         pcd.VertexData()[i][2] = request.points_new[i][2];
-        pcd.NormalData()[i][0] = request.norms_new[i][0];
-        pcd.NormalData()[i][1] = request.norms_new[i][1];
-        pcd.NormalData()[i][2] = request.norms_new[i][2];
+        if (!request.norms_new.empty())
+        {
+          pcd.NormalData()[i][0] = request.norms_new[i][0];
+          pcd.NormalData()[i][1] = request.norms_new[i][1];
+          pcd.NormalData()[i][2] = request.norms_new[i][2];
+        }
       }
 
       {

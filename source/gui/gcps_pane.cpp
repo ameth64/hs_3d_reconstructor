@@ -637,6 +637,12 @@ void GCPsPane::OnActionGCPConstrainedOptimizeTriggered()
     ProgressDialog dialog;
     dialog.Start(&GCPsPane::GCPConstrainedOptimize,
                  this, dialog.GetProgressManagerPtr());
+    db::RequestUpdatePhotoOrientationParams request_params;
+    request_params.photo_orientation_id = photo_orientation_id_;
+    db::ResponseUpdatePhotoOrientationParams response_params;
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_PARAMS,
+      request_params, response_params, true);
   }
 }
 
@@ -1004,6 +1010,16 @@ int GCPsPane::ComputeSimilarTransform()
     {
       result = 0;
       action_gcp_constrained_optimize_->setEnabled(false);
+      auto itr_gcp_measure = gcp_measures_.begin();
+      auto itr_gcp_measure_end = gcp_measures_.end();
+      for (; itr_gcp_measure != itr_gcp_measure_end; ++itr_gcp_measure)
+      {
+        gcps_table_widget_->UpdateGCPEstimatePos(
+          itr_gcp_measure->first,
+          itr_gcp_measure->second.estimate_pos[0],
+          itr_gcp_measure->second.estimate_pos[1],
+          itr_gcp_measure->second.estimate_pos[2]);
+      }
       break;
     }
 
@@ -1522,10 +1538,12 @@ void GCPsPane::GCPConstrainedOptimize(
   {
     point += offset;
   }
+  //TODO:No broadcast here.
+  //Because It will cause opengl render in the non-main thread.
   request_params.norms_new = norms;
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_PARAMS,
-    request_params, response_params, true);
+    request_params, response_params, false);
 
   if (progress_manager)
   {
