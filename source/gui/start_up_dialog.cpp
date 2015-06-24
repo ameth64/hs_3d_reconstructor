@@ -25,16 +25,6 @@ namespace hs
         button_open_project_ = new QPushButton(tr("&Open Project..."), this);
         button_cancel_ = new QPushButton(tr("&Cancel"), this);
 
-        //for (int i = 0; i < MaxRecentFiles; ++i) 
-        //{
-        //  recent_file_acts_[i] = new QAction(this);
-        //  recent_file_acts_[i]->setVisible(false);
-        //  connect(recent_file_acts_[i], SIGNAL(triggered()),
-        //    this, SLOT(openRecentFile()));
-
-
-        //}
-        //
         for (int i = 0; i < MaxRecentFiles; ++i)
         {
           recent_file_acts_[i] = new QAction(this);
@@ -123,6 +113,11 @@ namespace hs
         {
           OpenProjectWithFile(action->data().toString());
         }
+      }
+
+      void StartUpDialog::reject()
+      {
+        //这里实例化reject函数的作用时用来禁止按下esc键之后调用QDialog的reject而关闭窗口！
       }
 
     }

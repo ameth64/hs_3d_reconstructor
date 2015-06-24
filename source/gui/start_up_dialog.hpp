@@ -47,6 +47,8 @@ namespace hs
 
       public slots:
         void SetCurrentFile(const QString& file_neam);
+        //这里实例化reject函数的作用时用来禁止按下esc键之后调用QDialog的reject而关闭窗口！
+        void reject();
         
       signals:
         void NewProjcet();
