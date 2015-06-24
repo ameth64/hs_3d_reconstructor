@@ -24,7 +24,8 @@ public:
   {
     IC_VALID = 0,
     IC_INVALID_NAME,
-    IC_PROJECT_DIRECTORY_EXIST
+    IC_PROJECT_DIRECTORY_EXIST,
+    IC_WORK_DIRECTORY_NOT_EXIST
   };
 public:
   NewProjectConfigDialog(const QString& default_project_directory,

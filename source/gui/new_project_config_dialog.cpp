@@ -67,6 +67,14 @@ QString NewProjectConfigDialog::new_project_directory() const
 
 int NewProjectConfigDialog::ValidateProjectDirectory()
 {
+  //验证Project 创建路径是否有效
+  std::string std_work_directory =
+    line_edit_directory_->text().toLocal8Bit().data();
+  if (!boost::filesystem::exists(boost::filesystem::path(std_work_directory)))
+  {
+    return IC_WORK_DIRECTORY_NOT_EXIST;
+  }
+
   //验证Project Name是否有效
   std::string std_project_name =
     line_edit_project_name_->text().toLocal8Bit().data();
@@ -100,6 +108,12 @@ void NewProjectConfigDialog::OnAccept()
   QMessageBox msg_box;
   switch(ValidateProjectDirectory())
   {
+  case IC_WORK_DIRECTORY_NOT_EXIST:
+    {
+      msg_box.setText(tr("The directory to create projcets does not exist! !"));
+      msg_box.exec();
+      break;
+    }
   case IC_INVALID_NAME:
     {
       msg_box.setText(tr("Invalid project name!"));
