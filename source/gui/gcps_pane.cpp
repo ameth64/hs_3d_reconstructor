@@ -408,17 +408,29 @@ void GCPsPane::FilterPhotosByPoints(const Point3FContainer& points)
                Scalar((*itr_point)[2]);
 
       EIGEN_VECTOR(Scalar, 2) key =
-        hs::sfm::ProjectiveFunctions<Scalar>::WorldPointProjectToImageKey(
-          itr_photo_entry->second.intrinsic_params,
-          itr_photo_entry->second.extrinsic_params,
-          point);
-
+        hs::sfm::ProjectiveFunctions<Scalar>::
+          WorldPointProjectToImageKeyNoDistort(
+            itr_photo_entry->second.intrinsic_params,
+            itr_photo_entry->second.extrinsic_params,
+            point);
       if (key[0] > Scalar(0) &&
           key[0] < Scalar(itr_photo_entry->second.image_width) &&
           key[1] > Scalar(0) &&
           key[1] < Scalar(itr_photo_entry->second.image_height))
       {
-        filtered_photo_entries.insert(*itr_photo_entry);
+        key = 
+          hs::sfm::ProjectiveFunctions<Scalar>::
+            WorldPointProjectToImageKey(
+              itr_photo_entry->second.intrinsic_params,
+              itr_photo_entry->second.extrinsic_params,
+              point);
+        if (key[0] > Scalar(0) &&
+            key[0] < Scalar(itr_photo_entry->second.image_width) &&
+            key[1] > Scalar(0) &&
+            key[1] < Scalar(itr_photo_entry->second.image_height))
+        {
+          filtered_photo_entries.insert(*itr_photo_entry);
+        }
       }
     }
   }

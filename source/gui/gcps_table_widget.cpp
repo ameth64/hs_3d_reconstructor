@@ -297,24 +297,33 @@ void GCPsTableWidget::OnItemChanged(QTableWidgetItem* item)
     msg_box.exec();
     return;
   }
+  bool updated = false;
   if (col == 0)
   {
     itr_gcp_entry->second.name = item->text();
+    updated = true;
   }
-  else if (col == 1)
+  if (display_mode_ == SHOW_MEASUREMENT)
   {
-    itr_gcp_entry->second.measure_pos[0] = Float(item->text().toDouble());
-  }
-  else if (col == 2)
-  {
-    itr_gcp_entry->second.measure_pos[1] = Float(item->text().toDouble());
-  }
-  else if (col == 3)
-  {
-    itr_gcp_entry->second.measure_pos[2] = Float(item->text().toDouble());
-  }
+    if (col == 1)
+    {
+      itr_gcp_entry->second.measure_pos[0] = Float(item->text().toDouble());
+    }
+    else if (col == 2)
+    {
+      itr_gcp_entry->second.measure_pos[1] = Float(item->text().toDouble());
+    }
+    else if (col == 3)
+    {
+      itr_gcp_entry->second.measure_pos[2] = Float(item->text().toDouble());
+    }
 
-  emit GCPUpdated(gcp_id, itr_gcp_entry->second);
+    updated = true;
+  }
+  if (updated)
+  {
+    emit GCPUpdated(gcp_id, itr_gcp_entry->second);
+  }
 
 }
 

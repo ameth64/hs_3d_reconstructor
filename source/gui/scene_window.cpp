@@ -361,6 +361,9 @@ void SceneWindow::BackupSelectedPointsColor(Float left, Float right,
                                             Float bottom, Float top,
                                             PointCloudData& pcd)
 {
+#if 1
+  std::cout << "Backup!\n";
+#endif
   //Restore colors
   for (size_t i = 0; i < selected_points_backup_colors_.size(); i++)
   {
