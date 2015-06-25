@@ -200,7 +200,11 @@ void MainWindow::OnActionNewProjectTriggered()
 
 void MainWindow::OnActionOpenProjectTriggered()
 {
+  QSettings settings;
+  QString default_projects_directory =
+    settings.value("default_projects_directory").toString();
   QFileDialog dialog;
+  dialog.setDirectory(default_projects_directory);
   dialog.setFileMode(QFileDialog::ExistingFile);
   dialog.setNameFilter(tr("3D Reconstructor Database File (*.3db)"));
   if (dialog.exec())
