@@ -35,6 +35,7 @@ namespace hs
         QGroupBox* groupbox_recent_files_;
         QPushButton* button_create_project_;
         QPushButton* button_open_project_;
+        QPushButton* button_tools_;
         QPushButton* button_cancel_;
         enum { MaxRecentFiles = 5 };
         QToolBar* menu_recent_file_[MaxRecentFiles];
@@ -44,6 +45,7 @@ namespace hs
         void OnButtonCreateProjectClicked();
         void OnButtonOpenProjectClicked();
         void OnButtonCancelClicked();
+        void OnButtonToolsClicked();
         void OnRecentProjectClicked();
 
       public slots:
@@ -54,6 +56,7 @@ namespace hs
       signals:
         void NewProjcet();
         void OpenProject();
+        void OpenTools();
         void OpenProjectWithFile(const QString &db_file);
 
       };

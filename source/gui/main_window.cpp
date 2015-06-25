@@ -131,6 +131,8 @@ MainWindow::MainWindow()
     this, &MainWindow::OnActionOpenProjectTriggered);
   QObject::connect(start_up_dialog_, &StartUpDialog::OpenProjectWithFile,
     this, &MainWindow::OpenProject);
+  QObject::connect(start_up_dialog_, &StartUpDialog::OpenTools,
+    this, &MainWindow::OnActionPreferencesTriggered);
 
   QDesktopWidget* desk = QApplication::desktop();
   resize(desk->availableGeometry().size());
@@ -242,15 +244,15 @@ void MainWindow::DefaultSetting()
                       QCoreApplication::applicationDirPath());
   }
 
-  QString intermediate_directory_key = tr("intermediate_directory");
+  QString intermediate_directory_key = QString("intermediate_directory");
   if (!settings.contains(intermediate_directory_key))
   {
     QString intermediate_path =
-      QCoreApplication::applicationDirPath() + tr("/intermediate");
+      QCoreApplication::applicationDirPath() + QString("/intermediate");
     settings.setValue(intermediate_directory_key, intermediate_path);
   }
 
-  QString number_of_threads_key = tr("number_of_threads");
+  QString number_of_threads_key = QString("number_of_threads");
   if (!settings.contains(number_of_threads_key))
   {
     settings.setValue(number_of_threads_key, uint(1));

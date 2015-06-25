@@ -23,6 +23,7 @@ namespace hs
         groupbox_recent_files_ = new QGroupBox(tr("Recent File"));
         button_create_project_ = new QPushButton(tr("&New Project..."), this);
         button_open_project_ = new QPushButton(tr("&Open Project..."), this);
+        button_tools_ = new QPushButton(tr("&Tools..."), this);
         button_cancel_ = new QPushButton(tr("&Cancel"), this);
 
         for (int i = 0; i < MaxRecentFiles; ++i)
@@ -41,9 +42,9 @@ namespace hs
         layout_main_->addWidget(groupbox_recent_files_);
         layout_group_quick_start_->addWidget(button_create_project_);
         layout_group_quick_start_->addWidget(button_open_project_);
+        layout_group_quick_start_->addWidget(button_tools_);
         layout_group_quick_start_->addWidget(button_cancel_);
         groupbox_quick_start_->setLayout(layout_group_quick_start_);
-  
         groupbox_recent_files_->setLayout(layout_group_recent_files_);
         this->setLayout(layout_main_);
 
@@ -55,6 +56,8 @@ namespace hs
           , this, &StartUpDialog::OnButtonOpenProjectClicked);
         QObject::connect(button_cancel_, &QPushButton::clicked
           , this, &StartUpDialog::OnButtonCancelClicked);
+        QObject::connect(button_tools_, &QPushButton::clicked
+          , this, &StartUpDialog::OnButtonToolsClicked);
       }
 
       void StartUpDialog::OnButtonCreateProjectClicked()
@@ -65,6 +68,11 @@ namespace hs
       void StartUpDialog::OnButtonOpenProjectClicked()
       {
         OpenProject();
+      }
+
+      void StartUpDialog::OnButtonToolsClicked()
+      {
+        OpenTools();
       }
 
       void StartUpDialog::OnButtonCancelClicked()

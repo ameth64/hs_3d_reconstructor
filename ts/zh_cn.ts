@@ -20,6 +20,34 @@
     </message>
 </context>
 <context>
+    <name>SurfaceModelConfigureWidget</name>
+    <message>
+        <location filename="../source/gui/surface_model_configure_widget.cpp" line="21"/>
+        <source>Surface Model Configure</source>
+        <translation type="unfinished">模型重建设置</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/surface_model_configure_widget.cpp" line="30"/>
+        <source>Surface Model Quality </source>
+        <translation type="unfinished">模型质量</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/surface_model_configure_widget.cpp" line="36"/>
+        <source>Low</source>
+        <translation type="unfinished">低</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/surface_model_configure_widget.cpp" line="37"/>
+        <source>Medium</source>
+        <translation type="unfinished">中</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/surface_model_configure_widget.cpp" line="38"/>
+        <source>High</source>
+        <translation type="unfinished">高</translation>
+    </message>
+</context>
+<context>
     <name>hs::recon::BlocksTreeWidget</name>
     <message>
         <location filename="../source/gui/blocks_tree_widget.cpp" line="46"/>
@@ -489,63 +517,48 @@
         <translation>性能</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="234"/>
+        <location filename="../source/gui/main_window.cpp" line="240"/>
         <source>default_projects_directory</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="172"/>
+        <location filename="../source/gui/main_window.cpp" line="174"/>
         <source>Project    exist!</source>
         <translation>项目已存在！</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="178"/>
+        <location filename="../source/gui/main_window.cpp" line="180"/>
         <source>Project directory can&apos;t be created!</source>
         <translation>无法创建项目文件夹！</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="184"/>
-        <location filename="../source/gui/main_window.cpp" line="294"/>
+        <location filename="../source/gui/main_window.cpp" line="186"/>
+        <location filename="../source/gui/main_window.cpp" line="300"/>
         <source>Fail to open database!</source>
         <translation>无法打开数据库！</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="191"/>
+        <location filename="../source/gui/main_window.cpp" line="193"/>
         <source>/</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="193"/>
+        <location filename="../source/gui/main_window.cpp" line="195"/>
         <source>.3db</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="205"/>
+        <location filename="../source/gui/main_window.cpp" line="211"/>
         <source>3D Reconstructor Database File (*.3db)</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="223"/>
+        <location filename="../source/gui/main_window.cpp" line="229"/>
         <source>Fail to close database!</source>
         <translation>无法关闭数据库！</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="241"/>
-        <source>intermediate_directory</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../source/gui/main_window.cpp" line="245"/>
-        <source>/intermediate</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../source/gui/main_window.cpp" line="249"/>
-        <source>number_of_threads</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../source/gui/main_window.cpp" line="300"/>
+        <location filename="../source/gui/main_window.cpp" line="306"/>
         <source>Database file not exist!</source>
         <translation>数据库文件不存在！</translation>
     </message>
@@ -573,18 +586,18 @@
         <translation>新项目设置</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="115"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="122"/>
         <source>The directory to create projcets does not exist!
 Do you want to create it?</source>
         <translation>用于创建项目的文件夹不存在！是否创建文件夹？</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="131"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="135"/>
         <source>Invalid project name!</source>
         <translation>项目名不可用！</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="137"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="141"/>
         <source>New project directory exists!</source>
         <translation>项目文件夹已存在！</translation>
     </message>
@@ -1114,7 +1127,7 @@ Do you want to create it?</source>
     <name>hs::recon::gui::StartUpDialog</name>
     <message>
         <location filename="../source/gui/start_up_dialog.cpp" line="22"/>
-        <location filename="../source/gui/start_up_dialog.cpp" line="49"/>
+        <location filename="../source/gui/start_up_dialog.cpp" line="51"/>
         <source>Quick Start</source>
         <translation>快速使用</translation>
     </message>
@@ -1135,11 +1148,16 @@ Do you want to create it?</source>
     </message>
     <message>
         <location filename="../source/gui/start_up_dialog.cpp" line="26"/>
+        <source>&amp;Tools...</source>
+        <translation>设置...</translation>
+    </message>
+    <message>
+        <location filename="../source/gui/start_up_dialog.cpp" line="27"/>
         <source>&amp;Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../source/gui/start_up_dialog.cpp" line="102"/>
+        <location filename="../source/gui/start_up_dialog.cpp" line="132"/>
         <source>&amp;%1 %2</source>
         <translation></translation>
     </message>
