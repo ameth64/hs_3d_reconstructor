@@ -35,6 +35,7 @@ namespace hs
           menu_recent_file_[i]->addAction(recent_file_acts_[i]);
           layout_group_recent_files_->addWidget(menu_recent_file_[i]);
         }
+
         UpdateRecentFileActions();
         layout_main_->addWidget(groupbox_quick_start_);
         layout_main_->addWidget(groupbox_recent_files_);
@@ -97,12 +98,27 @@ namespace hs
         QSettings settings;
         QStringList files = settings.value("recentFileList").toStringList();
         int num_recent_file = qMin(files.size(), (int)MaxRecentFiles);
-        for (int i = 0; i < num_recent_file; i++)
+        //for (int i = 0; i < num_recent_file; i++)
+        //{
+        //  QString text = tr("&%1 %2").arg(i+1).arg(StrippedName(files[i]));
+        //  recent_file_acts_[i]->setText(text);
+        //  recent_file_acts_[i]->setData(files[i]);
+        //  recent_file_acts_[i]->setVisible(true);
+        //}
+        int i = 0;
+        int j = 0;
+        while (j<num_recent_file)
         {
-          QString text = tr("&%1 %2").arg(i+1).arg(StrippedName(files[i]));
-          recent_file_acts_[i]->setText(text);
-          recent_file_acts_[i]->setData(files[i]);
-          recent_file_acts_[i]->setVisible(true);
+          std::string str_file = files[j].toLocal8Bit().data();
+          if (!boost::filesystem::exists(str_file))
+          {
+            QString text = tr("&%1 %2").arg(i + 1).arg(StrippedName(files[i]));
+            recent_file_acts_[i]->setText(text);
+            recent_file_acts_[i]->setData(files[i]);
+            recent_file_acts_[i]->setVisible(true);
+            i++;
+          }
+          j++;
         }
       }
 
