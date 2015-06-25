@@ -214,7 +214,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->FeatureMatchItem(feature_match_id);
-              item->setDisabled(true);
+              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
             }
           }
 
@@ -256,7 +256,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
-              item->setDisabled(true);
+              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
             }
           }
 
@@ -299,7 +299,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->PointCloudItem(point_cloud_id);
-              item->setDisabled(true);
+              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
             }
           }
 
@@ -325,25 +325,25 @@ void BlocksPane::Response(int request_flag, void* response)
               uint(itr_surface_model->second[
                 db::SurfaceModelResource::
                   SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt());
-                std::string surface_model_std_name =
-                  itr_surface_model->second[
-                    db::SurfaceModelResource::
-                      SURFACE_MODEL_FIELD_NAME].ToString();
-                    QString surface_model_name =
-                      QString::fromLocal8Bit(surface_model_std_name.c_str());
-                    int flag =
-                      itr_surface_model->second[
-                        db::SurfaceModelResource::
-                          SURFACE_MODEL_FIELD_FLAG].ToInt();
-                        if (blocks_tree_widget_->AddSurfaceModel(
-                          point_cloud_id, surface_model_id,
-                          surface_model_name) == 0 &&
-                          flag == db::SurfaceModelResource::FLAG_NOT_COMPLETED)
-                        {
-                          QTreeWidgetItem* item =
-                            blocks_tree_widget_->SurfaceModelItem(surface_model_id);
-                          item->setDisabled(true);
-                        }
+            std::string surface_model_std_name =
+              itr_surface_model->second[
+                db::SurfaceModelResource::
+                  SURFACE_MODEL_FIELD_NAME].ToString();
+            QString surface_model_name =
+              QString::fromLocal8Bit(surface_model_std_name.c_str());
+            int flag =
+              itr_surface_model->second[
+                db::SurfaceModelResource::
+                  SURFACE_MODEL_FIELD_FLAG].ToInt();
+            if (blocks_tree_widget_->AddSurfaceModel(
+              point_cloud_id, surface_model_id,
+              surface_model_name) == 0 &&
+              flag == db::SurfaceModelResource::FLAG_NOT_COMPLETED)
+            {
+              QTreeWidgetItem* item =
+                blocks_tree_widget_->SurfaceModelItem(surface_model_id);
+              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
+            }
           }
 
           //读取Texture
@@ -376,7 +376,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->TextureItem(texture_id);
-              item->setDisabled(true);
+              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
             }
           }
           break;
@@ -674,6 +674,7 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
   {
   case BlocksTreeWidget::PHOTO_ORIENTATION:
     {
+      bool ret = true;
       while(1)
       {
         typedef hs::recon::db::Database::Identifier Identifier;
@@ -686,9 +687,17 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
         if(response_photo_orientation.error_code !=
             hs::recon::db::Database::NO_ERROR)
         {
+          ret = false;
           break;
         }
 
+        if (response_photo_orientation.record[
+          db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt()
+          ==db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
+        {
+          ret = false;
+          break;
+        }
         Identifier feature_match_id =
           int(response_photo_orientation.record[
                 db::PhotoOrientationResource::
@@ -702,6 +711,7 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
         if (response_feature_match.error_code !=
           db::DatabaseMediator::NO_ERROR)
         {
+          ret = false;
           break;
         }
 
@@ -714,7 +724,9 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
         photo_orientation_info_widget_->show();
         break;
       }
-      ActivatePhotoOrientationItem(item);
+      if (ret){
+        ActivatePhotoOrientationItem(item);
+      }
       while(1)
       {
         typedef hs::recon::db::Database::Identifier Identifier;
@@ -727,9 +739,16 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
         if(response_photo_orientation.error_code !=
             hs::recon::db::Database::NO_ERROR)
         {
+          ret = false;
           break;
         }
-
+        if (response_photo_orientation.record[
+          db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt()
+            == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
+        {
+          ret = false;
+          break;
+        }
         Identifier feature_match_id =
           int(response_photo_orientation.record[
             db::PhotoOrientationResource::
@@ -743,6 +762,7 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
         if(response_feature_match.error_code !=
           db::DatabaseMediator::NO_ERROR)
         {
+          ret = false;
           break;
         }
 
@@ -755,15 +775,17 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
         photo_orientation_info_widget_->show();
         break;
       }
-
-      emit PhotoOrientationActivated(activated_photo_orientation_id_);
+      if (ret)
+      {
+        emit PhotoOrientationActivated(activated_photo_orientation_id_);
+      }
       break;
     }
   case BlocksTreeWidget::POINT_CLOUD:
     {
-      ActivatePointCloudItem(item);
-      emit PointCloudActivated(activated_point_cloud_id_);
-      break;
+      //ActivatePointCloudItem(item);
+      //emit PointCloudActivated(activated_point_cloud_id_);
+      //break;
     }
   }
 }
@@ -1428,9 +1450,31 @@ void BlocksPane::OnPhotosItemSelected(uint block_id)
 
 void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
 {
-  action_copy_->setEnabled(true);
+
+  hs::recon::db::RequestGetFeatureMatch request_feature_match;
+  hs::recon::db::ResponseGetFeatureMatch response_feature_match;
+  request_feature_match.id = feature_match_id;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
+    request_feature_match, response_feature_match, false);
+
+  if (response_feature_match.error_code == hs::recon::db::Database::NO_ERROR)
+  {
+    int flag = response_feature_match.record[
+      db::FeatureMatchResource::FEATURE_MATCH_FIELD_FLAG].ToInt();
+      if (flag == db::FeatureMatchResource::FLAG_NOT_COMPLETED)
+      {
+        action_copy_->setEnabled(false);
+        action_add_workflow_->setEnabled(false);
+      }
+      else
+      {
+        action_copy_->setEnabled(true);
+        action_add_workflow_->setEnabled(true);
+      }
+  }
+
   action_remove_->setEnabled(true);
-  action_add_workflow_->setEnabled(true);
   selected_feature_match_id_ = feature_match_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(FEATURE_MATCH_SELECTED);
@@ -1442,9 +1486,30 @@ void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
 
 void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
 {
-  action_copy_->setEnabled(true);
+  db::RequestGetPhotoOrientation request_photo_orientation;
+  db::ResponseGetPhotoOrientation response_photo_orientation;
+  request_photo_orientation.id = photo_orientation_id;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+    request_photo_orientation, response_photo_orientation, false);
+
+  if (response_photo_orientation.error_code == hs::recon::db::Database::NO_ERROR)
+  {
+    int flag = response_photo_orientation.record[
+      db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
+      if (flag == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
+      {
+        action_copy_->setEnabled(false);
+        action_add_workflow_->setEnabled(false);
+      }
+      else
+      {
+        action_copy_->setEnabled(true);
+        action_add_workflow_->setEnabled(true);
+      }
+  }
+
   action_remove_->setEnabled(true);
-  action_add_workflow_->setEnabled(true);
   selected_photo_orientation_id_ = photo_orientation_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(PHOTO_ORIENTATION_SELECTED);
@@ -1453,9 +1518,29 @@ void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
 
 void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
 {
-  action_copy_->setEnabled(true);
+  db::RequestGetPointCloud request_point_cloud;
+  db::ResponseGetPointCloud response_point_cloud;
+  request_point_cloud.id = point_cloud_id;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+    request_point_cloud, response_point_cloud, false);
+  if (response_point_cloud.error_code == hs::recon::db::Database::NO_ERROR)
+  {
+    int flag = response_point_cloud.record[
+      db::PointCloudResource::POINT_CLOUD_FIELD_FLAG].ToInt();
+      if (flag == db::PointCloudResource::FLAG_NOT_COMPLETED)
+      {
+        action_copy_->setEnabled(false);
+        action_add_workflow_->setEnabled(false);
+      }
+      else
+      {
+        action_copy_->setEnabled(true);
+        action_add_workflow_->setEnabled(true);
+      }
+  }
+
   action_remove_->setEnabled(true);
-  action_add_workflow_->setEnabled(true);
   selected_point_cloud_id_ = point_cloud_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(POINT_CLOUD_SELECTED);
@@ -1467,9 +1552,29 @@ void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
 
 void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
 {
-  action_copy_->setEnabled(true);
+  hs::recon::db::RequestGetSurfaceModel request_surface_model;
+  hs::recon::db::ResponseGetSurfaceModel response_surface_model;
+  request_surface_model.id = surface_model_id;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
+    request_surface_model, response_surface_model, false);
+  if (response_surface_model.error_code ==hs::recon::db::Database::NO_ERROR)
+  {
+    int flag = response_surface_model.record[
+      db::SurfaceModelResource::SURFACE_MODEL_FIELD_FLAG].ToInt();
+      if (flag == db::SurfaceModelResource::FLAG_NOT_COMPLETED)
+      {
+        action_copy_->setEnabled(false);
+        action_add_workflow_->setEnabled(false);
+      }
+      else
+      {
+        action_copy_->setEnabled(true);
+        action_add_workflow_->setEnabled(true);
+      }
+  }
+
   action_remove_->setEnabled(true);
-  action_add_workflow_->setEnabled(true);
   selected_surface_model_id_ = surface_model_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(SURFACE_MODEL_SELECTED);
@@ -1480,9 +1585,29 @@ void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
 
 void BlocksPane::OnTextureItemSelected(uint texture_id)
 {
-  action_copy_->setEnabled(true);
+  hs::recon::db::RequestGetTexture request_texture;
+  hs::recon::db::ResponseGetTexture response_texture;
+  request_texture.id = texture_id;
+  ((MainWindow*)parent())->database_mediator().Request(
+    this, db::DatabaseMediator::REQUEST_GET_TEXTURE,
+    request_texture, response_texture, false);
+  if (response_texture.error_code ==
+    hs::recon::db::Database::NO_ERROR)
+  {
+    int flag = response_texture.record[
+      db::TextureResource::TEXTURE_FIELD_FLAG].ToInt();
+      if (flag == db::TextureResource::FLAG_NOT_COMPLETED)
+      {
+        action_copy_->setEnabled(false);
+        action_add_workflow_->setEnabled(false);
+      }
+      else
+      {
+        action_copy_->setEnabled(true);
+        action_add_workflow_->setEnabled(true);
+      }
+  }
   action_remove_->setEnabled(true);
-  action_add_workflow_->setEnabled(true);
   selected_texture_id_ = texture_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(TEXTURE_SELECTED);
@@ -2307,7 +2432,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
       ((MainWindow*)parent())->database_mediator().GetPointCloudPath(
         request_point_cloud.id);
     QSettings settings;
-    QString number_of_threads_key = tr("number_of_threads");
+    QString number_of_threads_key = QString("number_of_threads");
     uint number_of_threads = settings.value(number_of_threads_key,
         QVariant(uint(1))).toUInt();
 
@@ -2497,7 +2622,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
     }
 
     QSettings settings;
-    QString number_of_threads_key = tr("number_of_threads");
+    QString number_of_threads_key = QString("number_of_threads");
     uint number_of_threads = settings.value(number_of_threads_key,
         QVariant(uint(1))).toUInt();
 
