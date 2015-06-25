@@ -153,7 +153,7 @@ void MainWindow::OnActionNewProjectTriggered()
 {
   QSettings settings;
   QString default_projects_directory =
-    settings.value(tr("default_projects_directory")).toString();
+    settings.value("default_projects_directory").toString();
   NewProjectConfigDialog dialog(default_projects_directory, this);
   if (dialog.exec())
   {

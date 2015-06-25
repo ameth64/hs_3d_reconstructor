@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QHideEvent>
+#include <QSettings>
 
 #include <boost/filesystem.hpp>
 
@@ -97,6 +98,13 @@ void NewProjectConfigDialog::OnBrowseButtonClicked()
 {
   QFileDialog dialog;
   dialog.setFileMode(QFileDialog::Directory);
+  std::string std_work_directory =
+    line_edit_directory_->text().toLocal8Bit().data();
+  if (boost::filesystem::exists(boost::filesystem::path(std_work_directory)))
+  {
+    dialog.setDirectory(line_edit_directory_->text());
+  }
+
   if (dialog.exec())
   {
     line_edit_directory_->setText(dialog.selectedFiles()[0]);
@@ -106,12 +114,20 @@ void NewProjectConfigDialog::OnBrowseButtonClicked()
 void NewProjectConfigDialog::OnAccept()
 {
   QMessageBox msg_box;
-  switch(ValidateProjectDirectory())
+  int ret = ValidateProjectDirectory();
+  switch(ret)
   {
   case IC_WORK_DIRECTORY_NOT_EXIST:
     {
-      msg_box.setText(tr("The directory to create projcets does not exist! !"));
-      msg_box.exec();
+      msg_box.setText(tr("The directory to create projcets does not exist!\nDo you want to create it?"));
+      msg_box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+      if (msg_box.exec() == QMessageBox::Ok)
+      {
+        std::string std_work_directory =
+          line_edit_directory_->text().toLocal8Bit().data();
+        boost::filesystem::create_directory(boost::filesystem::path(std_work_directory));
+        OnAccept();
+      }
       break;
     }
   case IC_INVALID_NAME:
@@ -128,6 +144,8 @@ void NewProjectConfigDialog::OnAccept()
     }
   case IC_VALID:
     {
+      QSettings settings;
+      settings.setValue("default_projects_directory", line_edit_directory_->text());
       accept();
       break;
     }

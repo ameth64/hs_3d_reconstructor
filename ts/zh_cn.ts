@@ -489,7 +489,6 @@
         <translation>性能</translation>
     </message>
     <message>
-        <location filename="../source/gui/main_window.cpp" line="156"/>
         <location filename="../source/gui/main_window.cpp" line="234"/>
         <source>default_projects_directory</source>
         <translation></translation>
@@ -554,37 +553,38 @@
 <context>
     <name>hs::recon::gui::NewProjectConfigDialog</name>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="23"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="24"/>
         <source>Project Name:</source>
         <translation>项目名称：</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="26"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="27"/>
         <source>Create in:</source>
         <translation>创建于：</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="28"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="29"/>
         <source>Browse</source>
         <translation>浏览</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="48"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="49"/>
         <source>New Project Configuration</source>
         <translation>新项目设置</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="113"/>
-        <source>The directory to create projcets does not exist! !</source>
-        <translation>用于创建项目的文件夹不存在！</translation>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="115"/>
+        <source>The directory to create projcets does not exist!
+Do you want to create it?</source>
+        <translation>用于创建项目的文件夹不存在！是否创建文件夹？</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="119"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="131"/>
         <source>Invalid project name!</source>
         <translation>项目名不可用！</translation>
     </message>
     <message>
-        <location filename="../source/gui/new_project_config_dialog.cpp" line="125"/>
+        <location filename="../source/gui/new_project_config_dialog.cpp" line="137"/>
         <source>New project directory exists!</source>
         <translation>项目文件夹已存在！</translation>
     </message>
@@ -1147,27 +1147,22 @@
 <context>
     <name>hs::recon::gui::SurfaceModelConfigureWidget</name>
     <message>
-        <location filename="../source/gui/surface_model_configure_widget.cpp" line="21"/>
         <source>Surface Model Configure</source>
         <translation type="vanished">模型重建设置</translation>
     </message>
     <message>
-        <location filename="../source/gui/surface_model_configure_widget.cpp" line="30"/>
         <source>Surface Model Quality </source>
         <translation type="vanished">模型质量</translation>
     </message>
     <message>
-        <location filename="../source/gui/surface_model_configure_widget.cpp" line="36"/>
         <source>Low</source>
         <translation type="vanished">低</translation>
     </message>
     <message>
-        <location filename="../source/gui/surface_model_configure_widget.cpp" line="37"/>
         <source>Medium</source>
         <translation type="vanished">中</translation>
     </message>
     <message>
-        <location filename="../source/gui/surface_model_configure_widget.cpp" line="38"/>
         <source>High</source>
         <translation type="vanished">高</translation>
     </message>
