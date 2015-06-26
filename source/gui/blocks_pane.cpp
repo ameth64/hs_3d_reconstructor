@@ -214,7 +214,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->FeatureMatchItem(feature_match_id);
-              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
+              item->setTextColor(0, Qt::gray);
             }
           }
 
@@ -256,7 +256,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
-              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
+              item->setTextColor(0, Qt::gray);
             }
           }
 
@@ -299,7 +299,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->PointCloudItem(point_cloud_id);
-              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
+              item->setTextColor(0, Qt::gray);
             }
           }
 
@@ -342,7 +342,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->SurfaceModelItem(surface_model_id);
-              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
+              item->setTextColor(0, Qt::gray);
             }
           }
 
@@ -376,7 +376,7 @@ void BlocksPane::Response(int request_flag, void* response)
             {
               QTreeWidgetItem* item =
                 blocks_tree_widget_->TextureItem(texture_id);
-              item->setIcon(0, QIcon(":/images/icon_invalid.png"));
+              item->setTextColor(0, Qt::gray);
             }
           }
           break;
@@ -527,7 +527,7 @@ void BlocksPane::OnTimeout()
                     workflow_step_entry.id);
                 if (item)
                 {
-                  item->setDisabled(false);
+                  item->setTextColor(0, Qt::black);
                 }
               }
               break;
@@ -554,7 +554,7 @@ void BlocksPane::OnTimeout()
                     workflow_step_entry.id);
                 if (item)
                 {
-                  item->setDisabled(false);
+                  item->setTextColor(0, Qt::black);
                   ActivatePhotoOrientationItem(item);
                   emit PhotoOrientationActivated(
                     activated_photo_orientation_id_);
@@ -579,7 +579,7 @@ void BlocksPane::OnTimeout()
                   workflow_step_entry.id);
                 if (item)
                 {
-                  item->setDisabled(false);
+                  item->setTextColor(0, Qt::black);
                   //ActivatePointCloudItem(item);
                   //emit PointCloudActivated(
                   //  activated_point_cloud_id_);
@@ -604,7 +604,7 @@ void BlocksPane::OnTimeout()
                   workflow_step_entry.id);
                 if (item)
                 {
-                  item->setDisabled(false);
+                  item->setTextColor(0, Qt::black);
                 }
               }
               break;
@@ -624,7 +624,7 @@ void BlocksPane::OnTimeout()
                   blocks_tree_widget_->TextureItem(workflow_step_entry.id);
                 if (item)
                 {
-                  item->setDisabled(false);
+                  item->setTextColor(0, Qt::black);
                 }
               }
               break;
@@ -1735,7 +1735,7 @@ int BlocksPane::AddFeatureMatchStep(
       blocks_tree_widget_->FeatureMatchItem(feature_match_id);
     if (feature_match_item)
     {
-      feature_match_item->setDisabled(true);
+      feature_match_item->setTextColor(0, Qt::gray);
     }
     WorkflowStepEntry feature_match_step_entry;
     feature_match_step_entry.id = uint(feature_match_id);
@@ -1778,7 +1778,7 @@ int BlocksPane::AddPhotoOrientationStep(
       blocks_tree_widget_->PhotoOrientationItem(photo_orientation_id);
     if (photo_orientation_item)
     {
-      photo_orientation_item->setDisabled(true);
+      photo_orientation_item->setTextColor(0, Qt::gray);
     }
     WorkflowStepEntry photo_orientation_step_entry;
     photo_orientation_step_entry.id = photo_orientation_id;
@@ -1819,7 +1819,7 @@ int BlocksPane::AddPointCloudStep(
       blocks_tree_widget_->PointCloudItem(point_cloud_id);
     if (point_cloud_item)
     {
-      point_cloud_item->setDisabled(true);
+      point_cloud_item->setTextColor(0, Qt::gray);
     }
     WorkflowStepEntry point_cloud_step_entry;
     point_cloud_step_entry.id = point_cloud_id;
@@ -1858,7 +1858,7 @@ int BlocksPane::AddSurfaceModelStep(
       blocks_tree_widget_->SurfaceModelItem(surface_model_id);
     if (surface_model_item)
     {
-      surface_model_item->setDisabled(true);
+      surface_model_item->setTextColor(0, Qt::gray);
     }
     WorkflowStepEntry surface_model_step_entry;
     surface_model_step_entry.id = uint(surface_model_id);
@@ -1897,7 +1897,7 @@ int BlocksPane::AddTextureStep(
       blocks_tree_widget_->TextureItem(texture_id);
     if (texture_item)
     {
-      texture_item->setDisabled(true);
+      texture_item->setTextColor(0, Qt::gray);
     }
     WorkflowStepEntry texture_step_entry;
     texture_step_entry.id = uint(texture_id);
