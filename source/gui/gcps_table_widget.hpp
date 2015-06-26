@@ -59,6 +59,7 @@ private slots:
   void OnItemSelectionChanged();
   void OnCurrentIndexChanged(int index);
   void OnItemChanged(QTableWidgetItem* item);
+  void SortByColumn(int column);
 
 signals:
   void SeletedGCPsDeleted(const std::vector<uint>& gcp_ids);
@@ -81,6 +82,7 @@ private:
 
   GCPRowMap gcp_row_map_;
   GCPTypeEditableMap gcp_type_editable_map_;
+  Qt::SortOrder *sort_order_;
 };
 
 }

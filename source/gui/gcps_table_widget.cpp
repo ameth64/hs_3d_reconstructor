@@ -1,4 +1,5 @@
 ﻿#include <QMessageBox>
+#include <QHeaderView>
 
 #include "gui/gcps_table_widget.hpp"
 
@@ -42,6 +43,8 @@ GCPsTableWidget::GCPsTableWidget(QWidget* parent)
                    this, &GCPsTableWidget::OnItemSelectionChanged);
   QObject::connect(this, &QTableWidget::itemChanged,
                    this, &GCPsTableWidget::OnItemChanged);
+  QObject::connect(horizontalHeader(), &QHeaderView::sectionClicked,
+    this, &GCPsTableWidget::SortByColumn);
 }
 
 GCPsTableWidget::DisplayMode
@@ -429,6 +432,11 @@ void GCPsTableWidget::RefreshTable()
   }
   resizeColumnsToContents();
   is_refresh_complete_ = true;
+}
+
+void GCPsTableWidget::SortByColumn(int column)
+{
+    sortByColumn(column);
 }
 
 }
