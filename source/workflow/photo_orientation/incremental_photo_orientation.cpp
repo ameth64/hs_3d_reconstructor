@@ -15,6 +15,7 @@
 #include "hs_sfm/sfm_file_io/keyset_loader.hpp"
 #include "hs_sfm/sfm_file_io/matches_loader.hpp"
 #include "hs_sfm/sfm_utility/similar_transform_estimator.hpp"
+#include "hs_sfm/sfm_pipeline/incremental_sfm.hpp"
 #include "hs_sfm/sfm_pipeline/reprojective_error_calculator.hpp"
 #include "hs_sfm/sfm_pipeline/point_cloud_norm_calculator.hpp"
 #include "hs_image_io/whole_io/image_data.hpp"
@@ -252,6 +253,7 @@ int IncrementalPhotoOrientation::RunSFM(
   hs::sfm::ObjectIndexMap& track_point_map,
   hs::sfm::ViewInfoIndexer& view_info_indexer)
 {
+  typedef hs::sfm::pipeline::IncrementalSFM<Scalar> SFM;
   PhotoOrientationConfig* photo_orientation_config =
     static_cast<PhotoOrientationConfig*>(config);
 

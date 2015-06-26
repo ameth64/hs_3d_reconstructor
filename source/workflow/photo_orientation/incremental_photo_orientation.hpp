@@ -3,7 +3,7 @@
 
 #include "hs_sfm/sfm_utility/camera_type.hpp"
 #include "hs_sfm/sfm_utility/match_type.hpp"
-#include "hs_sfm/sfm_pipeline/incremental_sfm.hpp"
+#include "hs_sfm/sfm_utility/key_type.hpp"
 
 #include "hs_3d_reconstructor/config/hs_config.hpp"
 
@@ -104,15 +104,14 @@ public:
 
 private:
   typedef PhotoOrientationConfig::Scalar Scalar;
-  typedef hs::sfm::pipeline::IncrementalSFM<Scalar> SFM;
-  typedef SFM::Keyset Keyset;
-  typedef SFM::KeysetContainer KeysetContainer;
-  typedef SFM::ExtrinsicParams ExtrinsicParams;
-  typedef SFM::ExtrinsicParamsContainer ExtrinsicParamsContainer;
-  typedef SFM::IntrinsicParams IntrinsicParams;
-  typedef SFM::IntrinsicParamsContainer IntrinsicParamsContainer;
-  typedef SFM::Point Point;
-  typedef SFM::PointContainer PointContainer;
+  typedef hs::sfm::ImageKeys<Scalar> Keyset;
+  typedef EIGEN_STD_VECTOR(Keyset) KeysetContainer;
+  typedef hs::sfm::CameraExtrinsicParams<Scalar> ExtrinsicParams;
+  typedef EIGEN_STD_VECTOR(ExtrinsicParams) ExtrinsicParamsContainer;
+  typedef hs::sfm::CameraIntrinsicParams<Scalar> IntrinsicParams;
+  typedef EIGEN_STD_VECTOR(IntrinsicParams) IntrinsicParamsContainer;
+  typedef EIGEN_VECTOR(Scalar, 3) Point;
+  typedef EIGEN_STD_VECTOR(Point) PointContainer;
 
   int LoadKeysets(WorkflowStepConfig* config, KeysetContainer& keysets);
   int LoadMatches(WorkflowStepConfig* config,

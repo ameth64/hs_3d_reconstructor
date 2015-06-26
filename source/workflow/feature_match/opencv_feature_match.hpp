@@ -34,7 +34,7 @@ private:
                     const KeysetMap& keysets,
                     const hs::sfm::MatchContainer& matches_initial,
                     hs::sfm::MatchContainer& matches_filtered);
-#if 0
+#if 1
   int FilterMatchesOpenMVG(WorkflowStepConfig* config,
                            const KeysetMap& keysets,
                            const hs::sfm::MatchContainer& matches_initial,

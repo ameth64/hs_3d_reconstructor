@@ -56,11 +56,7 @@ public:
                  const std::string& sparse_point_cloud_path,
                  const std::string& tracks_path);
 
-  void ComputeReprojectionError(
-    const KeysetMap& keysets,
-    const PointCloudData& pcd,
-    const hs::sfm::TrackContainer& tracks,
-    const hs::sfm::ObjectIndexMap& track_point_map);
+  void ComputeReprojectionError();
 
   void OnTimeOut();
 
@@ -94,6 +90,11 @@ private:
   Scalar reprojection_error_;
   int reprojection_error_computed_;
   std::thread reprojection_compute_thread_;
+
+  KeysetMap keysets_;
+  PointCloudData pcd_;
+  hs::sfm::TrackContainer tracks_;
+  hs::sfm::ObjectIndexMap track_point_map_;
 };
 
 class IntrinsicParaminfoWidget: public QWidget

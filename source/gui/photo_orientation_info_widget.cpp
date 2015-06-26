@@ -77,13 +77,17 @@ int PhotoOrientationInfoWidget::Initialize(
   const std::string& sparse_point_cloud_path,
   const std::string& tracks_path)
 {
+  if (reprojection_compute_thread_.joinable())
+  {
+    reprojection_compute_thread_.join();
+  }
+
   //读取特征点集
-  KeysetMap keysets;
   {
     std::ifstream keysets_file(keysets_path, std::ios::binary);
     if (!keysets_file) return -1;
     cereal::PortableBinaryInputArchive archive(keysets_file);
-    archive(keysets);
+    archive(keysets_);
   }
 
   //读取外参数获取num_used_photo
@@ -97,16 +101,15 @@ int PhotoOrientationInfoWidget::Initialize(
   }
 
   //读取稀疏点云获取num_pointcloud
-  PointCloudData pcd;
   {
     std::ifstream sparse_point_cloud_file(
       sparse_point_cloud_path, std::ios::binary);
     if(!sparse_point_cloud_file) return -1;
     cereal::PortableBinaryInputArchive archive_sparse_point_cloud(
       sparse_point_cloud_file);
-    archive_sparse_point_cloud(pcd);
+    archive_sparse_point_cloud(pcd_);
     lineedit_num_pointcloud_->setText(
-      QString::number(pcd.PointCloudSize()));
+      QString::number(pcd_.PointCloudSize()));
   }
 
   //读取内参数
@@ -132,13 +135,11 @@ int PhotoOrientationInfoWidget::Initialize(
   }
 
   //读取tracks
-  hs::sfm::TrackContainer tracks;
-  hs::sfm::ObjectIndexMap track_point_map;
   {
     std::ifstream tracks_file(tracks_path, std::ios::binary);
     if (!tracks_file) return -1;
     cereal::PortableBinaryInputArchive archive(tracks_file);
-    archive(tracks, track_point_map);
+    archive(tracks_, track_point_map_);
   }
 
   lineedit_reprojection_error_->setText(tr("Computing..."));
@@ -147,23 +148,13 @@ int PhotoOrientationInfoWidget::Initialize(
   QObject::connect(timer_reprojection_error_, &QTimer::timeout,
                    this, &PhotoOrientationInfoWidget::OnTimeOut);
 
-  if (reprojection_compute_thread_.joinable())
-  {
-    reprojection_compute_thread_.join();
-  }
-
   reprojection_compute_thread_ =
-    std::thread(&PhotoOrientationInfoWidget::ComputeReprojectionError,
-    this, keysets, pcd, tracks, track_point_map);
+    std::thread(&PhotoOrientationInfoWidget::ComputeReprojectionError, this);
 
   return 0;
 }
 
-void PhotoOrientationInfoWidget::ComputeReprojectionError(
-  const KeysetMap& keysets,
-  const PointCloudData& pcd,
-  const hs::sfm::TrackContainer& tracks,
-  const hs::sfm::ObjectIndexMap& track_point_map)
+void PhotoOrientationInfoWidget::ComputeReprojectionError()
 {
   typedef Keyset::Key Key;
 
@@ -176,15 +167,15 @@ void PhotoOrientationInfoWidget::ComputeReprojectionError(
 
   reprojection_error_ = 0.0;
   size_t number_of_projection = 0;
-  for (size_t track_id = 0; track_id < tracks.size(); track_id++)
+  for (size_t track_id = 0; track_id < tracks_.size(); track_id++)
   {
-    if (track_point_map.IsValid(track_id))
+    if (track_point_map_.IsValid(track_id))
     {
-      size_t point_id = track_point_map[track_id];
-      for (size_t view_id = 0; view_id < tracks[track_id].size(); view_id++)
+      size_t point_id = track_point_map_[track_id];
+      for (size_t view_id = 0; view_id < tracks_[track_id].size(); view_id++)
       {
-        size_t image_id = tracks[track_id][view_id].first;
-        size_t key_id = tracks[track_id][view_id].second;
+        size_t image_id = tracks_[track_id][view_id].first;
+        size_t key_id = tracks_[track_id][view_id].second;
 
         auto itr_intrinsic_id = image_intrinsic_map.find(image_id);
         if (itr_intrinsic_id == image_intrinsic_map.end()) continue;
@@ -197,14 +188,14 @@ void PhotoOrientationInfoWidget::ComputeReprojectionError(
           extrinsic_params_map_.find(std::make_pair(image_id, intrinsic_id));
         if (itr_extrinsic == extrinsic_params_map_.end()) continue;
 
-        auto itr_keyset = keysets.find(image_id);
-        if (itr_keyset == keysets.end()) continue;
+        auto itr_keyset = keysets_.find(image_id);
+        if (itr_keyset == keysets_.end()) continue;
 
         Key projected =
           hs::sfm::ProjectiveFunctions<Scalar>::WorldPointProjectToImageKey(
             itr_intrinsic->second,
             itr_extrinsic->second,
-            pcd.VertexData()[point_id]);
+            pcd_.VertexData()[point_id]);
 
         reprojection_error_ +=
           (projected - itr_keyset->second[key_id]).norm();

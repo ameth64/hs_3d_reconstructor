@@ -10,6 +10,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#if 1
+#include <openMVG/matching_image_collection/F_ACRobust.hpp>
+#endif
+
 #include <cereal/types/vector.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/utility.hpp>
@@ -287,22 +291,39 @@ int OpenCVFeatureMatch::FilterMatches(
   return 0;
 }
 
-#if 0
+#if 1
 int OpenCVFeatureMatch::FilterMatchesOpenMVG(
   WorkflowStepConfig* config,
   const KeysetMap& keysets,
   const hs::sfm::MatchContainer& matches_initial,
   hs::sfm::MatchContainer& matches_filtered)
 {
+  typedef openMVG::GeometricFilter_FMatrix_AC GeometricFilterT;
+
+  FeatureMatchConfig* feature_match_config =
+    static_cast<FeatureMatchConfig*>(config);
+
+  const auto& image_paths = feature_match_config->image_paths();
+  std::map<size_t, std::pair<size_t, size_t> > image_sizes;
+  hs::imgio::whole::ImageIO image_io;
+  for (const auto& image_path : image_paths)
+  {
+    std::pair<size_t, size_t> image_size;
+    image_io.GetImageDimension(image_path.second,
+                               image_size.first, image_size.second);
+    image_sizes[image_path.first] = image_size;
+  }
+
   size_t number_of_image_pairs = 0;
   for (const auto& image_pair : matches_initial)
   {
     number_of_image_pairs++;
   }
 
+  GeometricFilterT geometric_filter(4.0);
+
   auto itr_key_pairs = matches_initial.begin();
   auto itr_key_pairs_end = matches_initial.end();
-  double distance_threshold = 32.0;
   size_t number_of_finished_image_pairs = 0;
   for (; itr_key_pairs != itr_key_pairs_end; ++itr_key_pairs)
   {
@@ -310,15 +331,36 @@ int OpenCVFeatureMatch::FilterMatchesOpenMVG(
     {
       break;
     }
-    std::cout<<"Filtering image pair "<<itr_key_pairs->first.first<<" "
-                                      <<itr_key_pairs->first.second<<"\n";
+    size_t image_id_a = itr_key_pairs->first.first;
+    size_t image_id_b = itr_key_pairs->first.second;
+    std::cout<<"Filtering image pair "<<image_id_a<<" "<<image_id_b<<"\n";
+    size_t number_of_keys = itr_key_pairs->second.size();
     auto itr_key_pair = itr_key_pairs->second.begin();
     auto itr_key_pair_end = itr_key_pairs->second.end();
-    auto itr_keyset_first = keysets.find(itr_key_pairs->first.first);
-    auto itr_keyset_second = keysets.find(itr_key_pairs->first.second);
-    for (; itr_key_pair != itr_key_pair_end; ++itr_key_pair)
+    auto itr_keyset_first = keysets.find(image_id_a);
+    if (itr_keyset_first == keysets.end()) continue;
+    auto itr_keyset_second = keysets.find(image_id_b);
+    if (itr_keyset_second == keysets.end()) continue;
+    std::vector<size_t> inlier_indices;
+    std::pair<size_t, size_t> pair_index(image_id_a, image_id_b);
+    openMVG::Mat x_a(2, number_of_keys);
+    openMVG::Mat x_b(2, number_of_keys);
+    auto itr_image_size_a = image_sizes.find(image_id_a);
+    if (itr_image_size_a == image_sizes.end()) continue;
+    auto itr_image_size_b = image_sizes.find(image_id_b);
+    if (itr_image_size_b == image_sizes.end()) continue;
+    for (size_t col = 0; itr_key_pair != itr_key_pair_end;
+         ++itr_key_pair, ++col)
     {
+      x_a(0, col) = itr_keyset_first->second[itr_key_pair->first][0];
+      x_a(1, col) = itr_keyset_first->second[itr_key_pair->first][1];
+      x_b(0, col) = itr_keyset_second->second[itr_key_pair->second][0];
+      x_b(1, col) = itr_keyset_second->second[itr_key_pair->second][1];
     }
+    geometric_filter.Fit(pair_index,
+                         x_a, itr_image_size_a->second,
+                         x_b, itr_image_size_b->second,
+                         inlier_indices);
     std::cout<<"inlier_indices.size():"<<inlier_indices.size()<<"\n";
     if (inlier_indices.size() > 100)
     {
@@ -381,7 +423,7 @@ int OpenCVFeatureMatch::RunImplement(WorkflowStepConfig* config)
 
   progress_manager_.AddSubProgress(0.19f);
   hs::sfm::MatchContainer matches_filtered;
-  result = FilterMatches(config, keysets, matches_initial, matches_filtered);
+  result = FilterMatchesOpenMVG(config, keysets, matches_initial, matches_filtered);
   progress_manager_.FinishCurrentSubProgress();
   if (result != 0) return result;
 
