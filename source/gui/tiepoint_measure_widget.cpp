@@ -44,6 +44,7 @@ TiepointMeasureWidget::TiepointMeasureWidget(QWidget* parent)
   , layout_(new QHBoxLayout(this))
   , canvas_(new QWidget(this))
   , slider_(new QScrollBar(this))
+  , slider_resize_image_displayer_(new QSlider(this))
   , displayer_width_(240)
   , displayer_height_(180)
   , vertical_gap_(10)
@@ -54,9 +55,11 @@ TiepointMeasureWidget::TiepointMeasureWidget(QWidget* parent)
                                      QSizePolicy::Expanding));
   slider_->setSizePolicy(QSizePolicy(QSizePolicy::Minimum,
                                      QSizePolicy::Minimum));
+  slider_resize_image_displayer_->setRange(0,500);
   //slider_->setTickPosition(QSlider::TicksBothSides);
   layout_->setContentsMargins(0, 0, 0, 0);
   layout_->addWidget(canvas_);
+  layout_->addWidget(slider_resize_image_displayer_);
   layout_->addWidget(slider_);
 
   setMinimumSize(horizontal_gap_ + displayer_width_ + slider_->width() + 20,
@@ -68,6 +71,8 @@ TiepointMeasureWidget::TiepointMeasureWidget(QWidget* parent)
                    this, &TiepointMeasureWidget::UpdateImageWindows);
   QObject::connect(update_origin_timer_, &QTimer::timeout,
                    this, &TiepointMeasureWidget::OnTimeout);
+  QObject::connect(slider_resize_image_displayer_,&QSlider::valueChanged,
+                   this,&TiepointMeasureWidget::DisplayerSizeChanged);
 }
 
 TiepointMeasureWidget::~TiepointMeasureWidget()
@@ -377,6 +382,7 @@ int TiepointMeasureWidget::UpdateImageWindows()
     }
     image_measure_opengl_window->set_photo_id(itr_tiepoint_photo->first);
     displayer_pool_.pop_back();
+    displayer->resize(displayer_width_,displayer_height_);
     displayer->show();
 
     used_displayers_[itr_photo_id->second] = displayer;
@@ -434,7 +440,17 @@ void TiepointMeasureWidget::OnMeasureDeleted(uint photo_id)
 {
   emit TransmissionMeasureDeleted(photo_id);
 }
-
+void TiepointMeasureWidget::DisplayerSizeChanged(int scale)
+{
+  displayer_width_ = 240 + scale;
+  displayer_height_ = 180 + scale;
+  for (auto iter = used_displayers_.begin(); 
+    iter != used_displayers_.end(); ++iter)
+  {
+    iter->second->resize(displayer_width_,displayer_height_);
+  }
+  UpdateAlignment();
+}
 
 }
 }

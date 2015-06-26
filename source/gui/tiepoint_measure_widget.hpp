@@ -82,6 +82,7 @@ private slots:
   void OnTimeout();
   void OnMeasured(uint photo_id, const EIGEN_VECTOR(Float, 2)& position);
   void OnMeasureDeleted(uint photo_id);
+  void DisplayerSizeChanged(int scale);
 
 signals:
   void TransmissionMeasured(uint photo_id,
@@ -93,6 +94,7 @@ private:
   QWidget* canvas_;
   QScrollBar* slider_;
   QHBoxLayout* layout_;
+  QSlider* slider_resize_image_displayer_;
 
   TiepointPhotoAlignment alignment_;
   int displayer_width_;
