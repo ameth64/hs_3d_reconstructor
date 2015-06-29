@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QComboBox>
 
 #include "workflow/texture/rough_texture.hpp"
 
@@ -71,6 +72,10 @@ private:
   QLineEdit* line_edit_dom_tile_x_size_;
   QLabel* label_dom_tile_y_size_;
   QLineEdit* line_edit_dom_tile_y_size_;
+
+  QHBoxLayout* layout_dom_file_type_;
+  QLabel* label_dom_file_type_;
+  QComboBox* combobox_dom_file_type_;
 };
 
 }

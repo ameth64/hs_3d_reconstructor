@@ -116,6 +116,16 @@ TextureConfigureWidget::TextureConfigureWidget(
   group_box_dom_->setChecked(false);
   main_layout_->addWidget(group_box_dom_);
 
+  label_dom_file_type_ = new QLabel(tr("DOM Files Type"), this);
+  QStringList str_dom_file_type;
+  str_dom_file_type << tr("TIFF") << tr("JPEG");
+  combobox_dom_file_type_ = new QComboBox(this);
+  combobox_dom_file_type_->insertItems(0, str_dom_file_type);
+  layout_dom_file_type_ = new QHBoxLayout;
+  layout_dom_file_type_->addWidget(label_dom_file_type_);
+  layout_dom_file_type_->addWidget(combobox_dom_file_type_);
+  layout_group_box_dom_->addLayout(layout_dom_file_type_);
+
   QObject::connect(button_browse_dem_, &QPushButton::clicked,
                    this,  &TextureConfigureWidget::OnButtonBrowseDEMClicked);
   QObject::connect(button_browse_dom_, &QPushButton::clicked,
@@ -155,6 +165,16 @@ void TextureConfigureWidget::FetchTextureConfig(
     texture_config.set_dom_tile_y_size(dom_tile_y_size);
     texture_config.set_dom_x_scale(dom_x_scale);
     texture_config.set_dom_y_scale(dom_y_scale);
+    if (combobox_dom_file_type_->currentIndex() == 0)
+    {
+      texture_config.set_dom_output_type(
+        hs::recon::workflow::TextureConfig::OUTPUT_TIFF);
+    }
+    if (combobox_dom_file_type_->currentIndex() == 1)
+    {
+      texture_config.set_dom_output_type(
+        hs::recon::workflow::TextureConfig::OUTPUT_JPG);
+    }
   }
 }
 

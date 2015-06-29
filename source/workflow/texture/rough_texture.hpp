@@ -45,6 +45,13 @@ public:
     Scalar scale;
   };
 
+  enum DomOutputType
+  {
+    OUTPUT_TIFF = 0,
+    OUTPUT_JPG,
+    NUM_OF_OUTPUT_TYPE
+  };
+
   void set_dem_x_scale(double dem_x_scale);
   void set_dem_y_scale(double dem_y_scale);
   void set_dem_path(const std::string& dem_path);
@@ -58,6 +65,7 @@ public:
   void set_surface_model_path(const std::string& surface_model_path);
   void set_similar_transform(const SimilarTransform& similar_transform);
   void set_images(const ImageParamsContainer& images);
+  void set_dom_output_type(DomOutputType output_type);
 
   double dem_x_scale() const;
   double dem_y_scale() const;
@@ -72,6 +80,7 @@ public:
   const std::string& surface_model_path() const;
   const SimilarTransform& similar_transform() const;
   const ImageParamsContainer& images() const;
+  DomOutputType dom_output_type();
 
 private:
   double dem_x_scale_;
@@ -87,6 +96,8 @@ private:
   std::string surface_model_math_;
   SimilarTransform similar_transform_;
   ImageParamsContainer images_;
+  DomOutputType dom_output_type_;
+  
 };
 typedef std::shared_ptr<TextureConfig> TextureConfigPtr;
 
