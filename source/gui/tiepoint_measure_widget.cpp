@@ -264,6 +264,8 @@ int TiepointMeasureWidget::UpdateImageWindows()
           vertical_gap_ +
           (row - slider_value * alignment_.rows_in_page) *
           (displayer_height_ + vertical_gap_));
+        //重新设置大小
+        itr_displayer->second->resize(displayer_width_,displayer_height_);
         //重新设置座标
         auto itr_tiepoint_photo = tiepoint_photos_.find(itr_displayer->first);
         ImageOpenGLWindow* image_opengl_window =
@@ -444,11 +446,11 @@ void TiepointMeasureWidget::DisplayerSizeChanged(int scale)
 {
   displayer_width_ = 240 + scale;
   displayer_height_ = 180 + scale;
-  for (auto iter = used_displayers_.begin(); 
-    iter != used_displayers_.end(); ++iter)
-  {
-    iter->second->resize(displayer_width_,displayer_height_);
-  }
+//   for (auto iter = used_displayers_.begin(); 
+//     iter != used_displayers_.end(); ++iter)
+//   {
+//     iter->second->resize(displayer_width_,displayer_height_);
+//   }
   UpdateAlignment();
 }
 

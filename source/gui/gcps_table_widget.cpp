@@ -43,6 +43,8 @@ GCPsTableWidget::GCPsTableWidget(QWidget* parent)
                    this, &GCPsTableWidget::OnItemSelectionChanged);
   QObject::connect(this, &QTableWidget::itemChanged,
                    this, &GCPsTableWidget::OnItemChanged);
+  QObject::connect(this, &QTableWidget::itemActivated,
+                   this, &GCPsTableWidget::DeleteGCPsBySelectedItems);
   QObject::connect(horizontalHeader(), &QHeaderView::sectionClicked,
     this, &GCPsTableWidget::SortByColumn);
 }
@@ -66,6 +68,17 @@ void GCPsTableWidget::ClearGCPs()
   {
     removeRow(0);
   }
+}
+
+void GCPsTableWidget::AddGCP(GCPEntry& gcp)
+{
+  if(gcps_.find(gcp.id) == gcps_.end())
+  {
+    gcps_[gcp.id] = gcp;
+    gcp_type_editable_map_[gcp.id] = true;
+   RefreshTable();
+  }
+
 }
 
 void GCPsTableWidget::AddGCPs(const GCPContainer& gcps)
@@ -95,11 +108,35 @@ void GCPsTableWidget::SetGCPType(uint gcp_id, int type)
 
 int GCPsTableWidget::DeleteGCPsByIds(const std::vector<uint>& group_ids)
 {
+
   return 0;
 }
 
 int GCPsTableWidget::DeleteGCPsBySelectedItems()
 {
+  std::vector<uint> gcp_ids;
+  QItemSelectionModel *select = selectionModel();
+  if (!select->hasSelection())
+  {
+    return 0;
+  }
+  QModelIndexList select_row = select->selectedRows();
+  for (int i = 0; i < select_row.size(); ++i)
+  {
+    int row_id = select_row.at(i).row();
+    for(auto iter = gcp_row_map_.begin(); iter != gcp_row_map_.end(); ++iter)
+    {
+      if(iter->second == row_id)
+      {
+        uint gcp_id = iter->first;
+        gcp_ids.push_back(gcp_id);
+        gcps_.erase(gcp_id);
+        break;
+      }
+    }
+  }
+  RefreshTable();
+  emit  SeletedGCPsDeleted(gcp_ids);
   return 0;
 }
 

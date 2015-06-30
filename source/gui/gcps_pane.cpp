@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
+#include <QRegExp>
 
 #include <cereal/types/utility.hpp>
 #include <cereal/types/map.hpp>
@@ -84,8 +85,8 @@ GCPsPane::GCPsPane(QWidget* parent)
   action_gcp_config_->setEnabled(true);
 
   tool_bar_ = new QToolBar(this);
-  //tool_bar_->addAction(action_add_gcp_);
-  //tool_bar_->addAction(action_remove_gcps_);
+  tool_bar_->addAction(action_add_gcp_);
+  tool_bar_->addAction(action_remove_gcps_);
   tool_bar_->addAction(action_import_gcps_);
   tool_bar_->addAction(action_show_measurement_);
   tool_bar_->addAction(action_show_estimate_);
@@ -96,6 +97,9 @@ GCPsPane::GCPsPane(QWidget* parent)
 
   QObject::connect(action_add_gcp_, &QAction::triggered,
                    this, &GCPsPane::OnActionAddGCPTriggered);
+  QObject::connect(action_remove_gcps_, &QAction::triggered,
+                   gcps_table_widget_,
+                   &GCPsTableWidget::DeleteGCPsBySelectedItems);
   QObject::connect(action_import_gcps_, &QAction::triggered,
                    this, &GCPsPane::OnActionImportGCPTriggered);
   QObject::connect(action_show_measurement_, &QAction::triggered,
@@ -111,6 +115,10 @@ GCPsPane::GCPsPane(QWidget* parent)
 
   QObject::connect(gcps_table_widget_, &GCPsTableWidget::GCPsSelected,
                    this, &GCPsPane::OnGCPsSelected);
+  QObject::connect(gcps_table_widget_, &QTableWidget::itemClicked,
+                   this, &GCPsPane::OnActionTableItemClicked);
+  QObject::connect(gcps_table_widget_, &GCPsTableWidget::SeletedGCPsDeleted,
+                   this, &GCPsPane::OnGCPsDeleteed);
 
   QObject::connect(tiepoint_measure_widget_,
                    &TiepointMeasureWidget::TransmissionMeasured,
@@ -457,7 +465,90 @@ void GCPsPane::FilterPhotosByPoints(const Point3FContainer& points)
 
 void GCPsPane::OnActionAddGCPTriggered()
 {
+  while(true)
+  {
+    //get all gcp for generate gcp name
+    db::RequestGetAllGCPs request_get_gcps;
+    db::ResponseGetAllGCPs response_get_gcps;
+    int error =
+      ((MainWindow*)parent())->database_mediator().Request(
+        this, db::DatabaseMediator::REQUEST_GET_ALL_GCPS,
+        request_get_gcps, response_get_gcps, true);
+    //采用正则表达式寻找gcp名
+    QRegExp rx("gcp\\((\\d+)\\)");
+    std::set<int> gcp_default_names;
+    for (auto iter = response_get_gcps.records.begin();
+         iter != response_get_gcps.records.end(); ++iter)
+    {
+      std::string temp = iter->second[db::GroundControlPointResource::GCP_FIELD_NAME].ToString();
+      QString name = QString::fromStdString(
+        iter->second[db::GroundControlPointResource::GCP_FIELD_NAME].ToString());
+      if (name.contains(rx))
+      {
+        int pos = rx.indexIn(name);
+        if(pos > -1) 
+        {
+          name = rx.cap(1);
+        }
+        gcp_default_names.insert(name.toInt());
+      }
+    }
+    
+    db::RequestAddGCP request_add_gcp;
+    db::ResponseAddGCP response_add_gcp;
+    int num_gcp = 1;
+    //如果存在gcp默认名,取set最后一个元素加1
+    if (!gcp_default_names.empty())
+    {
+      auto iter_gcp_num = gcp_default_names.rbegin();
+      num_gcp = *iter_gcp_num + 1;
+    }
+    
+    request_add_gcp.gcp.name = "gcp(" +  std::to_string(num_gcp) + ")";
+    request_add_gcp.gcp.description = "";
+    request_add_gcp.gcp.x = 0;
+    request_add_gcp.gcp.y = 0;
+    request_add_gcp.gcp.z = 0;
 
+    error = 
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_ADD_GCP,
+      request_add_gcp, response_add_gcp, true);
+
+    if(error != db::DatabaseMediator::NO_ERROR)
+    {
+      QMessageBox box;
+      box.setText(tr("delete GCP error!"));
+      box.exec();
+      break;
+    }
+
+    if(response_add_gcp.added_records.empty())
+    {
+      break;
+    }
+
+    GCPsTableWidget::GCPEntry gcp;
+    auto iter = response_add_gcp.added_records.begin();
+    if (iter == response_add_gcp.added_records.end())
+    {
+      break;
+    }
+    
+    gcp.id = iter->second[
+      db::GroundControlPointResource::GCP_FIELD_ID].ToInt();
+    gcp.name = QString::fromStdString(request_add_gcp.gcp.name);
+    gcp.measure_pos[0] = 0;
+    gcp.measure_pos[1] = 0;
+    gcp.measure_pos[2] = 0;
+    gcp.estimate_pos[0] = -std::numeric_limits<GCPsTableWidget::Float>::max();
+    gcp.estimate_pos[1] = -std::numeric_limits<GCPsTableWidget::Float>::max();
+    gcp.estimate_pos[2] = -std::numeric_limits<GCPsTableWidget::Float>::max();
+    gcp.type = GCPsTableWidget::GCPEntry::NOT_USED;
+
+    gcps_table_widget_->AddGCP(gcp);
+    break;
+  }
 }
 
 void GCPsPane::OnActionImportGCPTriggered()
@@ -675,6 +766,11 @@ void GCPsPane::OnActionGCPConfigTriggered()
   }
 }
 
+void GCPsPane::OnActionTableItemClicked(QTableWidgetItem * item)
+{
+  action_remove_gcps_->setEnabled(true);
+}
+
 void GCPsPane::OnPhotoMeasured(uint photo_id, const Point2F& image_pos)
 {
   typedef db::Database::Identifier Identifier;
@@ -801,6 +897,26 @@ void GCPsPane::OnGCPsSelected(const std::vector<uint>& gcp_ids)
     const GCPMeasure& gcp_measure = gcp_measures_[gcp_ids[0]];
     current_gcp_id_ = gcp_ids[0];
     UpdateTiepointWidget();
+  }
+}
+
+void GCPsPane::OnGCPsDeleteed(const std::vector<uint>& gcp_ids)
+{
+  if (!gcp_ids.empty())
+  {
+    db::RequestDeleteGCPs request;
+    db::ResponseDeleteGCPs response;
+    request.gcp_ids = gcp_ids;
+    int error = 
+    ((MainWindow*)parent())->database_mediator().Request(
+      this, db::DatabaseMediator::REQUEST_DELETE_GCPS,
+      request, response, true);
+    if (error != db::DatabaseMediator::NO_ERROR)
+    {
+      QMessageBox box;
+      box.setText(tr("delete GCP error!"));
+      box.exec();
+    }  
   }
 }
 

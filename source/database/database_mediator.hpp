@@ -103,7 +103,9 @@ public:
     REQUEST_GET_ALL_FEATURE_MATCHES,
     REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
     REQUEST_GET_ALL_POINT_CLOUDS,
+    REQUEST_ADD_GCP,
     REQUEST_ADD_GCPS,
+    REQUEST_DELETE_GCPS,
     REQUEST_GET_ALL_GCPS,
     REQUEST_ADD_PHOTO_MEASURE,
     REQUEST_DELETE_PHOTO_MEASURE,
@@ -1818,6 +1820,54 @@ struct DatabaseRequestHandler<RequestGetAllPointClouds,
   }
 };
 
+//Request Add a GCP
+struct RequestAddGCP
+{
+  REQUEST_HEADER
+  typedef Database::Float Float;
+  struct GCPEntry
+  {
+    std::string name;
+    std::string description;
+    Float x;
+    Float y;
+    Float z;
+  };
+  GCPEntry gcp;
+};
+struct ResponseAddGCP
+{
+  RESPONSE_HEADER
+  GroundControlPointResource::AddedRecordContainer added_records;
+};
+template <>
+struct DatabaseRequestHandler < RequestAddGCP, ResponseAddGCP >
+{
+  int operator() (const RequestAddGCP& request,
+                  ResponseAddGCP& response,
+                  DatabaseMediator& database_mediator)
+  {
+      GroundControlPointResource::AddRequestContainer add_requests;
+      GroundControlPointResource::AddRequest add_request;
+      add_request[GroundControlPointResource::GCP_FIELD_NAME] =
+        request.gcp.name;
+      add_request[GroundControlPointResource::GCP_FIELD_DESCRIPTION] =
+        request.gcp.description;
+      add_request[GroundControlPointResource::GCP_FIELD_X] =
+        request.gcp.x;
+      add_request[GroundControlPointResource::GCP_FIELD_Y] =
+        request.gcp.y;
+      add_request[GroundControlPointResource::GCP_FIELD_Z] =
+        request.gcp.z;
+
+      add_requests.push_back(add_request);
+    response.error_code =
+      database_mediator.ground_control_point_resource_->Add(
+        add_requests, response.added_records);
+    return response.error_code;
+  }
+};
+
 
 //Request Add GCPs
 struct RequestAddGCPs
@@ -1910,6 +1960,42 @@ struct DatabaseRequestHandler<RequestAddGCPs, ResponseAddGCPs>
     //  }
     //}
 
+    return response.error_code;
+  }
+};
+
+//Request Delete GCPs
+struct RequestDeleteGCPs
+{
+  REQUEST_HEADER
+  typedef unsigned int uint;
+  std::vector<uint> gcp_ids;
+};
+
+struct ResponseDeleteGCPs
+{
+  RESPONSE_HEADER
+};
+
+template <>
+struct DatabaseRequestHandler<RequestDeleteGCPs, ResponseDeleteGCPs>
+{
+  int operator() (const RequestDeleteGCPs& request,
+                  ResponseDeleteGCPs& response,
+                  DatabaseMediator& database_mediator)
+  {
+
+    for (size_t i = 0; i < request.gcp_ids.size(); ++i)
+    {
+      response.error_code =
+        database_mediator.ground_control_point_resource_->Delete(
+          EqualTo(BlockResource::fields_[0], Value(int(request.gcp_ids.at(i)))));
+      if (response.error_code != DatabaseMediator::NO_ERROR)
+      {
+        return response.error_code;
+      }
+    }
+    
     return response.error_code;
   }
 };

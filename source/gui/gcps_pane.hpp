@@ -88,9 +88,11 @@ private slots:
   void OnActionShowErrorTriggered();
   void OnActionGCPConstrainedOptimizeTriggered();
   void OnActionGCPConfigTriggered();
+  void OnActionTableItemClicked(QTableWidgetItem * item);
   void OnPhotoMeasured(uint photo_id, const Point2F& image_pos);
   void OnPhotoMeasureDeleted(uint photo_id);
   void OnGCPsSelected(const std::vector<uint>& gcp_ids);
+  void OnGCPsDeleteed(const std::vector<uint>& gcp_ids);
   void OnGCPUpdated(uint gcp_id, const GCPsTableWidget::GCPEntry& gcp_updated);
 
 private:

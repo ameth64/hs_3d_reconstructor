@@ -45,6 +45,7 @@ public:
   void set_display_mode(DisplayMode display_mode);
 
   void ClearGCPs();
+  void AddGCP(GCPEntry& gcp);
   void AddGCPs(const GCPContainer& gcps);
   void SetGCPType(uint gcp_id, int type);
 
