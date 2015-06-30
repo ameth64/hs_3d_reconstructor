@@ -116,6 +116,23 @@ TextureConfigureWidget::TextureConfigureWidget(
   group_box_dom_->setChecked(false);
   main_layout_->addWidget(group_box_dom_);
 
+  group_box_dom_type_ = new QGroupBox(tr("DOM Output Type"), this);
+  layout_dom_type_ = new QHBoxLayout;
+  label_dom_type_tiff_ = new QLabel(tr("TIFF"), this);
+  label_dom_type_jpg_ = new QLabel(tr("JPG"), this);
+  check_box_dom_type_tiff_ = new QCheckBox(this);
+  check_box_dom_type_tiff_->setChecked(true);
+  check_box_dom_type_jpg_ = new QCheckBox(this);
+
+  layout_dom_type_->addWidget(label_dom_type_tiff_);
+  layout_dom_type_->addWidget(check_box_dom_type_tiff_);
+
+  layout_dom_type_->addWidget(label_dom_type_jpg_);
+  layout_dom_type_->addWidget(check_box_dom_type_jpg_);
+
+  group_box_dom_type_->setLayout(layout_dom_type_);
+  layout_group_box_dom_->addWidget(group_box_dom_type_);
+
   QObject::connect(button_browse_dem_, &QPushButton::clicked,
                    this,  &TextureConfigureWidget::OnButtonBrowseDEMClicked);
   QObject::connect(button_browse_dom_, &QPushButton::clicked,
@@ -155,6 +172,17 @@ void TextureConfigureWidget::FetchTextureConfig(
     texture_config.set_dom_tile_y_size(dom_tile_y_size);
     texture_config.set_dom_x_scale(dom_x_scale);
     texture_config.set_dom_y_scale(dom_y_scale);
+    int output_type_flag;
+    output_type_flag = hs::recon::workflow::TextureConfig::NO_OUTPUT;
+    if (check_box_dom_type_tiff_->isChecked())
+    {
+      output_type_flag |= hs::recon::workflow::TextureConfig::OUTPUT_TIFF;
+    }
+    if (check_box_dom_type_jpg_->isChecked())
+    {
+      output_type_flag |= hs::recon::workflow::TextureConfig::OUTPUT_JPG;
+    }
+    texture_config.set_dom_output_type(output_type_flag);
   }
 }
 

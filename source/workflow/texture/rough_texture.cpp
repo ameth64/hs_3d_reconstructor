@@ -12,6 +12,7 @@
 #include "hs_texture/texture_multiview/triangles_image_selector.hpp"
 #include "hs_texture/texture_multiview/dom_generator.hpp"
 #include "hs_texture/texture_multiview/dom_split_tiff_engine.hpp"
+#include "hs_texture/texture_multiview/dom_split_jpg_engine.hpp"
 
 #include "workflow/texture/rough_texture.hpp"
 
@@ -82,6 +83,11 @@ void TextureConfig::set_images(const ImageParamsContainer& images)
   images_ = images;
 }
 
+void TextureConfig::set_dom_output_type(int output_type_flag)
+{
+  dom_output_type_flag_ = output_type_flag;
+}
+
 double TextureConfig::dem_x_scale() const
 {
   return dem_x_scale_;
@@ -133,6 +139,11 @@ const TextureConfig::SimilarTransform& TextureConfig::similar_transform() const
 const TextureConfig::ImageParamsContainer& TextureConfig::images() const
 {
   return images_;
+}
+
+int TextureConfig::dom_output_type_flag() const
+{
+  return dom_output_type_flag_;
 }
 
 RoughTexture::RoughTexture()
@@ -253,6 +264,7 @@ int RoughTexture::GenerateDOM(WorkflowStepConfig* config,
   typedef Generator::ImageParams GeneratorImage;
   typedef Generator::ImageParamsContainer GeneratorImageContainer;
   typedef hs::texture::multiview::DOMSplitTIFFEngine<Scalar> Engine;
+  typedef hs::texture::multiview::DOMSplitJPGEngine<Scalar> JPGEngine;
 
   PlanarPoint min, max;
   min << std::numeric_limits<Scalar>::max(),
@@ -318,14 +330,50 @@ int RoughTexture::GenerateDOM(WorkflowStepConfig* config,
     Scalar scale_y = texture_config->dom_y_scale();
 
     Generator generator;
-    Engine engine;
-
     progress_manager_.AddSubProgress(0.8f);
-    int result =
-      generator(dom_path, engine, generator_images, vertices, triangles,
-                triangle_image_indices, min, max,
-                tile_width, tile_height,
-                scale_x, scale_y, Scalar(0), &progress_manager_);
+    int result;
+    if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_TIFF)
+    {
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_JPG)
+      {
+        progress_manager_.AddSubProgress(0.5f);
+      }
+      Engine engine;
+      result =
+        generator(dom_path, engine, generator_images, vertices, triangles,
+        triangle_image_indices, min, max,
+        tile_width, tile_height,
+        scale_x, scale_y, Scalar(0), &progress_manager_);
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_JPG)
+      {
+        progress_manager_.FinishCurrentSubProgress();
+      }
+    }
+
+    if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_JPG)
+    {
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_TIFF)
+      {
+        progress_manager_.AddSubProgress(0.5f);
+      }
+      JPGEngine engine;
+      result =
+        generator(dom_path, engine, generator_images, vertices, triangles,
+        triangle_image_indices, min, max,
+        tile_width, tile_height,
+        scale_x, scale_y, Scalar(0), &progress_manager_);
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_TIFF)
+      {
+        progress_manager_.FinishCurrentSubProgress();
+      }
+    }
+
+    
+    //int result =
+    //  generator(dom_path, engine, generator_images, vertices, triangles,
+    //            triangle_image_indices, min, max,
+    //            tile_width, tile_height,
+    //            scale_x, scale_y, Scalar(0), &progress_manager_);
     progress_manager_.FinishCurrentSubProgress();
 
     return result;
