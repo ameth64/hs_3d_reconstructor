@@ -474,13 +474,20 @@ void GCPsPane::OnActionAddGCPTriggered()
       ((MainWindow*)parent())->database_mediator().Request(
         this, db::DatabaseMediator::REQUEST_GET_ALL_GCPS,
         request_get_gcps, response_get_gcps, true);
+    if(error != db::DatabaseMediator::NO_ERROR)
+    {
+      QMessageBox box;
+      box.setText(tr("Add GCP error: Unable to get exist GCPs!"));
+      box.exec();
+      break;
+    }
+
     //采用正则表达式寻找gcp名
     QRegExp rx("gcp\\((\\d+)\\)");
     std::set<int> gcp_default_names;
     for (auto iter = response_get_gcps.records.begin();
          iter != response_get_gcps.records.end(); ++iter)
     {
-      std::string temp = iter->second[db::GroundControlPointResource::GCP_FIELD_NAME].ToString();
       QString name = QString::fromStdString(
         iter->second[db::GroundControlPointResource::GCP_FIELD_NAME].ToString());
       if (name.contains(rx))
@@ -489,8 +496,8 @@ void GCPsPane::OnActionAddGCPTriggered()
         if(pos > -1) 
         {
           name = rx.cap(1);
+          gcp_default_names.insert(name.toInt());
         }
-        gcp_default_names.insert(name.toInt());
       }
     }
     
@@ -518,7 +525,7 @@ void GCPsPane::OnActionAddGCPTriggered()
     if(error != db::DatabaseMediator::NO_ERROR)
     {
       QMessageBox box;
-      box.setText(tr("delete GCP error!"));
+      box.setText(tr("Add GCP error: Unable to add GCP to database!"));
       box.exec();
       break;
     }
