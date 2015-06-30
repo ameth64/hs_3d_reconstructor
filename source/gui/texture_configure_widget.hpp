@@ -8,7 +8,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QComboBox>
+#include <QCheckBox>
 
 #include "workflow/texture/rough_texture.hpp"
 
@@ -73,9 +73,13 @@ private:
   QLabel* label_dom_tile_y_size_;
   QLineEdit* line_edit_dom_tile_y_size_;
 
-  QHBoxLayout* layout_dom_file_type_;
-  QLabel* label_dom_file_type_;
-  QComboBox* combobox_dom_file_type_;
+  QGroupBox* group_box_dom_type_;
+  QHBoxLayout* layout_dom_type_;
+  QLabel* label_dom_type_tiff_;
+  QLabel* label_dom_type_jpg_;
+  QCheckBox* check_box_dom_type_tiff_;
+  QCheckBox* check_box_dom_type_jpg_;
+
 };
 
 }

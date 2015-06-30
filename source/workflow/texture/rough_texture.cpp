@@ -83,9 +83,9 @@ void TextureConfig::set_images(const ImageParamsContainer& images)
   images_ = images;
 }
 
-void TextureConfig::set_dom_output_type(DomOutputType output_type)
+void TextureConfig::set_dom_output_type(int output_type_flag)
 {
-  dom_output_type_=output_type;
+  dom_output_type_flag_ = output_type_flag;
 }
 
 double TextureConfig::dem_x_scale() const
@@ -141,10 +141,9 @@ const TextureConfig::ImageParamsContainer& TextureConfig::images() const
   return images_;
 }
 
-TextureConfig::DomOutputType 
-TextureConfig::dom_output_type()
+int TextureConfig::dom_output_type_flag() const
 {
-  return dom_output_type_;
+  return dom_output_type_flag_;
 }
 
 RoughTexture::RoughTexture()
@@ -333,31 +332,42 @@ int RoughTexture::GenerateDOM(WorkflowStepConfig* config,
     Generator generator;
     progress_manager_.AddSubProgress(0.8f);
     int result;
-    switch (texture_config->dom_output_type())
+    if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_TIFF)
     {
-    case TextureConfig::OUTPUT_TIFF:
-    {
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_JPG)
+      {
+        progress_manager_.AddSubProgress(0.5f);
+      }
       Engine engine;
       result =
         generator(dom_path, engine, generator_images, vertices, triangles,
         triangle_image_indices, min, max,
         tile_width, tile_height,
         scale_x, scale_y, Scalar(0), &progress_manager_);
-      break;
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_JPG)
+      {
+        progress_manager_.FinishCurrentSubProgress();
+      }
     }
-    case TextureConfig::OUTPUT_JPG:
+
+    if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_JPG)
     {
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_TIFF)
+      {
+        progress_manager_.AddSubProgress(0.5f);
+      }
       JPGEngine engine;
       result =
         generator(dom_path, engine, generator_images, vertices, triangles,
         triangle_image_indices, min, max,
         tile_width, tile_height,
         scale_x, scale_y, Scalar(0), &progress_manager_);
-      break;
+      if (texture_config->dom_output_type_flag() & TextureConfig::OUTPUT_TIFF)
+      {
+        progress_manager_.FinishCurrentSubProgress();
+      }
     }
-    default:
-      break;
-    }
+
     
     //int result =
     //  generator(dom_path, engine, generator_images, vertices, triangles,
