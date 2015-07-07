@@ -70,6 +70,7 @@ private slots:
   void OnActionAddWorkflowTriggered();
   void OnActionCopyTriggered();
   void OnActionRemoveTriggered();
+  void OnActionInfoTriggered();
 
   void OnBlockItemSelected(uint block_id);
   void OnPhotosInOneBlockSelected(uint block_id,
@@ -84,6 +85,7 @@ private slots:
 private:
   void ActivatePhotoOrientationItem(QTreeWidgetItem* photo_orientation_item);
   void ActivatePointCloudItem(QTreeWidgetItem* point_cloud_item);
+  void ActivateSurfaceModelItem(QTreeWidgetItem* surface_model_item);
 
   int SetWorkflowStep(const std::string& workflow_intermediate_directory,
                       WorkflowStepEntry& workflow_step_entry);
@@ -135,6 +137,7 @@ private:
 signals:
   void PhotoOrientationActivated(uint photo_orientation_id);
   void PointCloudActivated(uint point_cloud_id);
+  void SurfaceModelActivated(uint surface_model_id);
 
 private:
   BlocksTreeWidget* blocks_tree_widget_;
@@ -146,11 +149,13 @@ private:
   QIcon icon_copy_;
   QIcon icon_remove_;
   QIcon icon_add_workflow_;
+  QIcon icon_info_;
 
   QAction* action_add_block_;
   QAction* action_copy_;
   QAction* action_remove_;
   QAction* action_add_workflow_;
+  QAction* action_info_;
 
   uint selected_block_id_;
   std::vector<uint> photo_ids_;
@@ -162,6 +167,7 @@ private:
 
   uint activated_photo_orientation_id_;
   uint activated_point_cloud_id_;
+  uint activated_surface_model_id_;
 
   QTimer* timer_;
   QProgressBar* progress_bar_;

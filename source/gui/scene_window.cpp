@@ -32,6 +32,7 @@ SceneWindow::SceneWindow(QWindow* parent,
   , sparse_point_cloud_render_layer_(new PointCloudRenderLayer)
   , photo_orientation_render_layer_(new PhotoOrientationRenderLayer)
   , rectangle_render_layer_(new RectangleRenderLayer)
+  , surface_model_render_layer_(new SurfaceModelRenderLayer)
   , is_show_photo_orientation_(true)
   , offset_(DoubleVector3::Zero())
   , scene_flag_(FLAG_SHOW_SPARSE_POINT_CLOUD)
@@ -47,6 +48,8 @@ SceneWindow::SceneWindow(QWindow* parent,
     std::static_pointer_cast<RenderLayer>(sparse_point_cloud_render_layer_));
   AddRenderLayer(
     std::static_pointer_cast<RenderLayer>(photo_orientation_render_layer_));
+  AddRenderLayer(
+    std::static_pointer_cast<RenderLayer>(surface_model_render_layer_));
 
   QObject::connect(this, &OpenGLWindow::MouseClicked,
                    this, &SceneWindow::OnMouseClicked);
@@ -125,6 +128,12 @@ void SceneWindow::SetPointCloud(uint point_cloud_id)
 {
   point_cloud_id_ = point_cloud_id;
   UpdatePointCloud();
+}
+
+void SceneWindow::SetSurfaceModel(uint surface_model_id)
+{
+  surface_model_id_ = surface_model_id;
+  UpdateSurfaceModel();
 }
 
 void SceneWindow::OnMouseClicked(Qt::KeyboardModifiers state_key,
@@ -315,7 +324,8 @@ void SceneWindow::UpdatePhotoOrientation()
 
   UpdateScene(response_photo_orientation.intrinsic_path,
               response_photo_orientation.extrinsic_path,
-              response_photo_orientation.point_cloud_path);
+              response_photo_orientation.point_cloud_path,
+              FLAG_SHOW_SPARSE_POINT_CLOUD);
 }
 
 void SceneWindow::UpdatePointCloud()
@@ -354,6 +364,58 @@ void SceneWindow::UpdatePointCloud()
   UpdateScene(response_photo_orientation.intrinsic_path,
               response_photo_orientation.extrinsic_path,
               dense_pointcloud_path);
+}
+
+void SceneWindow::UpdateSurfaceModel()
+{
+  hs::recon::db::RequestGetSurfaceModel request_surface_model;
+  hs::recon::db::ResponseGetSurfaceModel response_surface_model;
+  request_surface_model.id  = db::Database::Identifier(surface_model_id_);
+  database_mediator_.Request(
+    this,db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
+    request_surface_model,response_surface_model,false);
+  if (response_surface_model.error_code != hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+
+  db::Identifier point_cloud_id =
+    db::Identifier(response_surface_model.record[
+      db::SurfaceModelResource::SURFACE_MODEL_FIELD_POINT_CLOUD_ID].ToInt());
+
+  hs::recon::db::RequestGetPointCloud request_point_cloud;
+  hs::recon::db::ResponseGetPointCloud response_point_cloud;
+  request_point_cloud.id =
+    db::Database::Identifier(point_cloud_id);
+  database_mediator_.Request(
+    this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
+    request_point_cloud, response_point_cloud, false);
+  if(response_point_cloud.error_code !=
+    hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+
+  db::Identifier photo_orientation_id =
+    db::Identifier(response_point_cloud.record[
+      db::PointCloudResource::POINT_CLOUD_FIELD_PHOTO_ORIENTATION_ID].ToInt());
+
+  hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+  hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+  request_photo_orientation.id = photo_orientation_id;
+  database_mediator_.Request(
+    this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+    request_photo_orientation, response_photo_orientation, false);
+  if(response_photo_orientation.error_code !=
+      hs::recon::db::Database::NO_ERROR)
+  {
+    return;
+  }
+
+  UpdateScene(response_photo_orientation.intrinsic_path,
+              response_photo_orientation.extrinsic_path,
+              response_surface_model.mesh_path,
+              FLAG_SHOW_SURFACE_MODEL);
 }
 
 
@@ -401,7 +463,8 @@ void SceneWindow::BackupSelectedPointsColor(Float left, Float right,
 
 void SceneWindow::UpdateScene(const std::string& intrinsic_path,
                               const std::string& extrinsic_path,
-                              const std::string& pcd_path)
+                              const std::string& path,
+                              SceneFlag flag)
 {
   typedef hs::sfm::CameraIntrinsicParams<double> SFMIntrinsicParams;
   typedef EIGEN_STD_MAP(size_t, SFMIntrinsicParams) SFMIntrinsicParamsMap;
@@ -480,54 +543,96 @@ void SceneWindow::UpdateScene(const std::string& intrinsic_path,
     orientation_entries.push_back(orientation_entry);
   }
 
-  //读取稀疏点云
-  PointCloudData pcd;
+  switch(flag)
   {
+  case hs::recon::gui::SceneWindow::FLAG_SHOW_SPARSE_POINT_CLOUD:
+  {
+    //读取稀疏点云
+    PointCloudData pcd;
     hs::graphics::PointCloudData<double> pcd_double;
-    std::ifstream point_cloud_file(pcd_path, std::ios::binary);
+    std::ifstream point_cloud_file(path, std::ios::binary);
     cereal::PortableBinaryInputArchive archive(point_cloud_file);
     archive(pcd_double);
 
     pcd.VertexData().resize(pcd_double.PointCloudSize());
     pcd.NormalData().resize(pcd_double.PointCloudSize());
     pcd.ColorData().resize(pcd_double.PointCloudSize());
-    for (size_t i = 0; i < pcd_double.PointCloudSize(); i++)
+    for(size_t i = 0; i < pcd_double.PointCloudSize(); i++)
     {
       pcd.VertexData()[i] =
         (pcd_double.VertexData()[i] - offset_).cast<Float>();
       pcd.NormalData()[i] = pcd_double.NormalData()[i].cast<Float>();
       pcd.ColorData()[i] = pcd_double.ColorData()[i].cast<Float>();
     }
+    Vector3 min, max;
+    min << std::numeric_limits<Float>::max(),
+           std::numeric_limits<Float>::max(),
+           std::numeric_limits<Float>::max();
+    max << -std::numeric_limits<Float>::max(),
+           -std::numeric_limits<Float>::max(),
+           -std::numeric_limits<Float>::max();
+    for(const auto& point : pcd.VertexData())
+    {
+      min[0] = std::min(min[0], point[0]);
+      min[1] = std::min(min[1], point[1]);
+      min[2] = std::min(min[2], point[2]);
+      max[0] = std::max(max[0], point[0]);
+      max[1] = std::max(max[1], point[1]);
+      max[2] = std::max(max[2], point[2]);
+    }
+    pcd.SetBoundingBox(min, max);
+    bounding_box_ = pcd.GetBoundingBox();
+    RemoveRenderLayer(surface_model_render_layer_);
+    AddRenderLayer(sparse_point_cloud_render_layer_);
+    sparse_point_cloud_render_layer_->SetupPointCloudData(pcd);
   }
-
-  Vector3 min, max;
-  min << std::numeric_limits<Float>::max(),
-         std::numeric_limits<Float>::max(),
-         std::numeric_limits<Float>::max();
-  max << -std::numeric_limits<Float>::max(),
-         -std::numeric_limits<Float>::max(),
-         -std::numeric_limits<Float>::max();
-  for (const auto& point : pcd.VertexData())
+  break;
+  case hs::recon::gui::SceneWindow::FLAG_SHOW_DENSE_POINT_CLOUD:
+  break;
+  case hs::recon::gui::SceneWindow::FLAG_SHOW_SURFACE_MODEL:
   {
-    min[0] = std::min(min[0], point[0]);
-    min[1] = std::min(min[1], point[1]);
-    min[2] = std::min(min[2], point[2]);
-    max[0] = std::max(max[0], point[0]);
-    max[1] = std::max(max[1], point[1]);
-    max[2] = std::max(max[2], point[2]);
-  }
-  pcd.SetBoundingBox(min, max);
+    //读取surface model
+    SurfaceModelData data;
+    VertexContainer vertices;
+    TriangleContainer triangles;
+    std::ifstream is(path, std::ios_base::binary);
+    if(!is.is_open())
+      break;
+    cereal::PortableBinaryInputArchive piarchive(is);
+    piarchive(vertices, triangles);
 
-  sparse_point_cloud_render_layer_->SetupPointCloudData(pcd);
+    DoubleVector3 v1, v2, v3;
+    DoubleVector3 normd;
+    Vector3 norm;
+    for(auto iter = triangles.begin(); iter != triangles.end(); ++iter)
+    {
+      v1 = vertices.at((*iter)[0]) - offset_;
+      v2 = vertices.at((*iter)[1]) - offset_;
+      v3 = vertices.at((*iter)[2]) - offset_;
+      normd = (v2 - v1).cross((v3 - v1));
+      normd.normalize();
+      norm = normd.cast<float>();
+      data.set_vertex_datas().push_back(v1.cast<float>());
+      data.set_vertex_datas().push_back(v2.cast<float>());
+      data.set_vertex_datas().push_back(v3.cast<float>());
+      data.set_normal_datas().push_back(norm);
+      data.set_normal_datas().push_back(norm);
+      data.set_normal_datas().push_back(norm);
+    }
+    RemoveRenderLayer(sparse_point_cloud_render_layer_);
+    AddRenderLayer(surface_model_render_layer_);
+    surface_model_render_layer_->Initialize(data);
+    bounding_box_ = surface_model_render_layer_->BoundingBoxs();
+  }
+  break;
+  case hs::recon::gui::SceneWindow::FLAG_SHOW_TEXTURE:
+  break;
+  default:
+  break;
+  }
 
   //计算中心点，以及各张照片距离中心点的平均距离
-  const auto& vertex_data = pcd.VertexData();
-  Vector3 center = Vector3::Zero();
-  for (size_t i = 0; i < vertex_data.size(); i++)
-  {
-    center += vertex_data[i];
-  }
-  center /= Float(vertex_data.size());
+  Vector3 center = bounding_box_.GetCenter();
 
   Float mean_distance = 0;
   for (size_t i = 0; i < orientation_entries.size(); i++)

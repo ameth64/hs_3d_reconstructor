@@ -1,6 +1,9 @@
 ﻿#ifndef _HS_3D_RECONSTRUCTOR_SCENE_WINDOW_HPP_
 #define _HS_3D_RECONSTRUCTOR_SCENE_WINDOW_HPP_
 
+#include <array>
+#include <vector>
+
 #include <QAction>
 #include <QMenu>
 
@@ -8,6 +11,7 @@
 #include "hs_graphics/graphics_render/photo_orientation_render_layer.hpp"
 #include "hs_graphics/graphics_render/point_cloud_render_layer.hpp"
 #include "hs_graphics/graphics_render/rectangle_render_layer.hpp"
+#include "hs_graphics/graphics_render/surfacemodel_render_layer.hpp"
 #include "database/database_mediator.hpp"
 
 namespace hs
@@ -34,10 +38,13 @@ public:
           PhotoOrientationRenderLayer;
   typedef std::shared_ptr<PhotoOrientationRenderLayer>
           PPhotoOrientationRenderLayer;
-
   typedef hs::graphics::render::RectangleRenderLayer<Float>
           RectangleRenderLayer;
   typedef std::shared_ptr<RectangleRenderLayer> PRectangleRenderLayer;
+  typedef hs::graphics::render::SurfaceModelRenderLayer < Float >
+          SurfaceModelRenderLayer;
+  typedef std::shared_ptr < SurfaceModelRenderLayer >
+          PSurfaceModelRenderLayer;
 
   typedef PhotoOrientationRenderLayer::OrientationEntry OrientationEntry;
   typedef PhotoOrientationRenderLayer::OrientationEntryContainer
@@ -46,8 +53,13 @@ public:
           ExtrinsicParams;
   typedef PointCloudRenderLayer::PointCloudData PointCloudData;
   typedef PointCloudData::Vector3 Vector3;
+  typedef SurfaceModelRenderLayer::SurfaceModelData SurfaceModelData;
   typedef EIGEN_STD_VECTOR(Vector3) PointContainer;
   typedef EIGEN_VECTOR(double, 3) DoubleVector3;
+  typedef EIGEN_STD_VECTOR(DoubleVector3) VertexContainer;
+  typedef std::array<size_t, 3> Triangle;
+  typedef std::vector<Triangle> TriangleContainer;
+
   struct IntrinsicEntry
   {
     Float focal_length;
@@ -80,6 +92,7 @@ public:
 public slots:
   void SetPhotoOrientation(uint photo_orientation_id_);
   void SetPointCloud(uint point_cloud_id);
+  void SetSurfaceModel(uint surface_model_id);
 
 protected slots:
   void OnMouseClicked(Qt::KeyboardModifiers state_key,
@@ -103,12 +116,14 @@ private slots:
 private:
   void UpdatePhotoOrientation();
   void UpdatePointCloud();
+  void UpdateSurfaceModel();
   void BackupSelectedPointsColor(Float left, Float right,
                                  Float bottom, Float top,
                                  PointCloudData& pcd);
   void UpdateScene(const std::string& intrinsic_path,
                    const std::string& extrinsic_path,
-                   const std::string& pcd_path);
+                   const std::string& path,
+                   SceneFlag flag =  FLAG_SHOW_SPARSE_POINT_CLOUD);
 
 signals:
   void FilterPhotosBySelectedPoints(const PointContainer& selected_points);
@@ -117,6 +132,7 @@ private:
   db::DatabaseMediator& database_mediator_;
   uint photo_orientation_id_;
   uint point_cloud_id_;
+  uint surface_model_id_;
 
   DoubleVector3 offset_;
 
@@ -127,6 +143,7 @@ private:
   PPointCloudRenderLayer sparse_point_cloud_render_layer_;
   PPhotoOrientationRenderLayer photo_orientation_render_layer_;
   PRectangleRenderLayer rectangle_render_layer_;
+  PSurfaceModelRenderLayer surface_model_render_layer_;
 
   QPoint start_select_pos_;
   QPoint current_select_pos_;

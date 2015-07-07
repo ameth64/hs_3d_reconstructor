@@ -44,6 +44,7 @@ BlocksPane::BlocksPane(QWidget* parent)
   , icon_copy_(":/images/icon_copy.png")
   , icon_remove_(":/images/icon_remove.png")
   , icon_add_workflow_(":/images/icon_workflow_add.png")
+  , icon_info_(":/images/icon_info.png")
   , selected_block_id_(std::numeric_limits<uint>::max())
   , selected_feature_match_id_(std::numeric_limits<uint>::max())
   , selected_photo_orientation_id_(std::numeric_limits<uint>::max())
@@ -52,6 +53,7 @@ BlocksPane::BlocksPane(QWidget* parent)
   , selected_texture_id_(std::numeric_limits<uint>::max())
   , activated_photo_orientation_id_(std::numeric_limits<uint>::max())
   , activated_point_cloud_id_(std::numeric_limits<uint>::max())
+  , activated_surface_model_id_(std::numeric_limits<uint>::max())
 {
   timer_ = new QTimer(this);
   blocks_tree_widget_ = new BlocksTreeWidget(this);
@@ -80,11 +82,15 @@ BlocksPane::BlocksPane(QWidget* parent)
                                      tr("Add Workflow"), this);
   action_add_workflow_->setEnabled(false);
 
+  action_info_ = new QAction(icon_info_,tr("Information"), this);
+  action_info_->setEnabled(false);
+
   tool_bar_ = new QToolBar(this);
   tool_bar_->addAction(action_add_block_);
   tool_bar_->addAction(action_copy_);
   tool_bar_->addAction(action_remove_);
   tool_bar_->addAction(action_add_workflow_);
+  tool_bar_->addAction(action_info_);
 
   main_window_->addToolBar(tool_bar_);
 
@@ -96,6 +102,9 @@ BlocksPane::BlocksPane(QWidget* parent)
                    this, &BlocksPane::OnActionCopyTriggered);
   QObject::connect(action_remove_, &QAction::triggered,
                    this, &BlocksPane::OnActionRemoveTriggered);
+  QObject::connect(action_info_, &QAction::triggered,
+                   this, &BlocksPane::OnActionInfoTriggered);
+
   QObject::connect(timer_, &QTimer::timeout, this, &BlocksPane::OnTimeout);
   QObject::connect(blocks_tree_widget_, &QTreeWidget::itemDoubleClicked,
                    this, &BlocksPane::OnItemDoubleClicked);
@@ -674,118 +683,18 @@ void BlocksPane::OnItemDoubleClicked(QTreeWidgetItem* item, int column)
   {
   case BlocksTreeWidget::PHOTO_ORIENTATION:
     {
-      bool ret = true;
-      while(1)
-      {
-        typedef hs::recon::db::Database::Identifier Identifier;
-        hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
-        hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
-        request_photo_orientation.id = Identifier(selected_photo_orientation_id_);
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
-          request_photo_orientation, response_photo_orientation, false);
-        if(response_photo_orientation.error_code !=
-            hs::recon::db::Database::NO_ERROR)
-        {
-          ret = false;
-          break;
-        }
-
-        if (response_photo_orientation.record[
-          db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt()
-          ==db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
-        {
-          ret = false;
-          break;
-        }
-        Identifier feature_match_id =
-          int(response_photo_orientation.record[
-                db::PhotoOrientationResource::
-                  PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
-        hs::recon::db::RequestGetFeatureMatch request_feature_match;
-        request_feature_match.id = feature_match_id;
-        hs::recon::db::ResponseGetFeatureMatch response_feature_match;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
-          request_feature_match, response_feature_match, false);
-        if (response_feature_match.error_code !=
-          db::DatabaseMediator::NO_ERROR)
-        {
-          ret = false;
-          break;
-        }
-
-        photo_orientation_info_widget_->Initialize(
-          response_feature_match.keysets_path,
-          response_photo_orientation.intrinsic_path,
-          response_photo_orientation.extrinsic_path,
-          response_photo_orientation.point_cloud_path,
-          response_photo_orientation.tracks_path);
-        photo_orientation_info_widget_->show();
-        break;
-      }
-      if (ret){
-        ActivatePhotoOrientationItem(item);
-      }
-      while(1)
-      {
-        typedef hs::recon::db::Database::Identifier Identifier;
-        hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
-        hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
-        request_photo_orientation.id = Identifier(selected_photo_orientation_id_);
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
-          request_photo_orientation, response_photo_orientation, false);
-        if(response_photo_orientation.error_code !=
-            hs::recon::db::Database::NO_ERROR)
-        {
-          ret = false;
-          break;
-        }
-        if (response_photo_orientation.record[
-          db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt()
-            == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
-        {
-          ret = false;
-          break;
-        }
-        Identifier feature_match_id =
-          int(response_photo_orientation.record[
-            db::PhotoOrientationResource::
-              PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
-        hs::recon::db::RequestGetFeatureMatch request_feature_match;
-        request_feature_match.id = feature_match_id;
-        hs::recon::db::ResponseGetFeatureMatch response_feature_match;
-        ((MainWindow*)parent())->database_mediator().Request(
-          this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
-          request_feature_match, response_feature_match, false);
-        if(response_feature_match.error_code !=
-          db::DatabaseMediator::NO_ERROR)
-        {
-          ret = false;
-          break;
-        }
-
-        photo_orientation_info_widget_->Initialize(
-          response_feature_match.keysets_path,
-          response_photo_orientation.intrinsic_path,
-          response_photo_orientation.extrinsic_path,
-          response_photo_orientation.point_cloud_path,
-          response_photo_orientation.tracks_path);
-        photo_orientation_info_widget_->show();
-        break;
-      }
-      if (ret)
-      {
-        emit PhotoOrientationActivated(activated_photo_orientation_id_);
-      }
+      ActivatePhotoOrientationItem(item);
       break;
     }
   case BlocksTreeWidget::POINT_CLOUD:
     {
       //ActivatePointCloudItem(item);
-      //emit PointCloudActivated(activated_point_cloud_id_);
-      //break;
+      break;
+    }
+  case BlocksTreeWidget::SURFACE_MODEL:
+    {
+      ActivateSurfaceModelItem(item);
+      break;
     }
   }
 }
@@ -1409,11 +1318,81 @@ void BlocksPane::OnActionRemoveTriggered()
 
 }
 
+void BlocksPane::OnActionInfoTriggered()
+{
+  if(item_selected_mask_[BLOCK_SELECTED])
+  {
+  }
+  else if(item_selected_mask_[FEATURE_MATCH_SELECTED])
+  {
+  }
+  else if(item_selected_mask_[PHOTO_ORIENTATION_SELECTED])
+  {
+    while(1)
+    {
+      typedef hs::recon::db::Database::Identifier Identifier;
+      hs::recon::db::RequestGetPhotoOrientation request_photo_orientation;
+      hs::recon::db::ResponseGetPhotoOrientation response_photo_orientation;
+      request_photo_orientation.id = Identifier(selected_photo_orientation_id_);
+      ((MainWindow*)parent())->database_mediator().Request(
+        this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
+        request_photo_orientation, response_photo_orientation, false);
+      if(response_photo_orientation.error_code !=
+          hs::recon::db::Database::NO_ERROR)
+      {
+        break;
+      }
+
+      if(response_photo_orientation.record[
+        db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt()
+        == db::PhotoOrientationResource::FLAG_NOT_COMPLETED)
+      {
+        break;
+      }
+        Identifier feature_match_id =
+          int(response_photo_orientation.record[
+            db::PhotoOrientationResource::
+              PHOTO_ORIENTATION_FIELD_FEATURE_MATCH_ID].ToInt());
+        hs::recon::db::RequestGetFeatureMatch request_feature_match;
+        request_feature_match.id = feature_match_id;
+        hs::recon::db::ResponseGetFeatureMatch response_feature_match;
+        ((MainWindow*)parent())->database_mediator().Request(
+          this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
+          request_feature_match, response_feature_match, false);
+        if(response_feature_match.error_code !=
+          db::DatabaseMediator::NO_ERROR)
+        {
+          break;
+        }
+        photo_orientation_info_widget_->Initialize(
+          response_feature_match.keysets_path,
+          response_photo_orientation.intrinsic_path,
+          response_photo_orientation.extrinsic_path,
+          response_photo_orientation.point_cloud_path,
+          response_photo_orientation.tracks_path);
+        photo_orientation_info_widget_->show();
+        break;
+    }
+  }
+  else if(item_selected_mask_[POINT_CLOUD_SELECTED])
+  {
+  }
+  else if(item_selected_mask_[SURFACE_MODEL_SELECTED])
+  {
+  }
+  else if(item_selected_mask_[TEXTURE_SELECTED])
+  {
+  }
+}
+
+
 void BlocksPane::OnBlockItemSelected(uint block_id)
 {
   action_copy_->setEnabled(true);
   action_remove_->setEnabled(true);
   action_add_workflow_->setEnabled(true);
+  action_info_->setEnabled(false);
+
   selected_block_id_ = block_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(BLOCK_SELECTED);
@@ -1429,6 +1408,8 @@ void BlocksPane::OnPhotosInOneBlockSelected(uint block_id,
   action_copy_->setEnabled(false);
   action_remove_->setEnabled(false);
   action_add_workflow_->setEnabled(false);
+  action_info_->setEnabled(false);
+
   selected_block_id_ = block_id;
   //Hide Photo Orientation information
   photo_orientation_info_widget_->hide();
@@ -1440,6 +1421,8 @@ void BlocksPane::OnPhotosItemSelected(uint block_id)
   action_copy_->setEnabled(false);
   action_remove_->setEnabled(false);
   action_add_workflow_->setEnabled(false);
+  action_info_->setEnabled(false);
+
   selected_block_id_ = block_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(PHOTOS_SELECTED);
@@ -1475,6 +1458,8 @@ void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
   }
 
   action_remove_->setEnabled(true);
+  action_info_->setEnabled(false);
+
   selected_feature_match_id_ = feature_match_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(FEATURE_MATCH_SELECTED);
@@ -1510,9 +1495,14 @@ void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
   }
 
   action_remove_->setEnabled(true);
+  action_info_->setEnabled(true);
+
   selected_photo_orientation_id_ = photo_orientation_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(PHOTO_ORIENTATION_SELECTED);
+
+  //Hide Photo Orientation information
+  photo_orientation_info_widget_->hide();
 
 }
 
@@ -1541,6 +1531,8 @@ void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
   }
 
   action_remove_->setEnabled(true);
+  action_info_->setEnabled(false);
+
   selected_point_cloud_id_ = point_cloud_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(POINT_CLOUD_SELECTED);
@@ -1575,6 +1567,8 @@ void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
   }
 
   action_remove_->setEnabled(true);
+  action_info_->setEnabled(false);
+
   selected_surface_model_id_ = surface_model_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(SURFACE_MODEL_SELECTED);
@@ -1608,6 +1602,8 @@ void BlocksPane::OnTextureItemSelected(uint texture_id)
       }
   }
   action_remove_->setEnabled(true);
+  action_info_->setEnabled(false);
+
   selected_texture_id_ = texture_id;
   item_selected_mask_.reset();
   item_selected_mask_.set(TEXTURE_SELECTED);
@@ -1626,6 +1622,15 @@ void BlocksPane::ActivatePhotoOrientationItem(
   if (last_point_cloud_item)
   {
     last_point_cloud_item->setBackground(0, backup_background_);
+    activated_point_cloud_id_ = std::numeric_limits<uint>::max();
+  }
+  //清除surface_model_item颜色
+  QTreeWidgetItem* last_surface_model_item =
+    blocks_tree_widget_->SurfaceModelItem(activated_surface_model_id_);
+  if (last_surface_model_item)
+  {
+    last_surface_model_item->setBackground(0, backup_background_);
+    activated_surface_model_id_ = std::numeric_limits<uint>::max();
   }
 
   //设置photo_orientation_item颜色
@@ -1641,6 +1646,8 @@ void BlocksPane::ActivatePhotoOrientationItem(
   photo_orientation_item->setBackground(0, QBrush(QColor(200, 110, 90)));
   activated_photo_orientation_id_ =
     photo_orientation_item->data(0, Qt::UserRole).toUInt();
+  emit PhotoOrientationActivated(activated_photo_orientation_id_);
+
 }
 
 void BlocksPane::ActivatePointCloudItem(
@@ -1652,6 +1659,15 @@ void BlocksPane::ActivatePointCloudItem(
   if (last_photo_orientation_item)
   {
     last_photo_orientation_item->setBackground(0, backup_background_);
+    activated_photo_orientation_id_ = std::numeric_limits<uint>::max();
+  }
+  //清除surface_model_item颜色
+  QTreeWidgetItem* last_surface_model_item =
+    blocks_tree_widget_->SurfaceModelItem(activated_surface_model_id_);
+  if(last_surface_model_item)
+  {
+    last_surface_model_item->setBackground(0, backup_background_);
+    activated_surface_model_id_ = std::numeric_limits<uint>::max();
   }
 
   //设置point_cloud_item颜色
@@ -1667,6 +1683,45 @@ void BlocksPane::ActivatePointCloudItem(
   point_cloud_item->setBackground(0, QBrush(QColor(200, 110, 90)));
   activated_point_cloud_id_ =
     point_cloud_item->data(0, Qt::UserRole).toUInt();
+  //emit PointCloudActivated(activated_point_cloud_id_);
+
+}
+
+void BlocksPane::ActivateSurfaceModelItem(QTreeWidgetItem* surface_model_item)
+{
+  //清除photo_orientation_item颜色
+  QTreeWidgetItem* last_photo_orientation_item =
+    blocks_tree_widget_->PhotoOrientationItem(activated_photo_orientation_id_);
+  if(last_photo_orientation_item)
+  {
+    last_photo_orientation_item->setBackground(0, backup_background_);
+    activated_photo_orientation_id_ = std::numeric_limits<uint>::max();
+  }
+
+  //清除point_cloud_item颜色
+  QTreeWidgetItem* last_point_cloud_item =
+    blocks_tree_widget_->PhotoOrientationItem(activated_point_cloud_id_);
+  if(last_point_cloud_item)
+  {
+    last_point_cloud_item->setBackground(0, backup_background_);
+    activated_point_cloud_id_ = std::numeric_limits<uint>::max();
+  }
+
+  //设置surface_model_item颜色
+  QTreeWidgetItem* last_surface_model_item =
+    blocks_tree_widget_->SurfaceModelItem(activated_surface_model_id_);
+  if(last_surface_model_item == surface_model_item) return;
+  if(last_surface_model_item)
+  {
+    last_surface_model_item->setBackground(0, backup_background_);
+  }
+
+  backup_background_ = surface_model_item->background(0);
+  surface_model_item->setBackground(0, QBrush(QColor(200, 110, 90)));
+  activated_surface_model_id_ =
+    surface_model_item->data(0, Qt::UserRole).toUInt();
+  emit SurfaceModelActivated(activated_surface_model_id_);
+
 }
 
 int BlocksPane::SetWorkflowStep(

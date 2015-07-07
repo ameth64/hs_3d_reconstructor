@@ -32,5 +32,6 @@
     <file>images/icon_block_add.png</file>
     <file>images/icon_block_remove.png</file>
     <file>images/icon_workflow_add.png</file>
+    <file>images/icon_info.png</file>
 </qresource>
 </RCC>

@@ -66,7 +66,7 @@ MainWindow::MainWindow()
   QObject::connect(action_open_project_, &QAction::triggered,
                    this, &MainWindow::OnActionOpenProjectTriggered);
   QObject::connect(action_close_project_, &QAction::triggered,
-    this, &MainWindow::OnActionCloseProjectTriggered);
+                   this, &MainWindow::OnActionCloseProjectTriggered);
 
   QObject::connect(action_photos_pane_, &QAction::triggered,
                    this, &MainWindow::OnActionPhotosPaneTriggered);
@@ -117,6 +117,8 @@ MainWindow::MainWindow()
                    scene_window_, &SceneWindow::SetPhotoOrientation);
   QObject::connect(blocks_pane_, &BlocksPane::PointCloudActivated,
                     scene_window_, &SceneWindow::SetPointCloud);
+  QObject::connect(blocks_pane_, &BlocksPane::SurfaceModelActivated,
+                    scene_window_, &SceneWindow::SetSurfaceModel);
   QObject::connect(blocks_pane_, &BlocksPane::PhotoOrientationActivated,
                    gcps_pane_, &GCPsPane::UpdatePhotoOrientation);
   QObject::connect(gcps_pane_, &GCPsPane::GCPRelateLocationState,
