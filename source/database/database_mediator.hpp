@@ -1984,18 +1984,42 @@ struct DatabaseRequestHandler<RequestDeleteGCPs, ResponseDeleteGCPs>
                   ResponseDeleteGCPs& response,
                   DatabaseMediator& database_mediator)
   {
+    //获取PHOTO_MEASURE表
+    PhotoMeasureResource::RecordContainer photo_measure_records;
+    response.error_code =
+      database_mediator.photo_measure_resource_->GetAll(photo_measure_records);
+    if(response.error_code != DatabaseMediator::NO_ERROR)
+    {
+      return response.error_code;
+    }
 
     for (size_t i = 0; i < request.gcp_ids.size(); ++i)
     {
+      //删除GROUND_CONTROL_POINT表对应GCP
       response.error_code =
         database_mediator.ground_control_point_resource_->Delete(
-          EqualTo(BlockResource::fields_[0], Value(int(request.gcp_ids.at(i)))));
+          EqualTo(GroundControlPointResource::fields_[
+                  GroundControlPointResource::GCP_FIELD_ID], 
+                  Value(int(request.gcp_ids.at(i)))));
       if (response.error_code != DatabaseMediator::NO_ERROR)
       {
         return response.error_code;
       }
-    }
-    
+
+      //删除PHOTO_MEASURE表对应GCP_ID所有项
+      for(auto record : photo_measure_records)
+      {
+        response.error_code =
+        database_mediator.photo_measure_resource_->Delete(
+          EqualTo(PhotoMeasureResource::fields_[
+            PhotoMeasureResource::PHOTO_MEASURE_FIELD_GCP_ID],
+            Value(int(request.gcp_ids.at(i)))));
+        if(response.error_code != DatabaseMediator::NO_ERROR)
+        {
+          return response.error_code;
+        }
+      }
+    }   
     return response.error_code;
   }
 };
