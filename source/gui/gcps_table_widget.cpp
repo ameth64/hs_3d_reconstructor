@@ -43,8 +43,6 @@ GCPsTableWidget::GCPsTableWidget(QWidget* parent)
                    this, &GCPsTableWidget::OnItemSelectionChanged);
   QObject::connect(this, &QTableWidget::itemChanged,
                    this, &GCPsTableWidget::OnItemChanged);
-  QObject::connect(this, &QTableWidget::itemActivated,
-                   this, &GCPsTableWidget::DeleteGCPsBySelectedItems);
   QObject::connect(horizontalHeader(), &QHeaderView::sectionClicked,
     this, &GCPsTableWidget::SortByColumn);
 }
@@ -75,7 +73,7 @@ void GCPsTableWidget::AddGCP(GCPEntry& gcp)
   if(gcps_.find(gcp.id) == gcps_.end())
   {
     gcps_[gcp.id] = gcp;
-    gcp_type_editable_map_[gcp.id] = true;
+    gcp_type_editable_map_[gcp.id] = false;
    RefreshTable();
   }
 
