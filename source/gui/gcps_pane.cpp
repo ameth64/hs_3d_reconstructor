@@ -535,15 +535,14 @@ void GCPsPane::OnActionAddGCPTriggered()
       break;
     }
 
-    GCPsTableWidget::GCPEntry gcp;
-    auto iter = response_add_gcp.added_records.begin();
-    if (iter == response_add_gcp.added_records.end())
+    auto& record = response_add_gcp.added_records.begin();
+    if (record == response_add_gcp.added_records.end())
     {
       break;
     }
     
-    gcp.id = iter->second[
-      db::GroundControlPointResource::GCP_FIELD_ID].ToInt();
+    GCPsTableWidget::GCPEntry gcp;
+    gcp.id = record->first;
     gcp.name = QString::fromStdString(request_add_gcp.gcp.name);
     gcp.measure_pos[0] = 0;
     gcp.measure_pos[1] = 0;
@@ -552,8 +551,20 @@ void GCPsPane::OnActionAddGCPTriggered()
     gcp.estimate_pos[1] = -std::numeric_limits<GCPsTableWidget::Float>::max();
     gcp.estimate_pos[2] = -std::numeric_limits<GCPsTableWidget::Float>::max();
     gcp.type = GCPsTableWidget::GCPEntry::NOT_USED;
-
     gcps_table_widget_->AddGCP(gcp);
+
+    //添加gcp_measures_
+    GCPMeasure gcp_measure;
+    gcp_measure.gcp_id = gcp.id;
+    gcp_measure.type = GCPsTableWidget::GCPEntry::NOT_USED;
+    gcp_measure.measure_pos[0] = gcp.measure_pos[0];
+    gcp_measure.measure_pos[1] = gcp.measure_pos[1];
+    gcp_measure.measure_pos[2] = gcp.measure_pos[2];
+    gcp_measure.estimate_pos[0] = gcp.estimate_pos[0];
+    gcp_measure.estimate_pos[1] = gcp.estimate_pos[1];
+    gcp_measure.estimate_pos[2] = gcp.estimate_pos[2];
+    gcp_measures_[gcp_measure.gcp_id] = gcp_measure;
+
     break;
   }
 }

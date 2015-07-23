@@ -129,6 +129,10 @@ int GCPsTableWidget::DeleteGCPsBySelectedItems()
         uint gcp_id = iter->first;
         gcp_ids.push_back(gcp_id);
         gcps_.erase(gcp_id);
+        //删除gcp_row_map_对应项
+        gcp_row_map_.erase(iter);
+        //删除gcp_type_editable_map_对应项
+        gcp_type_editable_map_.erase(gcp_id);
         break;
       }
     }

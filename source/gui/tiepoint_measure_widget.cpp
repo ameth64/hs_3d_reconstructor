@@ -446,11 +446,6 @@ void TiepointMeasureWidget::DisplayerSizeChanged(int scale)
 {
   displayer_width_ = 240 + scale;
   displayer_height_ = 180 + scale;
-//   for (auto iter = used_displayers_.begin(); 
-//     iter != used_displayers_.end(); ++iter)
-//   {
-//     iter->second->resize(displayer_width_,displayer_height_);
-//   }
   UpdateAlignment();
 }
 
