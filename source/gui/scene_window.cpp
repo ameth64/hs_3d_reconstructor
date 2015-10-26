@@ -10,10 +10,11 @@
 #endif
 
 #include <cereal/types/map.hpp>
+#include <cereal/types/array.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/archives/portable_binary.hpp>
 
-#include "hs_graphics/graphics_utility/read_file.hpp"
+//#include "hs_graphics/graphics_utility/read_file.hpp"
 #include "hs_sfm/sfm_utility/camera_type.hpp"
 
 #include "gui/scene_window.hpp"

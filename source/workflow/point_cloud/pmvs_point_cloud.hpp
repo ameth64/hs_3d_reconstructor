@@ -117,7 +117,7 @@ public:
   virtual int RunImplement(WorkflowStepConfig* config);
 
 private:
-  int PointCloud::CreateConfigXml(PointCloudConfig* config);
+  int CreateConfigXml(PointCloudConfig* config);
   //读取内参数文件
   int ReadIntrinsicFile(const std::string& file_path, IntrinsicParamsMap& ipm);
   //读取外参数文件

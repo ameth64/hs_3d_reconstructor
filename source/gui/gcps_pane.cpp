@@ -535,12 +535,12 @@ void GCPsPane::OnActionAddGCPTriggered()
       break;
     }
 
-    auto& record = response_add_gcp.added_records.begin();
+    auto record = response_add_gcp.added_records.begin();
     if (record == response_add_gcp.added_records.end())
     {
       break;
     }
-    
+
     GCPsTableWidget::GCPEntry gcp;
     gcp.id = record->first;
     gcp.name = QString::fromStdString(request_add_gcp.gcp.name);

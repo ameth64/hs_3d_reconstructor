@@ -1,3 +1,6 @@
 [submodule "cmake"]
 	path = cmake
 	url = ../hslib_cmake.git
+[submodule "ci_script/hslib_ci_script"]
+	path = ci_script/hslib_ci_script
+	url = ../hslib_ci_script.git
