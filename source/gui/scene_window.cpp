@@ -80,7 +80,7 @@ void SceneWindow::Response(int request_flag, void* response)
     {
       db::ResponseUpdatePhotoOrientationParams* response_params =
         static_cast<db::ResponseUpdatePhotoOrientationParams*>(response);
-      if (response_params->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_params->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         if (response_params->photo_orientation_id ==
             db::Identifier(photo_orientation_id_))
@@ -95,7 +95,7 @@ void SceneWindow::Response(int request_flag, void* response)
     {
       db::ResponseCloseDatabase* response_close =
         static_cast<db::ResponseCloseDatabase*>(response);
-      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_close->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         photo_orientation_render_layer_->SetOrientationEntries(
           OrientationEntryContainer());
@@ -318,7 +318,7 @@ void SceneWindow::UpdatePhotoOrientation()
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
     request_photo_orientation, response_photo_orientation, false);
   if (response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -339,7 +339,7 @@ void SceneWindow::UpdatePointCloud()
     this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
     request_point_cloud, response_point_cloud, false);
   if (response_point_cloud.error_code !=
-    hs::recon::db::Database::NO_ERROR)
+    hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -357,7 +357,7 @@ void SceneWindow::UpdatePointCloud()
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
     request_photo_orientation, response_photo_orientation, false);
   if (response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -375,7 +375,7 @@ void SceneWindow::UpdateSurfaceModel()
   database_mediator_.Request(
     this,db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
     request_surface_model,response_surface_model,false);
-  if (response_surface_model.error_code != hs::recon::db::Database::NO_ERROR)
+  if (response_surface_model.error_code != hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -392,7 +392,7 @@ void SceneWindow::UpdateSurfaceModel()
     this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
     request_point_cloud, response_point_cloud, false);
   if(response_point_cloud.error_code !=
-    hs::recon::db::Database::NO_ERROR)
+    hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -408,7 +408,7 @@ void SceneWindow::UpdateSurfaceModel()
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
     request_photo_orientation, response_photo_orientation, false);
   if(response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -490,7 +490,7 @@ void SceneWindow::UpdateScene(const std::string& intrinsic_path,
     database_mediator_.Request(
       this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
       request_group, response_group, false);
-    if (response_group.error_code != db::DatabaseMediator::NO_ERROR)
+    if (response_group.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       return;
     }

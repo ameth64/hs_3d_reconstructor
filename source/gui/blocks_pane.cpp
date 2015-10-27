@@ -144,7 +144,7 @@ void BlocksPane::Response(int request_flag, void* response)
     {
       db::ResponseOpenDatabase* response_open =
         static_cast<db::ResponseOpenDatabase*>(response);
-      if (response_open->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_open->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         while (1)
         {
@@ -153,7 +153,8 @@ void BlocksPane::Response(int request_flag, void* response)
           ((MainWindow*)parent())->database_mediator().Request(
             this, db::DatabaseMediator::REQUEST_GET_ALL_BLOCKS,
             blocks_request, blocks_response, false);
-          if (blocks_response.error_code != db::DatabaseMediator::NO_ERROR)
+          if (blocks_response.error_code !=
+              db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_block = blocks_response.records.begin();
@@ -175,7 +176,7 @@ void BlocksPane::Response(int request_flag, void* response)
               request_get_photos_in_block, response_get_photos_in_block, false);
 
             if (response_get_photos_in_block.error_code !=
-                hs::recon::db::Database::NO_ERROR)
+                hs::recon::db::Database::DATABASE_NO_ERROR)
             {
               continue;
             }
@@ -198,7 +199,7 @@ void BlocksPane::Response(int request_flag, void* response)
             this, db::DatabaseMediator::REQUEST_GET_ALL_FEATURE_MATCHES,
             feature_matches_request, feature_matches_response, false);
           if (feature_matches_response.error_code !=
-              db::DatabaseMediator::NO_ERROR)
+              db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_feature_match = feature_matches_response.records.begin();
@@ -233,7 +234,7 @@ void BlocksPane::Response(int request_flag, void* response)
             this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTO_ORIENTATIONS,
             photo_orientations_request, photo_orientations_response, false);
           if (photo_orientations_response.error_code !=
-              db::DatabaseMediator::NO_ERROR)
+              db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_photo_orientation =
@@ -276,7 +277,7 @@ void BlocksPane::Response(int request_flag, void* response)
             this, db::DatabaseMediator::REQUEST_GET_ALL_POINT_CLOUDS,
             point_cloud_request, point_cloud_response, false);
           if (point_cloud_response.error_code !=
-            db::DatabaseMediator::NO_ERROR)
+            db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_point_cloud =
@@ -319,7 +320,7 @@ void BlocksPane::Response(int request_flag, void* response)
             this, db::DatabaseMediator::REQUEST_GET_ALL_SURFACE_MODELS,
             surface_model_request, surface_model_response, false);
           if (surface_model_response.error_code !=
-            db::DatabaseMediator::NO_ERROR)
+            db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_surface_model =
@@ -361,7 +362,7 @@ void BlocksPane::Response(int request_flag, void* response)
           ((MainWindow*)parent())->database_mediator().Request(
             this, db::DatabaseMediator::REQUEST_GET_ALL_TEXTURES,
             texture_request, texture_response, false);
-          if (texture_response.error_code != db::DatabaseMediator::NO_ERROR)
+          if (texture_response.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_texture = texture_response.records.begin();
@@ -419,7 +420,7 @@ void BlocksPane::Response(int request_flag, void* response)
     {
       db::ResponseCloseDatabase* response_close =
         static_cast<db::ResponseCloseDatabase*>(response);
-      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_close->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         blocks_tree_widget_->Clear();
         action_copy_->setEnabled(false);
@@ -529,7 +530,7 @@ void BlocksPane::OnTimeout()
               ((MainWindow*)parent())->database_mediator().Request(
                 this, db::DatabaseMediator::REQUEST_UPDATE_FEATURE_MATCH_FLAG,
                 request, response, true);
-              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
               {
                 QTreeWidgetItem* item =
                   blocks_tree_widget_->FeatureMatchItem(
@@ -556,7 +557,7 @@ void BlocksPane::OnTimeout()
                 this,
                 db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
                 request, response, true);
-              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
               {
                 QTreeWidgetItem* item =
                   blocks_tree_widget_->PhotoOrientationItem(
@@ -581,7 +582,7 @@ void BlocksPane::OnTimeout()
                 this,
                 db::DatabaseMediator::REQUEST_UPDATE_POINT_CLOUD_FLAG,
                 request, response, true);
-              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
               {
                 QTreeWidgetItem* item =
                   blocks_tree_widget_->PointCloudItem(
@@ -606,7 +607,7 @@ void BlocksPane::OnTimeout()
                 this,
                 db::DatabaseMediator::REQUEST_UPDATE_SURFACE_MODEL_FLAG,
                 request, response, true);
-              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
               {
                 QTreeWidgetItem* item =
                   blocks_tree_widget_->SurfaceModelItem(
@@ -627,7 +628,7 @@ void BlocksPane::OnTimeout()
               ((MainWindow*)parent())->database_mediator().Request(
                 this, db::DatabaseMediator::REQUEST_UPDATE_TEXTURE_FLAG,
                 request, response, true);
-              if (response.error_code == db::DatabaseMediator::NO_ERROR)
+              if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
               {
                 QTreeWidgetItem* item =
                   blocks_tree_widget_->TextureItem(workflow_step_entry.id);
@@ -708,7 +709,7 @@ void BlocksPane::OnActionAddBlockTriggered()
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOGROUPS,
     photogroups_request, photogroups_response, false);
-  if (photogroups_response.error_code != db::DatabaseMediator::NO_ERROR)
+  if (photogroups_response.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
     return;
 
   db::RequestGetAllPhotos photos_request;
@@ -716,7 +717,7 @@ void BlocksPane::OnActionAddBlockTriggered()
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOS,
     photos_request, photos_response, false);
-  if (photos_response.error_code != db::DatabaseMediator::NO_ERROR)
+  if (photos_response.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
     return;
 
   GroupEntryContainer group_entries;
@@ -792,7 +793,7 @@ void BlocksPane::OnActionAddBlockTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, hs::recon::db::DatabaseMediator::REQUEST_ADD_BLOCK,
       request_add_block, response_add_block, true);
-    if (response_add_block.error_code != db::DatabaseMediator::NO_ERROR)
+    if (response_add_block.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QMessageBox msg_box;
       msg_box.setText(tr("Block name exists!"));
@@ -821,7 +822,7 @@ void BlocksPane::OnActionAddBlockTriggered()
       this, hs::recon::db::DatabaseMediator::REQUEST_ADD_PHOTOS_TO_BLOCK,
       request_add_photos_to_block, response_add_photos_to_block, true);
     if (response_add_photos_to_block.error_code !=
-        hs::recon::db::DatabaseMediator::NO_ERROR)
+        hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QMessageBox msg_box;
       msg_box.setText(tr("Add photos to block failed!"));
@@ -841,7 +842,7 @@ void BlocksPane::OnActionAddBlockTriggered()
           this, hs::recon::db::DatabaseMediator::REQUEST_GET_PHOTO,
           request_get_photo, response_get_photo, false);
         if (response_get_photo.error_code !=
-            hs::recon::db::DatabaseMediator::NO_ERROR)
+            hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
         {
           QMessageBox msg_box;
           msg_box.setText(tr("Photo not exists!"));
@@ -1069,7 +1070,7 @@ void BlocksPane::OnActionCopyTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_COPY_BLOCK,
       request, response, false);
-    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QString copied_block_name =
         QString::fromLocal8Bit(response.copied_block_name.c_str());
@@ -1085,7 +1086,7 @@ void BlocksPane::OnActionCopyTriggered()
           this, hs::recon::db::DatabaseMediator::REQUEST_GET_PHOTO,
           request_get_photo, response_get_photo, false);
         if (response_get_photo.error_code !=
-            hs::recon::db::DatabaseMediator::NO_ERROR)
+            hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
         {
           QMessageBox msg_box;
           msg_box.setText(tr("Photo not exists!"));
@@ -1110,7 +1111,7 @@ void BlocksPane::OnActionCopyTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
       request, response, false);
-    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QString copied_feature_name =
         QString::fromLocal8Bit(
@@ -1129,7 +1130,7 @@ void BlocksPane::OnActionCopyTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
       request, response, false);
-    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QString copied_feature_name =
         QString::fromLocal8Bit(
@@ -1148,7 +1149,7 @@ void BlocksPane::OnActionCopyTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_COPY_POINT_CLOUD,
       request, response, false);
-    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QString copied_feature_name =
         QString::fromLocal8Bit(
@@ -1167,7 +1168,7 @@ void BlocksPane::OnActionCopyTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
       request, response, false);
-    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QString copied_feature_name =
         QString::fromLocal8Bit(
@@ -1186,7 +1187,7 @@ void BlocksPane::OnActionCopyTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_COPY_FEATURE_MATCH,
       request, response, false);
-    if (response.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QString copied_feature_name =
         QString::fromLocal8Bit(
@@ -1210,7 +1211,7 @@ void BlocksPane::OnActionRemoveTriggered()
      ((MainWindow*)parent())->database_mediator().Request(
      this, db::DatabaseMediator::REQUEST_REMOVE_BLOCK,
      request, response, false);
-     if(response.error_code == db::DatabaseMediator::NO_ERROR)
+     if(response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
      {
        blocks_tree_widget_->DeleteBlock(selected_block_id_);
      }
@@ -1228,7 +1229,7 @@ void BlocksPane::OnActionRemoveTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_REMOVE_FEATURE_MATCH,
     request, response, false);
-    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    if(response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       blocks_tree_widget_->DeleteFeatureMatch(selected_feature_match_id_);
     }
@@ -1246,7 +1247,7 @@ void BlocksPane::OnActionRemoveTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_REMOVE_PHOTO_ORIENTATION,
     request, response, false);
-    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    if(response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       blocks_tree_widget_->
         DeletePhotoOrientation(selected_photo_orientation_id_);
@@ -1265,7 +1266,7 @@ void BlocksPane::OnActionRemoveTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_REMOVE_POINT_CLOUD,
     request, response, false);
-    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    if(response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       blocks_tree_widget_->DeletePointCloud(selected_point_cloud_id_);
     }
@@ -1283,7 +1284,7 @@ void BlocksPane::OnActionRemoveTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_REMOVE_SURFACE_MODEL,
     request, response, false);
-    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    if(response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       blocks_tree_widget_->DeleteSurfaceModel(selected_surface_model_id_);
     }
@@ -1301,7 +1302,7 @@ void BlocksPane::OnActionRemoveTriggered()
     ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_REMOVE_TEXTURE,
     request, response, false);
-    if(response.error_code == db::DatabaseMediator::NO_ERROR)
+    if(response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       blocks_tree_widget_->DeleteTexture(selected_texture_id_);
     }
@@ -1338,7 +1339,7 @@ void BlocksPane::OnActionInfoTriggered()
         this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
         request_photo_orientation, response_photo_orientation, false);
       if(response_photo_orientation.error_code !=
-          hs::recon::db::Database::NO_ERROR)
+          hs::recon::db::Database::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -1360,7 +1361,7 @@ void BlocksPane::OnActionInfoTriggered()
           this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
           request_feature_match, response_feature_match, false);
         if(response_feature_match.error_code !=
-          db::DatabaseMediator::NO_ERROR)
+          db::DatabaseMediator::DATABASE_NO_ERROR)
         {
           break;
         }
@@ -1441,7 +1442,7 @@ void BlocksPane::OnFeatureMatchItemSelected(uint feature_match_id)
     this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
     request_feature_match, response_feature_match, false);
 
-  if (response_feature_match.error_code == hs::recon::db::Database::NO_ERROR)
+  if (response_feature_match.error_code == hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     int flag = response_feature_match.record[
       db::FeatureMatchResource::FEATURE_MATCH_FIELD_FLAG].ToInt();
@@ -1478,7 +1479,7 @@ void BlocksPane::OnPhotoOrientationItemSelected(uint photo_orientation_id)
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
     request_photo_orientation, response_photo_orientation, false);
 
-  if (response_photo_orientation.error_code == hs::recon::db::Database::NO_ERROR)
+  if (response_photo_orientation.error_code == hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     int flag = response_photo_orientation.record[
       db::PhotoOrientationResource::PHOTO_ORIENTATION_FIELD_FLAG].ToInt();
@@ -1514,7 +1515,7 @@ void BlocksPane::OnPointCloudItemSelected(uint point_cloud_id)
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
     request_point_cloud, response_point_cloud, false);
-  if (response_point_cloud.error_code == hs::recon::db::Database::NO_ERROR)
+  if (response_point_cloud.error_code == hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     int flag = response_point_cloud.record[
       db::PointCloudResource::POINT_CLOUD_FIELD_FLAG].ToInt();
@@ -1550,7 +1551,7 @@ void BlocksPane::OnSurfaceModelItemSelected(uint surface_model_id)
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
     request_surface_model, response_surface_model, false);
-  if (response_surface_model.error_code ==hs::recon::db::Database::NO_ERROR)
+  if (response_surface_model.error_code ==hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     int flag = response_surface_model.record[
       db::SurfaceModelResource::SURFACE_MODEL_FIELD_FLAG].ToInt();
@@ -1586,7 +1587,7 @@ void BlocksPane::OnTextureItemSelected(uint texture_id)
     this, db::DatabaseMediator::REQUEST_GET_TEXTURE,
     request_texture, response_texture, false);
   if (response_texture.error_code ==
-    hs::recon::db::Database::NO_ERROR)
+    hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     int flag = response_texture.record[
       db::TextureResource::TEXTURE_FIELD_FLAG].ToInt();
@@ -1778,7 +1779,7 @@ int BlocksPane::AddFeatureMatchStep(
     this, hs::recon::db::DatabaseMediator::REQUEST_ADD_FEATURE_MATCH,
     request_add_feature_match, response_add_feature_match, true);
   if (response_add_feature_match.error_code ==
-      hs::recon::db::DatabaseMediator::NO_ERROR)
+      hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     uint feature_match_id = uint(response_add_feature_match.feature_match_id);
     QString feature_match_name =
@@ -1820,7 +1821,7 @@ int BlocksPane::AddPhotoOrientationStep(
     this, hs::recon::db::DatabaseMediator::REQUEST_ADD_PHOTO_ORIENTATION,
     request_add_photo_orientation, response_add_photo_orientation, true);
   if (response_add_photo_orientation.error_code ==
-      hs::recon::db::DatabaseMediator::NO_ERROR)
+      hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     uint photo_orientation_id =
       uint(response_add_photo_orientation.photo_orientation_id);
@@ -1861,7 +1862,7 @@ int BlocksPane::AddPointCloudStep(
     this, hs::recon::db::DatabaseMediator::REQUEST_ADD_POINT_CLOUD,
     request_add_point_cloud, response_add_point_cloud, true);
   if (response_add_point_cloud.error_code ==
-    hs::recon::db::DatabaseMediator::NO_ERROR)
+    hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     uint point_cloud_id =
       uint(response_add_point_cloud.point_cloud_id);
@@ -1901,7 +1902,7 @@ int BlocksPane::AddSurfaceModelStep(
     this, hs::recon::db::DatabaseMediator::REQUEST_ADD_SURFACE_MODEL,
     request_add_surface_model, response_add_surface_model, true);
   if (response_add_surface_model.error_code ==
-    hs::recon::db::DatabaseMediator::NO_ERROR)
+    hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     uint surface_model_id = uint(response_add_surface_model.surface_model_id);
     QString surface_model_name =
@@ -1940,7 +1941,7 @@ int BlocksPane::AddTextureStep(
     this, hs::recon::db::DatabaseMediator::REQUEST_ADD_TEXTURE,
     request_add_texture, response_add_texture, true);
   if (response_add_texture.error_code ==
-    hs::recon::db::DatabaseMediator::NO_ERROR)
+    hs::recon::db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     uint texture_id = uint(response_add_texture.texture_id);
     QString texture_name =
@@ -1993,7 +1994,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
       this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
       request_feature_match, response_feature_match, false);
 
-    if (response_feature_match.error_code != hs::recon::db::Database::NO_ERROR)
+    if (response_feature_match.error_code != hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2012,7 +2013,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetFeatureMatchStep(
       request_get_photos_in_block, response_get_photos_in_block, false);
 
     if (response_get_photos_in_block.error_code !=
-        hs::recon::db::Database::NO_ERROR)
+        hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2146,7 +2147,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
       request_photo_orientation, response_photo_orientation, false);
     if (response_photo_orientation.error_code !=
-        hs::recon::db::Database::NO_ERROR)
+        hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2183,7 +2184,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPhotoOrientationStep(
       request_get_photos_in_block, response_get_photos_in_block, false);
 
     if (response_get_photos_in_block.error_code !=
-        hs::recon::db::Database::NO_ERROR)
+        hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2379,7 +2380,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
     ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOS,
     request_get_all_photos, response_get_all_photos, false);
-    if(response_get_all_photos.error_code != hs::recon::db::Database::NO_ERROR)
+    if(response_get_all_photos.error_code != hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2400,7 +2401,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
       this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
       request_point_cloud, response_point_cloud, false);
     if (response_point_cloud.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2417,7 +2418,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetPointCloudStep(
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
       request_photo_orientation, response_photo_orientation, false);
-    if (response_photo_orientation.error_code != db::DatabaseMediator::NO_ERROR)
+    if (response_photo_orientation.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2461,7 +2462,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
       this, db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
       request_surface_model, response_surface_model, false);
     if (response_surface_model.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2479,7 +2480,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetSurfaceModelStep(
       this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
       request_point_cloud, response_point_cloud, false);
     if (response_point_cloud.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2531,7 +2532,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       this, db::DatabaseMediator::REQUEST_GET_TEXTURE,
       request_texture, response_texture, false);
     if (response_texture.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2549,7 +2550,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       this, db::DatabaseMediator::REQUEST_GET_SURFACE_MODEL,
       request_surface_model, response_surface_model, false);
     if (response_texture.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2565,7 +2566,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_GET_POINT_CLOUD,
       request_point_cloud, response_point_cloud, false);
-    if (response_point_cloud.error_code != hs::recon::db::Database::NO_ERROR)
+    if (response_point_cloud.error_code != hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2582,7 +2583,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
       request_photo_orientation, response_photo_orientation, false);
     if (response_photo_orientation.error_code !=
-        hs::recon::db::Database::NO_ERROR)
+        hs::recon::db::Database::DATABASE_NO_ERROR)
     {
       break;
     }
@@ -2646,7 +2647,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       ((MainWindow*)parent())->database_mediator().Request(
         this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
         request_group, response_group, false);
-      if (response_group.error_code != db::DatabaseMediator::NO_ERROR)
+      if (response_group.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         continue;
       }
@@ -2656,7 +2657,7 @@ BlocksPane::WorkflowStepPtr BlocksPane::SetTextureStep(
       ((MainWindow*)parent())->database_mediator().Request(
         this, db::DatabaseMediator::REQUEST_GET_PHOTO,
         request_photo, response_photo, false);
-      if (response_photo.error_code != db::DatabaseMediator::NO_ERROR)
+      if (response_photo.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         continue;
       }

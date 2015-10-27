@@ -29,7 +29,7 @@ int Database::Open(const std::string& database_file)
     int result = sqlite3_open(database_file_path_.string().c_str(), &sqlite_db_);
     if (result == SQLITE_OK)
     {
-      return NO_ERROR;
+      return DATABASE_NO_ERROR;
     }
     else
     {
@@ -99,7 +99,7 @@ int Database::Create(const std::string& database_directory)
   int result = sqlite3_open(database_file_path_.string().c_str(), &sqlite_db_);
   if (result == SQLITE_OK)
   {
-    return NO_ERROR;
+    return DATABASE_NO_ERROR;
   }
   else
   {
@@ -120,7 +120,7 @@ int Database::Close()
   else
   {
     database_file_path_ = boost::filesystem::path();
-    return NO_ERROR;
+    return DATABASE_NO_ERROR;
   }
 }
 

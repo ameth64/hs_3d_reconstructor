@@ -154,6 +154,11 @@ yong_add_dependence(hs_3d_reconstructor hs_3d_reconstructor
   DEPENDENT_PROJECT hs_texture
     HEADER_ONLY
   )
+if (WIN32)
+  yong_add_dependence(hs_3d_reconstructor hs_3d_reconstructor
+    DEPENDENT_PROJECT glew
+      DEPENDENT_LIBS glew)
+endif()
 hslib_add_mkl_dep(hs_3d_reconstructor)
 target_link_libraries(hs_3d_reconstructor ${OPENGL_LIBRARIES})
 hslib_add_executable_end(hs_3d_reconstructor)

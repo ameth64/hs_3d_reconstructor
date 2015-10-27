@@ -114,14 +114,14 @@ void PhotosPane::Response(int request_flag, void* response)
       {
         db::ResponseOpenDatabase* response_open =
           static_cast<db::ResponseOpenDatabase*>(response);
-        if (response_open->error_code == db::DatabaseMediator::NO_ERROR)
+        if (response_open->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
         {
           db::RequestGetAllPhotogroups photogroups_request;
           db::ResponseGetAllPhotogroups photogroups_response;
           ((MainWindow*)parent())->database_mediator().Request(
             this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOGROUPS,
             photogroups_request, photogroups_response, false);
-          if (photogroups_response.error_code != db::DatabaseMediator::NO_ERROR)
+          if (photogroups_response.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           db::RequestGetAllPhotos photos_request;
@@ -129,7 +129,7 @@ void PhotosPane::Response(int request_flag, void* response)
           ((MainWindow*)parent())->database_mediator().Request(
             this, db::DatabaseMediator::REQUEST_GET_ALL_PHOTOS,
             photos_request, photos_response, false);
-          if (photos_response.error_code != db::DatabaseMediator::NO_ERROR)
+          if (photos_response.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           std::map<uint, PhotosTreeWidget::GroupEntry> group_entries;
@@ -212,7 +212,7 @@ void PhotosPane::Response(int request_flag, void* response)
     {
       db::ResponseCloseDatabase* response_close =
         static_cast<db::ResponseCloseDatabase*>(response);
-      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_close->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         photos_tree_widget_->ClearGroups();
       }
@@ -270,7 +270,7 @@ void PhotosPane::OnPhotoSelected(uint photo_id)
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_PHOTO,
     request, response);
-  if (response.error_code == db::DatabaseMediator::NO_ERROR)
+  if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     std::string photo_path =
       response.record[db::PhotoResource::PHOTO_FIELD_PATH].ToString();
@@ -328,7 +328,7 @@ void PhotosPane::OnSingleGroupSelected(uint group_id)
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_PHOTOGROUP,
     request, response);
-  if (response.error_code == db::DatabaseMediator::NO_ERROR)
+  if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     PhotogroupInfo info;
     std::string name =
@@ -542,7 +542,7 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
   ((MainWindow*)parent())->database_mediator().Request(
     this, hs::recon::db::DatabaseMediator::REQUEST_ADD_PHOTOGROUP,
     request, response, true);
-  if (response.error_code == db::DatabaseMediator::NO_ERROR)
+  if (response.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     hs::recon::db::RequestAddPhotos request_add_photos;
     hs::recon::db::ResponseAddPhotos response_add_photos;
@@ -574,7 +574,7 @@ void PhotosPane::ImportPhotos(const PhotogroupInfo &photogroup_info
 
     //progress_manager_ = new hs::progress::ProgressManager;
 
-    if (response_add_photos.error_code == db::DatabaseMediator::NO_ERROR)
+    if (response_add_photos.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       imported_group_entry_.id = uint(response.added_id);
       imported_group_entry_.name = photogroup_info.name;

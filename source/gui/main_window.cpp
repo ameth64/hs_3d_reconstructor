@@ -189,7 +189,7 @@ void MainWindow::OnActionNewProjectTriggered()
         msg_box.exec();
         break;
       }
-    case hs::recon::db::Database::NO_ERROR:
+    case hs::recon::db::Database::DATABASE_NO_ERROR:
      {
       QString db_file_path
         = QString::fromStdString(std_new_project_directory) + tr("/")
@@ -328,7 +328,7 @@ void MainWindow::OpenProject(const QString& database_file)
       start_up_dialog_->close();
       break;
     }
-    case hs::recon::db::Database::NO_ERROR:
+    case hs::recon::db::Database::DATABASE_NO_ERROR:
     {
       start_up_dialog_->SetCurrentFile(database_file);
       start_up_dialog_->close();

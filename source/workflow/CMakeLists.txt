@@ -18,6 +18,8 @@ if (MSVC)
     PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
 
+add_definitions(-DCGAL_NO_AUTOLINK)
+
 hslib_add_library(hs_3d_reconstructor_workflow
   SOURCES ${WORKFLOW_SOURCE}
   LIB_TYPE STATIC)

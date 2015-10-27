@@ -138,7 +138,7 @@ void GCPsPane::Response(int request_flag, void* response)
     {
       db::ResponseOpenDatabase* response_open =
         static_cast<db::ResponseOpenDatabase*>(response);
-      if (response_open->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_open->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         while (1)
         {
@@ -147,7 +147,7 @@ void GCPsPane::Response(int request_flag, void* response)
           ((MainWindow*)parent())->database_mediator().Request(
             this, db::DatabaseMediator::REQUEST_GET_ALL_GCPS,
             gcps_request, gcps_response, false);
-          if (gcps_response.error_code != db::DatabaseMediator::NO_ERROR)
+          if (gcps_response.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
             break;
 
           auto itr_record = gcps_response.records.begin();
@@ -206,7 +206,7 @@ void GCPsPane::Response(int request_flag, void* response)
     {
       db::ResponseCloseDatabase* response_close =
         static_cast<db::ResponseCloseDatabase*>(response);
-      if (response_close->error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_close->error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         gcps_table_widget_->ClearGCPs();
         tiepoint_measure_widget_->SetTiepointPhotos(
@@ -241,7 +241,7 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
     request_photo_orientation, response_photo_orientation, false);
   if (response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -304,7 +304,7 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_GET_PHOTO,
       request_photo, response_photo, false);
-    if (response_photo.error_code != db::DatabaseMediator::NO_ERROR)
+    if (response_photo.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       continue;
     }
@@ -333,7 +333,7 @@ void GCPsPane::UpdatePhotoOrientation(uint photo_orientation_id)
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_MEASURES_IN_PHOTO_ORIENTATION,
     request_photo_measure, response_photo_measure, false);
-  if (response_photo_measure.error_code == db::DatabaseMediator::NO_ERROR)
+  if (response_photo_measure.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     auto itr_gcp_measure = gcp_measures_.begin();
     auto itr_gcp_measure_end = gcp_measures_.end();
@@ -474,7 +474,7 @@ void GCPsPane::OnActionAddGCPTriggered()
       ((MainWindow*)parent())->database_mediator().Request(
         this, db::DatabaseMediator::REQUEST_GET_ALL_GCPS,
         request_get_gcps, response_get_gcps, true);
-    if(error != db::DatabaseMediator::NO_ERROR)
+    if(error != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QMessageBox box;
       box.setText(tr("Add GCP error: Unable to get exist GCPs!"));
@@ -522,7 +522,7 @@ void GCPsPane::OnActionAddGCPTriggered()
       this, db::DatabaseMediator::REQUEST_ADD_GCP,
       request_add_gcp, response_add_gcp, true);
 
-    if(error != db::DatabaseMediator::NO_ERROR)
+    if(error != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QMessageBox box;
       box.setText(tr("Add GCP error: Unable to add GCP to database!"));
@@ -818,7 +818,7 @@ void GCPsPane::OnPhotoMeasured(uint photo_id, const Point2F& image_pos)
         this, db::DatabaseMediator::REQUEST_ADD_PHOTO_MEASURE,
         request_add_photo_measure, response_add_photo_measure, true);
       if (response_add_photo_measure.error_code ==
-          db::DatabaseMediator::NO_ERROR)
+          db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         photo_measure.photo_measure_id =
           response_add_photo_measure.photo_measure_id;
@@ -838,7 +838,7 @@ void GCPsPane::OnPhotoMeasured(uint photo_id, const Point2F& image_pos)
       ((MainWindow*)parent())->database_mediator().Request(
         this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_MEASURE_POS,
         request_update, response_update, true);
-      if (response_update.error_code == db::DatabaseMediator::NO_ERROR)
+      if (response_update.error_code == db::DatabaseMediator::DATABASE_NO_ERROR)
       {
         itr_photo_measure->second.x = Scalar(image_pos[0]);
         itr_photo_measure->second.y = Scalar(image_pos[1]);
@@ -929,7 +929,7 @@ void GCPsPane::OnGCPsDeleteed(const std::vector<uint>& gcp_ids)
     ((MainWindow*)parent())->database_mediator().Request(
       this, db::DatabaseMediator::REQUEST_DELETE_GCPS,
       request, response, true);
-    if (error != db::DatabaseMediator::NO_ERROR)
+    if (error != db::DatabaseMediator::DATABASE_NO_ERROR)
     {
       QMessageBox box;
       box.setText(tr("delete GCP error!"));
@@ -1327,7 +1327,7 @@ void GCPsPane::GCPConstrainedOptimize(
     this, db::DatabaseMediator::REQUEST_GET_PHOTO_ORIENTATION,
     request_photo_orientation, response_photo_orientation, false);
   if (response_photo_orientation.error_code !=
-      hs::recon::db::Database::NO_ERROR)
+      hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -1344,7 +1344,7 @@ void GCPsPane::GCPConstrainedOptimize(
   ((MainWindow*)parent())->database_mediator().Request(
     this, db::DatabaseMediator::REQUEST_GET_FEATURE_MATCH,
     request_feature_match, response_feature_match, false);
-  if (response_feature_match.error_code != hs::recon::db::Database::NO_ERROR)
+  if (response_feature_match.error_code != hs::recon::db::Database::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -1645,7 +1645,7 @@ void GCPsPane::GCPConstrainedOptimize(
     this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_TRANSFORM,
     request_transform, response_transform, true);
 
-  if (response_transform.error_code != db::DatabaseMediator::NO_ERROR)
+  if (response_transform.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     return;
   }
@@ -1662,7 +1662,7 @@ void GCPsPane::GCPConstrainedOptimize(
     this, db::DatabaseMediator::REQUEST_UPDATE_PHOTO_ORIENTATION_FLAG,
     request_flag, response_flag, true);
 
-  if (response_flag.error_code != db::DatabaseMediator::NO_ERROR)
+  if (response_flag.error_code != db::DatabaseMediator::DATABASE_NO_ERROR)
   {
     return;
   }

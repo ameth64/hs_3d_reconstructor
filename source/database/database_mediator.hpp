@@ -60,7 +60,7 @@ public:
   typedef Database::Identifier Identifier;
   enum ErrorCode
   {
-    NO_ERROR = 0,
+    DATABASE_NO_ERROR = 0,
     ERROR_FAIL_TO_REGISTER_RESOURCE = Database::NUMBER_OF_ERROR_CODE,
     ERROR_FAIL_TO_CREATE_DIRECTORY,
     ERROR_FAIL_TO_COPY_DIRECTORY,
@@ -252,14 +252,14 @@ struct DatabaseRequestHandler<RequestOpenDatabase, ResponseOpenDatabase>
   {
     response.error_code =
       database_mediator.Open(request.database_file);
-    if (response.error_code != Database::NO_ERROR)
+    if (response.error_code != Database::DATABASE_NO_ERROR)
     {
       return response.error_code;
     }
     //检查all photo是否存在
     response.error_code = 
       database_mediator.photo_resource_->GetAll(response.photo_records);
-    if(response.error_code != Database::NO_ERROR)
+    if(response.error_code != Database::DATABASE_NO_ERROR)
     {
       return response.error_code;
     }
@@ -876,7 +876,7 @@ struct DatabaseRequestHandler<RequestAddPhotosToBlock, ResponseAddPhotosToBlock>
     response.error_code =
       database_mediator.photo_block_relation_resource_->Add(add_requests,
                                                             added_records);
-    if (response.error_code == DatabaseMediator::NO_ERROR)
+    if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
     {
       response.block_id = request.block_id;
       auto itr_added_record = added_records.begin();
@@ -935,7 +935,7 @@ struct DatabaseRequestHandler<RequestAddFeatureMatch, ResponseAddFeatureMatch>
     response.error_code =
       database_mediator.feature_match_resource_->Add(add_requests,
                                                      added_records);
-    if (response.error_code != DatabaseMediator::NO_ERROR ||
+    if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR ||
         added_records.empty())
     {
       return response.error_code;
@@ -962,7 +962,7 @@ struct DatabaseRequestHandler<RequestAddFeatureMatch, ResponseAddFeatureMatch>
       database_mediator.feature_match_resource_->Update(update_requests,
                                                         updated_records);
 
-    if (response.error_code == DatabaseMediator::NO_ERROR)
+    if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
     {
       response.feature_match_id = feature_match_id;
       response.block_id = request.block_id;
@@ -1050,7 +1050,7 @@ struct DatabaseRequestHandler<RequestGetPhotosInBlock, ResponseGetPhotosInBlock>
       PhotoResource::Record photo_record;
       response.error_code =
         database_mediator.photo_resource_->GetById(photo_id, photo_record);
-      if (response.error_code != Database::NO_ERROR)
+      if (response.error_code != Database::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -1104,7 +1104,7 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
     response.error_code =
       database_mediator.photo_orientation_resource_->Add(add_requests,
                                                          added_records);
-    if (response.error_code != DatabaseMediator::NO_ERROR ||
+    if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR ||
         added_records.empty())
     {
       return response.error_code;
@@ -1131,7 +1131,7 @@ struct DatabaseRequestHandler<RequestAddPhotoOrientation,
       database_mediator.photo_orientation_resource_->Update(update_requests,
                                                             updated_records);
 
-    if (response.error_code == DatabaseMediator::NO_ERROR)
+    if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
     {
       response.photo_orientation_id = photo_orientation_id;;
       response.feature_match_id = request.feature_match_id;
@@ -1233,7 +1233,7 @@ struct DatabaseRequestHandler<RequestAddPointCloud,
       response.error_code =
         database_mediator.point_cloud_resource_->Add(add_requests,
         added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR ||
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR ||
         added_records.empty())
       {
         return response.error_code;
@@ -1260,7 +1260,7 @@ struct DatabaseRequestHandler<RequestAddPointCloud,
         database_mediator.point_cloud_resource_->Update(update_requests,
                                                         updated_records);
 
-      if (response.error_code == DatabaseMediator::NO_ERROR)
+      if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
       {
         response.point_cloud_id = point_cloud_id;;
         response.photo_orientation_id = request.photo_orientation_id;
@@ -1419,7 +1419,7 @@ struct DatabaseRequestHandler<RequestUpdatePhotoOrientationTransform,
       database_mediator.photo_orientation_resource_->GetById(request.id,
                                                              record);
 
-    if (response.error_code == DatabaseMediator::NO_ERROR)
+    if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
     {
       std::string photo_orientation_path =
         database_mediator.GetPhotoOrientationPath(request.id);
@@ -1524,7 +1524,7 @@ struct DatabaseRequestHandler <RequestUpdatePhotoOrientationParams,
                   ResponseUpdatePhotoOrientationParams& response,
                   DatabaseMediator& database_mediator)
   {
-    response.error_code = DatabaseMediator::NO_ERROR;
+    response.error_code = DatabaseMediator::DATABASE_NO_ERROR;
     response.photo_orientation_id = request.photo_orientation_id;
 
     //TODO:this is for update notify.Ugly.
@@ -1988,7 +1988,7 @@ struct DatabaseRequestHandler<RequestDeleteGCPs, ResponseDeleteGCPs>
     PhotoMeasureResource::RecordContainer photo_measure_records;
     response.error_code =
       database_mediator.photo_measure_resource_->GetAll(photo_measure_records);
-    if(response.error_code != DatabaseMediator::NO_ERROR)
+    if(response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
     {
       return response.error_code;
     }
@@ -2001,7 +2001,7 @@ struct DatabaseRequestHandler<RequestDeleteGCPs, ResponseDeleteGCPs>
           EqualTo(GroundControlPointResource::fields_[
                   GroundControlPointResource::GCP_FIELD_ID], 
                   Value(int(request.gcp_ids.at(i)))));
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         return response.error_code;
       }
@@ -2014,7 +2014,7 @@ struct DatabaseRequestHandler<RequestDeleteGCPs, ResponseDeleteGCPs>
           EqualTo(PhotoMeasureResource::fields_[
             PhotoMeasureResource::PHOTO_MEASURE_FIELD_GCP_ID],
             Value(int(request.gcp_ids.at(i)))));
-        if(response.error_code != DatabaseMediator::NO_ERROR)
+        if(response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
         {
           return response.error_code;
         }
@@ -2101,7 +2101,7 @@ struct DatabaseRequestHandler<RequestAddPhotoMeasure, ResponseAddPhotoMeasure>
     response.error_code =
       database_mediator.photo_measure_resource_->Add(add_requests,
                                                      added_records);
-    if (response.error_code == DatabaseMediator::NO_ERROR)
+    if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
     {
       if (added_records.size() == 1)
       {
@@ -2246,7 +2246,7 @@ struct DatabaseRequestHandler<RequestGetPhotoMeasuresInPhotoOrientation,
                   PHOTO_MEASURE_FIELD_PHOTO_ORIENTATION_ID],
                 Value(int(request.photo_orientation_id))),
         selected_records);
-    if (response.error_code == Database::NO_ERROR)
+    if (response.error_code == Database::DATABASE_NO_ERROR)
     {
       auto itr_selected_record = selected_records.begin();
       auto itr_selected_record_end = selected_records.end();
@@ -2304,10 +2304,10 @@ struct DatabaseRequestHandler<RequestGetPhotoMeasuresInPhotoOrientation,
             break;
           }
 
-          result = DatabaseMediator::NO_ERROR;
+          result = DatabaseMediator::DATABASE_NO_ERROR;
           break;
         }
-        if (result != DatabaseMediator::NO_ERROR)
+        if (result != DatabaseMediator::DATABASE_NO_ERROR)
         {
           response.error_code = result;
           break;
@@ -2360,7 +2360,7 @@ struct DatabaseRequestHandler<RequestUpdateGCP, ResponseUpdateGCP>
     response.error_code =
       database_mediator.ground_control_point_resource_->Update(
         update_requests, updated_records);
-    if (response.error_code == DatabaseMediator::NO_ERROR &&
+    if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR &&
         request.update_photo_measure)
     {
       PhotoMeasureResource::SelectMask select_mask;
@@ -2377,7 +2377,7 @@ struct DatabaseRequestHandler<RequestUpdateGCP, ResponseUpdateGCP>
                         PHOTO_MEASURE_FIELD_PHOTO_ORIENTATION_ID],
                       Value(int(request.photo_orientation_id)))),
           selected_records);
-      if (response.error_code == Database::NO_ERROR)
+      if (response.error_code == Database::DATABASE_NO_ERROR)
       {
         auto itr_selected_record = selected_records.begin();
         auto itr_selected_record_end = selected_records.end();
@@ -2439,7 +2439,7 @@ struct DatabaseRequestHandler<RequestAddSurfaceModel,
       response.error_code =
         database_mediator.surface_model_resource_->Add(add_requests,
         added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR ||
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR ||
         added_records.empty())
       {
         return response.error_code;
@@ -2466,7 +2466,7 @@ struct DatabaseRequestHandler<RequestAddSurfaceModel,
         database_mediator.surface_model_resource_->Update(update_requests,
         updated_records);
 
-      if (response.error_code == DatabaseMediator::NO_ERROR)
+      if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
       {
         response.surface_model_id = surface_model_id;;
         response.point_cloud_id = request.point_cloud_id;
@@ -2519,7 +2519,7 @@ struct DatabaseRequestHandler<RequestAddTexture,
       response.error_code =
         database_mediator.texture_resource_->Add(add_requests,
         added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR ||
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR ||
         added_records.empty())
       {
         return response.error_code;
@@ -2546,7 +2546,7 @@ struct DatabaseRequestHandler<RequestAddTexture,
         database_mediator.texture_resource_->Update(update_requests,
         updated_records);
 
-      if (response.error_code == DatabaseMediator::NO_ERROR)
+      if (response.error_code == DatabaseMediator::DATABASE_NO_ERROR)
       {
         response.texture_id = texture_id;;
         response.surface_model_id = request.surface_model_id;
@@ -2770,7 +2770,7 @@ struct DatabaseRequestHandler <RequestCopyBlock,
       response.error_code =
         database_mediator.block_resource_->GetById(
         request.block_id, block);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -2806,7 +2806,7 @@ struct DatabaseRequestHandler <RequestCopyBlock,
       BlockResource::AddedRecordContainer added_records;
       response.error_code =
         database_mediator.block_resource_->Add(add_requests, added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -2842,7 +2842,7 @@ struct DatabaseRequestHandler <RequestCopyBlock,
       response.error_code =
         database_mediator.photo_block_relation_resource_->Add(
           pbr_add_requests, pbr_added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -2886,7 +2886,7 @@ struct DatabaseRequestHandler <RequestCopyFeatureMatch,
       response.error_code =
         database_mediator.feature_match_resource_->GetById(
           request.feature_match_id, feature_match);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -2929,7 +2929,7 @@ struct DatabaseRequestHandler <RequestCopyFeatureMatch,
       response.error_code =
         database_mediator.feature_match_resource_->Add(
           add_requests, added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -2985,7 +2985,7 @@ struct DatabaseRequestHandler <RequestCopyPhotoOrientation,
       response.error_code =
         database_mediator.photo_orientation_resource_->GetById(
           request.photo_orientation_id, photo_orientation);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3028,7 +3028,7 @@ struct DatabaseRequestHandler <RequestCopyPhotoOrientation,
       response.error_code =
         database_mediator.photo_orientation_resource_->Add(
           add_requests, added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3120,7 +3120,7 @@ struct DatabaseRequestHandler <RequestCopyPointCloud,
       response.error_code =
         database_mediator.point_cloud_resource_->GetById(
           request.point_cloud_id, point_cloud);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3163,7 +3163,7 @@ struct DatabaseRequestHandler <RequestCopyPointCloud,
       response.error_code =
         database_mediator.point_cloud_resource_->Add(
           add_requests, added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3219,7 +3219,7 @@ struct DatabaseRequestHandler <RequestCopySurfaceModel,
       response.error_code =
         database_mediator.surface_model_resource_->GetById(
           request.surface_model_id, surface_model);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3262,7 +3262,7 @@ struct DatabaseRequestHandler <RequestCopySurfaceModel,
       response.error_code =
         database_mediator.surface_model_resource_->Add(
           add_requests, added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3318,7 +3318,7 @@ struct DatabaseRequestHandler <RequestCopyTexture,
       response.error_code =
         database_mediator.texture_resource_->GetById(
           request.texture_id, texture);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3361,7 +3361,7 @@ struct DatabaseRequestHandler <RequestCopyTexture,
       response.error_code =
         database_mediator.texture_resource_->Add(
           add_requests, added_records);
-      if (response.error_code != DatabaseMediator::NO_ERROR)
+      if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
       {
         break;
       }
@@ -3460,7 +3460,7 @@ struct DatabaseRequestHandler < RequestRemoveSurfaceModel,
         response.error_code = database_mediator.Request(
           nullptr, DatabaseMediator::REQUEST_REMOVE_TEXTURE,
           remove_request, remove_reponse, false);
-        if (response.error_code != DatabaseMediator::NO_ERROR)
+        if (response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
         {
           return response.error_code;
         }
@@ -3519,7 +3519,7 @@ struct DatabaseRequestHandler < RequestRemovePointCloud,
         response.error_code = database_mediator.Request(
           nullptr, DatabaseMediator::REQUEST_REMOVE_SURFACE_MODEL,
           remove_request, remove_reponse, false);
-        if(response.error_code != DatabaseMediator::NO_ERROR)
+        if(response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
         {
           return response.error_code;
         }
@@ -3578,7 +3578,7 @@ struct DatabaseRequestHandler < RequestRemovePhotoOrientation,
         response.error_code = database_mediator.Request(
           nullptr, DatabaseMediator::REQUEST_REMOVE_POINT_CLOUD,
           remove_request, remove_reponse, false);
-        if(response.error_code != DatabaseMediator::NO_ERROR)
+        if(response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
         {
           return response.error_code;
         }
@@ -3646,7 +3646,7 @@ struct DatabaseRequestHandler < RequestRemoveFeatureMatch,
         response.error_code = database_mediator.Request(
           nullptr, DatabaseMediator::REQUEST_REMOVE_PHOTO_ORIENTATION,
           remove_request, remove_reponse, false);
-        if(response.error_code != DatabaseMediator::NO_ERROR)
+        if(response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
         {
           return response.error_code;
         }
@@ -3705,7 +3705,7 @@ struct DatabaseRequestHandler < RequestRemoveBlock,
         response.error_code = database_mediator.Request(
           nullptr, DatabaseMediator::REQUEST_REMOVE_FEATURE_MATCH,
           remove_request, remove_reponse, false);
-        if(response.error_code != DatabaseMediator::NO_ERROR)
+        if(response.error_code != DatabaseMediator::DATABASE_NO_ERROR)
         {
           return response.error_code;
         }

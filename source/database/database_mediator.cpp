@@ -88,12 +88,12 @@ std::string DatabaseMediator::GetTexturePath(
 int DatabaseMediator::Open(const std::string& database_file)
 {
   int result = Close();
-  if (result != NO_ERROR)
+  if (result != DATABASE_NO_ERROR)
   {
     return result;
   }
   result = database_.Open(database_file);
-  if (result != NO_ERROR)
+  if (result != DATABASE_NO_ERROR)
   {
     return result;
   }
@@ -104,7 +104,7 @@ int DatabaseMediator::Open(const std::string& database_file)
 int DatabaseMediator::Create(const std::string& database_directory)
 {
   int result = Close();
-  if (result != NO_ERROR)
+  if (result != DATABASE_NO_ERROR)
   {
     return result;
   }
@@ -159,7 +159,7 @@ int DatabaseMediator::RegisterResources()
     break;\
   }\
 
-  int result = NO_ERROR;
+  int result = DATABASE_NO_ERROR;
   while (1)
   {
     MEDIATOR_REGISTER_RESOURCE(BlockResource,
